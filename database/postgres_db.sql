@@ -81,6 +81,116 @@ CREATE TABLE "employee_documents" (
   "uploaded_at" timestamp
 );
 
+CREATE TABLE "job_postings" (
+  "id" integer PRIMARY KEY,
+  "title" varchar,
+  "department_id" integer NOT NULL,
+  "description" text,
+  "requirements" text,
+  "location" varchar,
+  "employment_type" varchar,
+  "salary_min" decimal,
+  "salary_max" decimal,
+  "status" varchar,
+  "published_at" timestamp,
+  "closing_date" date,
+  "created_by" integer,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+CREATE TABLE "candidates" (
+  "id" integer PRIMARY KEY,
+  "first_name" varchar,
+  "last_name" varchar,
+  "email" varchar UNIQUE,
+  "phone" varchar,
+  "address" text,
+  "linkedin_url" varchar,
+  "portfolio_url" varchar,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+CREATE TABLE "resumes" (
+  "id" integer PRIMARY KEY,
+  "candidate_id" integer NOT NULL,
+  "file_name" varchar,
+  "file_url" varchar,
+  "parsed_text" text,
+  "parsed_data" json,
+  "uploaded_at" timestamp
+);
+
+CREATE TABLE "applications" (
+  "id" integer PRIMARY KEY,
+  "candidate_id" integer NOT NULL,
+  "job_posting_id" integer NOT NULL,
+  "resume_id" integer,
+  "status" varchar,
+  "applied_at" timestamp,
+  "source" varchar,
+  "notes" text,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+CREATE TABLE "interviews" (
+  "id" integer PRIMARY KEY,
+  "application_id" integer NOT NULL,
+  "interview_type" varchar,
+  "scheduled_at" timestamp,
+  "location" varchar,
+  "meeting_url" varchar,
+  "interviewer_id" integer,
+  "status" varchar,
+  "notes" text,
+  "created_at" timestamp
+);
+
+CREATE TABLE "evaluations" (
+  "id" integer PRIMARY KEY,
+  "interview_id" integer NOT NULL,
+  "evaluator_id" integer NOT NULL,
+  "technical_score" integer,
+  "communication_score" integer,
+  "problem_solving_score" integer,
+  "teamwork_score" integer,
+  "overall_score" decimal,
+  "recommendation" varchar,
+  "feedback" text,
+  "created_at" timestamp
+);
+
+CREATE TABLE "offers" (
+  "id" integer PRIMARY KEY,
+  "application_id" integer NOT NULL,
+  "salary" decimal,
+  "employment_type" varchar,
+  "start_date" date,
+  "expiration_date" date,
+  "status" varchar,
+  "offer_letter_url" varchar,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+ALTER TABLE "job_postings" ADD CONSTRAINT "job_department" FOREIGN KEY ("department_id") REFERENCES "departments" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "resumes" ADD CONSTRAINT "candidate_resumes" FOREIGN KEY ("candidate_id") REFERENCES "candidates" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "applications" ADD CONSTRAINT "candidate_applications" FOREIGN KEY ("candidate_id") REFERENCES "candidates" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "applications" ADD CONSTRAINT "job_applications" FOREIGN KEY ("job_posting_id") REFERENCES "job_postings" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "applications" ADD CONSTRAINT "application_resume" FOREIGN KEY ("resume_id") REFERENCES "resumes" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "interviews" ADD CONSTRAINT "application_interviews" FOREIGN KEY ("application_id") REFERENCES "applications" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "evaluations" ADD CONSTRAINT "interview_evaluations" FOREIGN KEY ("interview_id") REFERENCES "interviews" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "offers" ADD CONSTRAINT "application_offers" FOREIGN KEY ("application_id") REFERENCES "applications" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
 ALTER TABLE "employees" ADD CONSTRAINT "employee_department" FOREIGN KEY ("department_id") REFERENCES "departments" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "employees" ADD CONSTRAINT "employee_position" FOREIGN KEY ("position_id") REFERENCES "positions" ("id") DEFERRABLE INITIALLY IMMEDIATE;

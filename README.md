@@ -17,8 +17,9 @@
   - [3.6. Training & Development Management](#36-training--development-management)
   - [3.7. Reports & Analytics](#37-reports--analytics)
   - [3.8. System Administration & Access Control](#38-system-administration--access-control)
-- [4. Proposed Technology Stack](#4-proposed-technology-stack)
-- [5. Suggested Project Structure](#5-suggested-project-structure)
+- [4. Technology Stack](#4-technology-stack)
+- [5. Project Structure](#5-project-structure)
+- [6. Getting Started (Docker Compose)](#6-getting-started-docker-compose)
 
 ---
 
@@ -103,3 +104,97 @@ The system is organized into **eight core functional pillars**:
 - **Account management:** Provide identity authentication, two-factor authentication (2FA), and single sign-on (SSO) through Google Workspace / Microsoft 365.
 - **Role & permission management (RBAC):** Apply granular permissions by role, such as Super Admin, HR Manager, HR Officer, Team Lead, and Employee.
 - **Audit logs:** Record all system activities—including sign-ins, payroll-data edits, and data exports—to improve information security and transparency.
+
+---
+
+## 4. Technology Stack
+
+- **Backend API**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12, Uvicorn, SQLAlchemy 2.0 ORM, Pydantic v2)
+- **Database**: [PostgreSQL 16](https://www.postgresql.org/) (Official Docker Alpine image)
+- **Containerization**: [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
+- **Frontend**: Clean Modern HTML5 / CSS3 (Inter & Plus Jakarta Sans, glassmorphism, responsive) with asynchronous client fetching & graceful offline fallback.
+
+---
+
+## 5. Project Structure
+
+```text
+QLNS/
+├── backend/
+│   ├── app/
+│   │   ├── models/           # SQLAlchemy 2.0 declarative models (Employee & Recruitment)
+│   │   ├── routers/          # FastAPI APIRouters (/api/employees, /api/recruitment)
+│   │   ├── schemas/          # Pydantic validation & response schemas
+│   │   ├── config.py         # App settings & env loading
+│   │   ├── database.py       # DB engine, sessionmaker & get_db dependency
+│   │   └── main.py           # FastAPI entrypoint, CORS setup, healthcheck
+│   ├── Dockerfile            # Python 3.12-slim container image
+│   └── requirements.txt      # Python dependencies
+├── database/
+│   ├── init.sql              # PostgreSQL DDL schema & rich initial seed data
+│   ├── postgres_db.sql       # Original DDL schema reference
+│   └── database_design.md    # Mermaid ERD diagrams & database documentation
+├── uiux/
+│   ├── main.html             # Employee records & profile dashboard
+│   ├── recruitment.html      # Recruitment ATS Kanban pipeline & candidate tracker
+│   └── *.png / assets        # UI design mockups & screenshots
+├── docker-compose.yml        # Orchestrates PostgreSQL + FastAPI services
+└── README.md                 # System overview and operational guide
+```
+
+---
+
+## 6. Getting Started (Docker Compose)
+
+### 6.1. Prerequisites
+- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on your machine.
+
+### 6.2. Start the Backend & Database
+
+From the project root directory, run:
+
+```bash
+docker compose up -d --build
+```
+
+This command will:
+1. Initialize the PostgreSQL 16 container (`qlns_postgres`) on port `5432`.
+2. Automatically run `database/init.sql` to create all 14 tables, sequences, and insert seed data (6 departments, 6 positions, 5 employees, 5 contracts, 5 job requisitions, 12 candidate applications across 6 Kanban stages).
+3. Build and launch the FastAPI container (`qlns_backend`) on port `8000` with hot-reload enabled.
+
+### 6.3. Service URLs & Interactive API Docs
+
+- **Swagger UI Interactive Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **ReDoc Interactive Documentation**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
+- **Health Check Endpoint**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
+- **Employee API**:
+  - `GET /api/employees` - List employees (supports search & department filter)
+  - `GET /api/employees/{id}` - Detailed profile with contract & event history
+  - `POST /api/employees` - Create a new employee record
+  - `GET /api/employees/stats/summary` - Statistical headcount metrics
+  - `GET /api/departments` - List departments with manager details
+  - `GET /api/positions` - List positions
+- **Recruitment ATS API**:
+  - `GET /api/recruitment/pipeline` - Full Kanban stages and candidate cards
+  - `GET /api/recruitment/jobs` - Job requisitions with applicant count
+  - `POST /api/recruitment/jobs` - Create new job posting
+  - `GET /api/recruitment/candidates/{id}` - Candidate application detail
+  - `POST /api/recruitment/applications/{id}/advance` - Advance candidate stage
+
+### 6.4. Database Credentials
+
+| Parameter | Value |
+|:---|:---|
+| **Host** | `localhost` |
+| **Port** | `5432` |
+| **Database Name** | `qlns_db` |
+| **Username** | `postgres` |
+| **Password** | `postgres123` |
+
+### 6.5. Open the Web Frontend
+
+Simply open the HTML files in your browser:
+- **Employee Management**: Open `uiux/main.html` in Chrome, Safari, or Edge.
+- **Recruitment ATS**: Open `uiux/recruitment.html` in your browser.
+
+> When the backend is running, a green **"Backend Online"** badge appears in the top navigation bar, and data is synchronized in real time with PostgreSQL. If the backend is turned off, the interface seamlessly falls back to offline demo mode.

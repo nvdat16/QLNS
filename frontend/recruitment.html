@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>NexusHR - Recruitment & ATS Management</title>
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <style>
+        @layer base {
+
+            *,
+            ::before,
+            ::after {
+                font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+            }
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
+            }
+
+            body {
+                overscroll-behavior: none;
+            }
+
+            main>:first-child {
+                margin-top: 0 !important;
+            }
+
+            main>:last-child {
+                margin-bottom: 0 !important;
+            }
+        }
+
+        .kanban-col {
+            min-height: calc(100vh - 360px);
+        }
+
+        .candidate-card {
+            min-height: 165px;
+        }
+
+        .candidate-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px -2px rgba(79, 70, 229, 0.08), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Custom Scrollbar for Kanban columns */
+        .kanban-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .kanban-scroll::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 9999px;
+        }
+
+        .kanban-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: #94a3b8;
+        }
+
+        .kanban-scroll::-webkit-scrollbar-track {
+            background-color: #f1f5f9;
+            border-radius: 9999px;
+        }
+    </style>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config">tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#f7f9fb",
+                        "primary-fixed": "#e2dfff",
+                        "surface-tint": "#4d44e3",
+                        "secondary-fixed": "#dae2fd",
+                        "surface-variant": "#e0e3e5",
+                        "on-secondary-container": "#5c647a",
+                        "on-tertiary-fixed-variant": "#38485d",
+                        "secondary-fixed-dim": "#bec6e0",
+                        "tertiary-fixed": "#d3e4fe",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container-high": "#e6e8ea",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "outline-variant": "#c7c4d8",
+                        "primary-container": "#4f46e5",
+                        "inverse-primary": "#c3c0ff",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed": "#0f0069",
+                        "inverse-surface": "#2d3133",
+                        "secondary-container": "#dae2fd",
+                        "surface-dim": "#d8dadc",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "error": "#ba1a1a",
+                        "outline": "#777587",
+                        "on-background": "#191c1e",
+                        "on-secondary-fixed": "#131b2e",
+                        "on-surface": "#191c1e",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#b7c8e1",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-fixed": "#0b1c30",
+                        "tertiary-container": "#516177",
+                        "surface": "#f7f9fb",
+                        "surface-container-low": "#f2f4f6",
+                        "on-tertiary-container": "#ccdcf7",
+                        "on-secondary": "#ffffff",
+                        "surface-bright": "#f7f9fb",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "surface-container": "#eceef0",
+                        "tertiary": "#3a495f",
+                        "on-primary-container": "#dad7ff",
+                        "secondary": "#565e74",
+                        "on-surface-variant": "#464555",
+                        "primary": "#3525cd"
+                    },
+                    "fontFamily": {
+                        "sans": ["'Plus Jakarta Sans'", "Inter", "sans-serif"]
+                    }
+                }
+            }
+        }</script>
+</head>
+
+<body class="bg-surface font-sans text-sm text-on-surface antialiased">
+    <!-- LEFT SIDEBAR -->
+    <aside
+        class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest border-r border-surface-variant flex flex-col z-50 select-none">
+        <div class="h-14 px-4 flex items-center justify-between border-b border-surface-variant flex-shrink-0">
+            <div class="flex items-center gap-2">
+                <img alt="NexusHR" class="h-8 w-auto object-contain"
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHB_225bJmkbNuSS_x8Vqeb3tOeutjQdCy01Z1UKZdddqLTO_YarwIfnNiLXVOnFGvQFUVya8jGZBOkkeu4dHnjNOwfDvIf-OgBD5tp39IyIdtyFtoe8Al3pNpLWJxpStuWMGpFiqgzxa2Qh8V_uMngKHWkS1MWyzaCG3PfgmfqxYI1yGrtOigrPIyVyUM_6rNqC5d1i0NQEpJxe-LQtSYbjlfYYKf9byzEtZo6Fm2Iau5geK5h2Cglg" />
+                <div class="flex flex-col">
+                    <span class="font-semibold tracking-tight text-on-surface text-base leading-none">NexusHR</span>
+                    <span class="text-[10px] text-primary font-medium tracking-wide uppercase mt-0.5">Enterprise
+                        Plan</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto px-2 py-3 space-y-4">
+            <nav class="space-y-1">
+                <div class="px-2 pb-1 text-xs uppercase tracking-wider text-outline font-semibold">Main</div>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="main.html">
+                    <span class="material-symbols-outlined text-lg">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="main.html">
+                    <span class="material-symbols-outlined text-lg">badge</span>
+                    <span>Employees / Directory</span>
+                </a>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="main.html#org">
+                    <span class="material-symbols-outlined text-lg">account_tree</span>
+                    <span>Teams &amp; Org Chart</span>
+                </a>
+                <!-- ACTIVE TAB: Recruitment / ATS -->
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded bg-primary-container text-on-primary font-medium transition-colors"
+                    href="recruitment.html">
+                    <span class="material-symbols-outlined text-lg">person_search</span>
+                    <span>Recruitment / ATS</span>
+                    <span class="ml-auto px-1.5 py-0.5 rounded-full bg-white/20 text-[11px] font-semibold">14</span>
+                </a>
+            </nav>
+            <nav class="space-y-1">
+                <div class="px-2 pb-1 text-xs uppercase tracking-wider text-outline font-semibold">Management</div>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="#"><span class="material-symbols-outlined text-lg">schedule</span><span>Time &amp;
+                        Attendance</span></a>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="#"><span class="material-symbols-outlined text-lg">event_available</span><span>Leave &amp;
+                        Time Off</span></a>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="#"><span class="material-symbols-outlined text-lg">track_changes</span><span>Performance &amp;
+                        Goals</span></a>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="#"><span class="material-symbols-outlined text-lg">payments</span><span>Payroll &amp;
+                        Compensation</span></a>
+            </nav>
+            <nav class="space-y-1">
+                <div class="px-2 pb-1 text-xs uppercase tracking-wider text-outline font-semibold">Platform</div>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="#"><span class="material-symbols-outlined text-lg">insights</span><span>Analytics &amp;
+                        Reports</span></a>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="#"><span class="material-symbols-outlined text-lg">verified_user</span><span>Compliance &amp;
+                        Documents</span></a>
+                <a class="flex items-center gap-2 px-2 py-1.5 rounded text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                    href="#"><span class="material-symbols-outlined text-lg">tune</span><span>Settings &amp;
+                        Workflows</span></a>
+            </nav>
+        </div>
+        <div class="p-3 border-t border-surface-variant bg-surface-container-low space-y-2 flex-shrink-0">
+            <div class="flex items-center justify-between px-1">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span class="text-xs text-on-surface-variant">ATS AI Engine Active</span>
+                </div>
+                <button class="text-outline hover:text-on-surface" type="button">
+                    <span class="material-symbols-outlined text-base">menu_open</span>
+                </button>
+            </div>
+            <div class="bg-surface-container-lowest p-2 rounded border border-surface-variant">
+                <div class="flex justify-between text-xs text-on-surface-variant mb-1">
+                    <span>Talent Pool</span><span>342 Candidates</span>
+                </div>
+                <div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-primary-container h-full w-[78%]"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <div class="pl-64">
+        <!-- TOP HEADER -->
+        <header
+            class="fixed top-0 left-64 right-0 h-14 bg-surface-container-lowest/95 backdrop-blur border-b border-surface-variant z-40 px-6 flex items-center justify-between">
+            <div class="flex items-center gap-4 flex-1 max-w-xl">
+                <div class="hidden lg:flex items-center gap-1 text-xs text-outline flex-shrink-0">
+                    <span class="text-on-surface-variant">Talent Acquisition</span>
+                    <span class="material-symbols-outlined text-sm">chevron_right</span>
+                    <span class="text-on-surface font-medium">Recruitment &amp; ATS Pipeline</span>
+                </div>
+                <div class="relative flex-1">
+                    <span
+                        class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-outline text-lg">search</span>
+                    <input
+                        class="w-full h-8 pl-8 pr-16 bg-surface border border-surface-variant rounded text-on-surface placeholder:text-outline text-xs focus:outline-none focus:border-primary-container"
+                        id="globalSearchInput" placeholder="Search candidates, skills, requisitions, interviewers..."
+                        type="text" />
+                    <span
+                        class="absolute right-2 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded border border-surface-variant bg-surface-container text-[11px] text-outline select-none">⌘K</span>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button
+                    class="flex items-center gap-1 px-2.5 py-1 rounded border border-surface-variant hover:bg-surface-container-low text-on-surface-variant text-xs"
+                    type="button">
+                    <span class="material-symbols-outlined text-base">corporate_fare</span>
+                    <span class="font-medium text-on-surface">Acme Global Inc.</span>
+                    <span class="material-symbols-outlined text-sm">arrow_drop_down</span>
+                </button>
+                <button onclick="openPostJobModal()"
+                    class="flex items-center gap-1 bg-primary-container hover:bg-primary text-on-primary px-3 py-1.5 rounded text-xs font-medium shadow-sm transition-all"
+                    type="button">
+                    <span class="material-symbols-outlined text-base">add</span>
+                    <span>New Requisition</span>
+                </button>
+                <div class="h-5 w-px bg-surface-variant mx-1"></div>
+                <button aria-label="Notifications" class="relative p-1 rounded text-outline hover:text-on-surface"
+                    type="button">
+                    <span class="material-symbols-outlined text-xl">notifications</span>
+                    <span
+                        class="absolute top-0.5 right-0.5 w-4 h-4 bg-error text-on-error flex items-center justify-center rounded-full text-[10px] font-semibold leading-none">5</span>
+                </button>
+                <div class="flex items-center gap-2 pl-1 cursor-pointer">
+                    <img alt="Profile" class="w-8 h-8 rounded-full object-cover border border-surface-variant"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwV6RrX8Pucilr_lDu5jaqedKoK2VPoeItdGXQFPWAGtycT_xn5pugteqLe4IMUNnOZKxaGM1DIL67D0pB8ey5XkBtJWNRxKOABjjq03dkEppnRlyj5nh8sU-HADKPDfiGj9t5YcbehZm42rv8wzfWwzWGhd-6p28ZK_xsZKMpK0BLt7wSOKyP3KwfkEBSAV7UgG_66CTltP8Tmko5XVKIocqzDSR5RJsS-tMhs1D_PHDsahqo7_-96Q" />
+                    <div class="hidden xl:flex flex-col text-left">
+                        <span class="text-xs text-on-surface font-semibold leading-tight">Sarah Jenkins</span>
+                        <span class="text-[11px] text-outline leading-tight">Head of People &amp; Culture</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN VIEW BODY -->
+        <main class="relative pt-14 bg-background w-full min-h-screen px-6 py-6">
+            <div class="flex flex-col w-full space-y-5">
+                <!-- Page Title & Top Actions -->
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div class="space-y-1">
+                        <h1 class="text-2xl font-bold text-on-surface tracking-tight">Recruitment &amp; Applicant
+                            Tracking System</h1>
+                    </div>
+                    <div class="flex items-center gap-2 self-start lg:self-auto flex-shrink-0">
+                        <button onclick="openAiParserModal()"
+                            class="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-lowest text-primary text-xs font-semibold shadow-sm hover:bg-primary-fixed/30 border border-primary-container/20 transition-colors"
+                            type="button">
+                            <span class="material-symbols-outlined text-base text-primary">auto_awesome</span>
+                            <span>AI CV Extraction</span>
+                        </button>
+                        <button onclick="openScheduleModal()"
+                            class="flex items-center gap-1.5 px-3 py-2 rounded bg-surface-container-lowest text-on-surface text-xs font-medium shadow-sm hover:bg-surface-container-high transition-colors"
+                            type="button">
+                            <span class="material-symbols-outlined text-base text-secondary">calendar_add_on</span>
+                            <span>Schedule Interview</span>
+                        </button>
+                        <button onclick="openPostJobModal()"
+                            class="flex items-center gap-1.5 px-3.5 py-2 rounded bg-primary-container text-on-primary text-xs font-medium shadow-sm hover:bg-primary transition-all"
+                            type="button">
+                            <span class="material-symbols-outlined text-base">post_add</span>
+                            <span>+ Post New Job</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3 PILLAR RECRUITING KPI CARDS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Metric 1: Open Requisitions -->
+                    <div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col justify-between cursor-pointer hover:border-primary-container border border-transparent transition-all"
+                        onclick="switchTab('jobs')">
+                        <div class="flex items-start justify-between">
+                            <div class="space-y-1">
+                                <div
+                                    class="flex items-center gap-1.5 text-xs uppercase tracking-wider text-secondary font-semibold">
+                                    <span class="material-symbols-outlined text-base text-primary">work</span>
+                                    <span>Active Requisitions</span>
+                                </div>
+                                <div class="flex items-baseline gap-2 pt-1">
+                                    <span class="text-2xl font-bold text-on-surface tracking-tight">14 Jobs</span>
+                                    <span class="text-xs text-primary font-semibold">42 Headcount Target</span>
+                                </div>
+                            </div>
+                            <span class="p-2 rounded-lg bg-surface-container text-primary">
+                                <span class="material-symbols-outlined text-xl">campaign</span>
+                            </span>
+                        </div>
+                        <div
+                            class="pt-3 mt-3 bg-surface-container-low p-2 rounded flex items-center justify-between text-xs text-on-surface-variant">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>3 Priority Urgent (Eng &amp; Product)</span>
+                            </div>
+                            <span class="text-[11px] font-medium text-secondary">Channels: LinkedIn, TopCV</span>
+                        </div>
+                    </div>
+
+                    <!-- Metric 2: Candidate Pipeline -->
+                    <div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col justify-between cursor-pointer hover:border-primary-container border border-transparent transition-all"
+                        onclick="switchTab('pipeline')">
+                        <div class="flex items-start justify-between">
+                            <div class="space-y-1">
+                                <div
+                                    class="flex items-center gap-1.5 text-xs uppercase tracking-wider text-secondary font-semibold">
+                                    <span class="material-symbols-outlined text-base text-primary">group</span>
+                                    <span>Candidate Pipeline</span>
+                                </div>
+                                <div class="flex items-baseline gap-2 pt-1">
+                                    <span class="text-2xl font-bold text-on-surface tracking-tight">328 Active</span>
+                                    <span class="text-xs text-secondary font-medium">45 In Evaluation</span>
+                                </div>
+                            </div>
+                            <span class="p-2 rounded-lg bg-surface-container text-primary">
+                                <span class="material-symbols-outlined text-xl">view_kanban</span>
+                            </span>
+                        </div>
+                        <div
+                            class="pt-3 mt-3 bg-surface-container-low p-2 rounded flex items-center justify-between text-xs text-on-surface-variant">
+                            <div class="flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+                                <span>18 Technical Interviews This Week</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-800 font-medium text-[11px]">6 Offers
+                                Out</span>
+                        </div>
+                    </div>
+
+                    <!-- Metric 3: Time-to-Hire & Quality -->
+                    <div class="bg-surface-container-lowest p-4 rounded-xl shadow-sm flex flex-col justify-between cursor-pointer hover:border-primary-container border border-transparent transition-all"
+                        onclick="switchTab('offers')">
+                        <div class="flex items-start justify-between">
+                            <div class="space-y-1">
+                                <div
+                                    class="flex items-center gap-1.5 text-xs uppercase tracking-wider text-secondary font-semibold">
+                                    <span class="material-symbols-outlined text-base text-primary">speed</span>
+                                    <span>Hiring Velocity &amp; Quality</span>
+                                </div>
+                                <div class="flex items-baseline gap-2 pt-1">
+                                    <span class="text-2xl font-bold text-on-surface tracking-tight">18.5 Days</span>
+                                    <span class="text-xs text-emerald-700 font-semibold">89.4% Offer Acceptance</span>
+                                </div>
+                            </div>
+                            <span class="p-2 rounded-lg bg-surface-container text-primary">
+                                <span class="material-symbols-outlined text-xl">verified</span>
+                            </span>
+                        </div>
+                        <div
+                            class="pt-3 mt-3 bg-surface-container-low p-2 rounded flex items-center justify-between text-xs text-on-surface-variant">
+                            <div class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-emerald-600 text-sm">psychology</span>
+                                <span class="text-emerald-800 font-semibold">AI Match Precision: 94.2%</span>
+                            </div>
+                            <span class="text-[11px] font-medium text-secondary">Q3 Goal: &lt;20 Days</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NAVIGATION TABS -->
+                <div class="flex items-center justify-between bg-surface-container-lowest p-1.5 rounded-xl shadow-sm">
+                    <div class="flex items-center gap-1" id="recruitmentTabs">
+                        <button id="tabBtn-pipeline" onclick="switchTab('pipeline')"
+                            class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-container text-on-primary text-xs font-semibold transition-all"
+                            type="button">
+                            <span class="material-symbols-outlined text-base">view_kanban</span>
+                            <span>1. Candidate Pipeline (ATS)</span>
+                            <span class="ml-1 px-1.5 py-0.2 bg-white/20 rounded text-[11px]">28 Actionable</span>
+                        </button>
+                        <button id="tabBtn-jobs" onclick="switchTab('jobs')"
+                            class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container text-xs font-medium transition-all"
+                            type="button">
+                            <span class="material-symbols-outlined text-base">work_outline</span>
+                            <span>2. Job Requisitions (14)</span>
+                        </button>
+                        <button id="tabBtn-interviews" onclick="switchTab('interviews')"
+                            class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container text-xs font-medium transition-all"
+                            type="button">
+                            <span class="material-symbols-outlined text-base">event_note</span>
+                            <span>3. Interviews &amp; Scorecards</span>
+                            <span
+                                class="ml-1 px-1.5 py-0.2 bg-amber-100 text-amber-900 rounded text-[11px] font-semibold">5
+                                Today</span>
+                        </button>
+                        <button id="tabBtn-offers" onclick="switchTab('offers')"
+                            class="tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container text-xs font-medium transition-all"
+                            type="button">
+                            <span class="material-symbols-outlined text-base">task_alt</span>
+                            <span>4. Offers &amp; Onboarding Handoff</span>
+                            <span
+                                class="ml-1 px-1.5 py-0.2 bg-emerald-100 text-emerald-900 rounded text-[11px] font-semibold">4
+                                Sent</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- VIEW 1: CANDIDATE PIPELINE KANBAN (ATS) -->
+                <!-- ======================================================== -->
+                <div id="view-pipeline" class="tab-view space-y-4">
+                    <!-- Filter Toolbar -->
+                    <div
+                        class="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-container-lowest p-3 rounded-xl shadow-sm">
+                        <div class="flex items-center gap-2 flex-1 max-w-md">
+                            <div class="relative w-full">
+                                <span
+                                    class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-base">search</span>
+                                <input id="pipelineSearch" onkeyup="filterPipelineCards()"
+                                    class="w-full h-8 pl-9 pr-4 rounded bg-surface-container-low text-on-surface placeholder:text-outline text-xs focus:outline-none focus:bg-surface-container-lowest transition-colors"
+                                    placeholder="Filter by candidate name, role, skills (e.g. Go, React)..."
+                                    type="text" />
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <select id="roleFilter" onchange="filterPipelineCards()"
+                                class="h-8 px-2.5 rounded bg-surface-container-low text-on-surface text-xs focus:outline-none">
+                                <option value="all">All Requisitions</option>
+                                <option value="Lead Systems Architect">Lead Systems Architect</option>
+                                <option value="Senior Backend Engineer">Senior Backend Engineer</option>
+                                <option value="Product Designer">Product Designer</option>
+                                <option value="DevOps & Cloud Lead">DevOps &amp; Cloud Lead</option>
+                            </select>
+                            <select id="scoreFilter" onchange="filterPipelineCards()"
+                                class="h-8 px-2.5 rounded bg-surface-container-low text-on-surface text-xs focus:outline-none">
+                                <option value="all">AI Score: Any</option>
+                                <option value="90">&gt; 90% Match</option>
+                                <option value="80">&gt; 80% Match</option>
+                            </select>
+                            <div class="h-6 w-px bg-surface-variant mx-1"></div>
+                            <span class="text-xs text-outline font-medium">View:</span>
+                            <button
+                                class="px-2.5 py-1 rounded bg-primary-container text-on-primary text-xs font-medium">Kanban</button>
+                            <button onclick="switchTab('jobs')"
+                                class="px-2.5 py-1 rounded bg-surface-container-low text-on-surface text-xs font-medium hover:bg-surface-container">List</button>
+                        </div>
+                    </div>
+
+                    <!-- KANBAN BOARD (6 STAGES) - BALANCED EQUAL WIDTH & 2 CARDS PER COLUMN -->
+                    <div class="flex gap-4 overflow-x-auto pb-6 pt-1 kanban-scroll w-full items-start select-none">
+
+                        <!-- STAGE 1: SOURCED & APPLIED -->
+                        <div
+                            class="kanban-col bg-surface-container-low/80 p-3 rounded-2xl flex flex-col space-y-3 w-[285px] min-w-[285px] max-w-[285px] flex-shrink-0 border border-surface-variant/40 shadow-sm">
+                            <div class="flex items-center justify-between px-1.5 py-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-slate-400 ring-2 ring-slate-200"></span>
+                                    <span class="font-bold text-xs text-on-surface tracking-tight">1. Sourced &amp;
+                                        Applied</span>
+                                </div>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary text-xs font-bold">2</span>
+                            </div>
+                            <div class="space-y-3">
+                                <!-- Card 1 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-surface-variant/80 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Trần Hoàng Minh" data-role="Senior Backend Engineer" data-score="92"
+                                    data-cand-id="CAND-01" onclick="openCandidateDrawer('CAND-01')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwFBEjCj76V5bSoiuPVWmmxS4yQovKscOeaLsxTi1y4VvfLcivBJ8b6z1Y0hLgNbWq4qBxsalaEjuJLmEnKWKNbxg6FPsRVtuGLCTs40GkFcn-XJ0zrAJxvqHR2eGDUSgBRAXZRMGBQX7Gnlfu13LGPv455wqZOBOLpxYFAvwgBdgEOkHekwRWjaH3P1-lWr6eX2dtrLbAfEggqWEhUgWBp40ahh848mVGTLJYv5KJwSL_eeNGDj1sRQ" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Trần Hoàng Minh</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Senior Backend
+                                                    Engineer</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">92%
+                                            AI</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1 min-h-[24px]">
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Golang</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Postgres</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Kafka</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px] text-outline">
+                                        <span class="flex items-center gap-1 text-secondary">
+                                            <span
+                                                class="material-symbols-outlined text-[13px] text-primary">badge</span>
+                                            <span>TopCV Direct</span>
+                                        </span>
+                                        <span class="whitespace-nowrap">Applied 2d ago</span>
+                                    </div>
+                                </div>
+
+                                <!-- Card 2 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-surface-variant/80 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Jessica Sterling" data-role="Product Designer" data-score="86"
+                                    data-cand-id="CAND-02" onclick="openCandidateDrawer('CAND-02')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCITlndezrdQSlUWyKqKNuu7GZGNeiH4XVbkKtdnnNBIQcoLPI7R0cM2u_L6QQCZwkk9GQ9aq84lj3kkfEungP358TLg8BDDixc5LlcCKVGbll0dHxAtb19KTl7yDVpwr3jdM5UKGft757hhFpUWCYcjBV2iHo__xJORuY35g3d9kDFutCepEu0rMtvStPR7AGKucFPfXU2jDIoI5Puzau__v3evNMPNmvnAuRtST6W1onkwiqsXszz-w" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Jessica Sterling</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Product Designer
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">86%
+                                            AI</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1 min-h-[24px]">
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Figma</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Design
+                                            System</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px] text-outline">
+                                        <span class="flex items-center gap-1 text-secondary">
+                                            <span class="material-symbols-outlined text-[13px] text-primary">link</span>
+                                            <span>LinkedIn Jobs</span>
+                                        </span>
+                                        <span class="whitespace-nowrap">Applied 1d ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STAGE 2: AI SCREENING -->
+                        <div
+                            class="kanban-col bg-surface-container-low/80 p-3 rounded-2xl flex flex-col space-y-3 w-[285px] min-w-[285px] max-w-[285px] flex-shrink-0 border border-surface-variant/40 shadow-sm">
+                            <div class="flex items-center justify-between px-1.5 py-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-blue-200"></span>
+                                    <span class="font-bold text-xs text-on-surface tracking-tight">2. AI
+                                        Screening</span>
+                                </div>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary text-xs font-bold">2</span>
+                            </div>
+                            <div class="space-y-3">
+                                <!-- Card 3 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-primary-container/30 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5 ring-1 ring-primary-container/10"
+                                    data-name="Nguyễn Văn Đức" data-role="Lead Systems Architect" data-score="96"
+                                    data-cand-id="CAND-03" onclick="openCandidateDrawer('CAND-03')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa3IHO3fHVUUX220_CWZ-2wbm1w-0FLS8MgF7fhIuUrs-nvJzz0_tpDmifqOgZyrPlpyoaQPANaPr_VVyfmnUoWSjbWd_TxQzHUwkSYie_PGbgLlInzd0XRGD6hW0O-8V3Z97iQ8fZnanD3k-5OMNKYbTnApRoUrmp3QPB2hPiRv4w0_vu6PQu88t1jpRxzO9T0-JkalR4LUSEdBz_GeVESFrlEh38HV-K-JtTk8BzE2FU2FFROqutSQ" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Nguyễn Văn Đức</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Lead Systems
+                                                    Architect</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[10px] font-extrabold flex items-center gap-0.5 flex-shrink-0 whitespace-nowrap">
+                                            <span class="material-symbols-outlined text-[11px]">auto_awesome</span>96%
+                                            AI
+                                        </span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1 min-h-[24px]">
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Kubernetes</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">AWS</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Microservices</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px]">
+                                        <span class="text-emerald-700 font-semibold flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-xs">verified</span> CV Verified
+                                        </span>
+                                        <span class="text-primary font-semibold hover:underline">Schedule R1
+                                            &rarr;</span>
+                                    </div>
+                                </div>
+
+                                <!-- Card 4 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-surface-variant/80 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Sophia Martinez" data-role="DevOps & Cloud Lead" data-score="89"
+                                    data-cand-id="CAND-04" onclick="openCandidateDrawer('CAND-04')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHKe-EpnMvaqdpuYXWJ4APhecVvfkMlMMOkqtRvDb2YLhDTxc0pJmtjf4i4Gby0YP2RLgHQ7fgWKSXQes887yktL6zfMUez31OJryutc9HplUrL-yaB-tfIh9ilqBxwTEUgwOHem37s_6piG5x9_Om-YJR34eehL0Nn0Ce27Y-4a6HE_FyQtZ_5WNu7vDbKF867TYIKaNYur5VAfrYWSgVwFUeExFT4auuEJ9FQ441IXuKPIKzXoeikg" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Sophia Martinez</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">DevOps &amp; Cloud
+                                                    Lead</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">89%
+                                            AI</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-1 min-h-[24px]">
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Terraform</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">CI/CD</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-surface-container text-[10px] text-secondary font-mono">Docker</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px] text-outline">
+                                        <span class="text-secondary">Referral (David Chen)</span>
+                                        <span class="whitespace-nowrap">3d in stage</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STAGE 3: TECH INTERVIEW -->
+                        <div
+                            class="kanban-col bg-surface-container-low/80 p-3 rounded-2xl flex flex-col space-y-3 w-[285px] min-w-[285px] max-w-[285px] flex-shrink-0 border border-surface-variant/40 shadow-sm">
+                            <div class="flex items-center justify-between px-1.5 py-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-2 ring-amber-200"></span>
+                                    <span class="font-bold text-xs text-on-surface tracking-tight">3. Tech
+                                        Interview</span>
+                                </div>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary text-xs font-bold">2</span>
+                            </div>
+                            <div class="space-y-3">
+                                <!-- Card 5 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-surface-variant/80 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Lê Quốc Huy" data-role="Senior Backend Engineer" data-score="94"
+                                    data-cand-id="CAND-05" onclick="openCandidateDrawer('CAND-05')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0VEJCyMITv4AsRHFexn5B9LzNrgXl5FwEFEvAfuHiOkqRBJ_jhezX_j4HtTFpS40iXrdY7jNNvu1k14pF1-h4Go86XgO-yeLtUDX-qtiluAZpKrRI1AhfUxxzyhAlboFDsAoRj43lFjEir8KsURU08-qDXr6bm2YjYkA8SdS1fVMsqxIcjn9fc2BdkOoCza8oPodm4RvI5fInzInX4hF8hQTcMbwdqgWCnqwLN4ub8knV3ZAAEXuFhg" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">Lê
+                                                    Quốc Huy</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Senior Backend
+                                                    Engineer</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">94%
+                                            AI</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-amber-50 rounded-lg text-xs text-amber-900 flex items-center justify-between min-h-[34px]">
+                                        <span class="flex items-center gap-1 font-medium">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-amber-700">schedule</span>
+                                            <span>Today @ 15:30</span>
+                                        </span>
+                                        <span class="px-1.5 py-0.5 rounded bg-amber-200/80 text-[10px] font-bold">Google
+                                            Meet</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px] text-outline">
+                                        <span class="text-secondary">Interviewer: Marcus V.</span>
+                                        <span class="text-amber-800 font-semibold">Ready</span>
+                                    </div>
+                                </div>
+
+                                <!-- Card 6 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-surface-variant/80 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Đặng Minh Khôi" data-role="Frontend Lead" data-score="91"
+                                    data-cand-id="CAND-06" onclick="openCandidateDrawer('CAND-06')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwFBEjCj76V5bSoiuPVWmmxS4yQovKscOeaLsxTi1y4VvfLcivBJ8b6z1Y0hLgNbWq4qBxsalaEjuJLmEnKWKNbxg6FPsRVtuGLCTs40GkFcn-XJ0zrAJxvqHR2eGDUSgBRAXZRMGBQX7Gnlfu13LGPv455wqZOBOLpxYFAvwgBdgEOkHekwRWjaH3P1-lWr6eX2dtrLbAfEggqWEhUgWBp40ahh848mVGTLJYv5KJwSL_eeNGDj1sRQ" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Đặng Minh Khôi</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Frontend Lead
+                                                    Engineer</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">91%
+                                            AI</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-amber-50 rounded-lg text-xs text-amber-900 flex items-center justify-between min-h-[34px]">
+                                        <span class="flex items-center gap-1 font-medium">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-amber-700">schedule</span>
+                                            <span>Tomorrow @ 14:00</span>
+                                        </span>
+                                        <span class="px-1.5 py-0.5 rounded bg-amber-200/80 text-[10px] font-bold">Room
+                                            3B</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px] text-outline">
+                                        <span class="text-secondary">Panel: Elena &amp; Sarah</span>
+                                        <span class="text-emerald-700 font-semibold">Confirmed</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STAGE 4: EXECUTIVE ROUND -->
+                        <div
+                            class="kanban-col bg-surface-container-low/80 p-3 rounded-2xl flex flex-col space-y-3 w-[285px] min-w-[285px] max-w-[285px] flex-shrink-0 border border-surface-variant/40 shadow-sm">
+                            <div class="flex items-center justify-between px-1.5 py-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-purple-500 ring-2 ring-purple-200"></span>
+                                    <span class="font-bold text-xs text-on-surface tracking-tight">4. Executive
+                                        Round</span>
+                                </div>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary text-xs font-bold">2</span>
+                            </div>
+                            <div class="space-y-3">
+                                <!-- Card 7 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-surface-variant/80 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Phạm Thanh Thảo" data-role="Product Designer" data-score="91"
+                                    data-cand-id="CAND-07" onclick="openCandidateDrawer('CAND-07')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDsYZJVXQz9kHiVce4tGh2l7pQh-vIEPPOWWPjsKLwhkiZVnbD_z3UwuVM3JBbJBJkzU2Zo-hrChD5upWaBCl1wkw6DJdyzCygfdSCu0a1dWcwfMeO5TPTyuTVTgOuqxq595APdDxMLXU6eZtUrErwNJx1ysXUh9x1F2--9iRQt9YNneZ7m7G1-WJOfo3ck2agLT2LxjEMmUorJAHc7PdYbiqu4_TJSpsLt0OGVe8Id4ojk8ig_cDHu5w" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Phạm Thanh Thảo</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Product Designer
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">91%
+                                            AI</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-purple-50 rounded-lg text-xs text-purple-950 flex items-center justify-between min-h-[34px]">
+                                        <span class="font-medium">Tech Score: 4.8 / 5.0</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-purple-200 text-[10px] font-bold text-purple-900">Pass</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px] text-outline">
+                                        <span class="text-secondary">VP: Elena Rostova</span>
+                                        <span class="whitespace-nowrap">Tomorrow 10:00</span>
+                                    </div>
+                                </div>
+
+                                <!-- Card 8 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-surface-variant/80 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Hoàng Minh Tuấn" data-role="Engineering Manager" data-score="93"
+                                    data-cand-id="CAND-08" onclick="openCandidateDrawer('CAND-08')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwFBEjCj76V5bSoiuPVWmmxS4yQovKscOeaLsxTi1y4VvfLcivBJ8b6z1Y0hLgNbWq4qBxsalaEjuJLmEnKWKNbxg6FPsRVtuGLCTs40GkFcn-XJ0zrAJxvqHR2eGDUSgBRAXZRMGBQX7Gnlfu13LGPv455wqZOBOLpxYFAvwgBdgEOkHekwRWjaH3P1-lWr6eX2dtrLbAfEggqWEhUgWBp40ahh848mVGTLJYv5KJwSL_eeNGDj1sRQ" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Hoàng Minh Tuấn</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Engineering
+                                                    Manager</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">93%
+                                            AI</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-purple-50 rounded-lg text-xs text-purple-950 flex items-center justify-between min-h-[34px]">
+                                        <span class="font-medium">Tech Score: 4.7 / 5.0</span>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-purple-200 text-[10px] font-bold text-purple-900">Pass</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px] text-outline">
+                                        <span class="text-secondary">Dir: David Chen</span>
+                                        <span class="whitespace-nowrap">Friday 15:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STAGE 5: OFFER LETTER -->
+                        <div
+                            class="kanban-col bg-surface-container-low/80 p-3 rounded-2xl flex flex-col space-y-3 w-[285px] min-w-[285px] max-w-[285px] flex-shrink-0 border border-surface-variant/40 shadow-sm">
+                            <div class="flex items-center justify-between px-1.5 py-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="w-2.5 h-2.5 rounded-full bg-primary-container ring-2 ring-primary-fixed"></span>
+                                    <span class="font-bold text-xs text-on-surface tracking-tight">5. Offer
+                                        Letter</span>
+                                </div>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-surface-container-highest text-secondary text-xs font-bold">2</span>
+                            </div>
+                            <div class="space-y-3">
+                                <!-- Card 9 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-primary-container/40 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Đặng Tuấn Anh" data-role="Lead Systems Architect" data-score="98"
+                                    data-cand-id="CAND-09" onclick="openCandidateDrawer('CAND-09')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDa3IHO3fHVUUX220_CWZ-2wbm1w-0FLS8MgF7fhIuUrs-nvJzz0_tpDmifqOgZyrPlpyoaQPANaPr_VVyfmnUoWSjbWd_TxQzHUwkSYie_PGbgLlInzd0XRGD6hW0O-8V3Z97iQ8fZnanD3k-5OMNKYbTnApRoUrmp3QPB2hPiRv4w0_vu6PQu88t1jpRxzO9T0-JkalR4LUSEdBz_GeVESFrlEh38HV-K-JtTk8BzE2FU2FFROqutSQ" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Đặng Tuấn Anh</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Lead Systems
+                                                    Architect</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">Offer
+                                            Sent</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-emerald-50 rounded-lg text-xs text-emerald-950 space-y-0.5 min-h-[34px]">
+                                        <div class="flex justify-between text-[11px]">
+                                            <span>Base Salary:</span>
+                                            <span class="font-bold">85,000,000 VND</span>
+                                        </div>
+                                        <div class="flex justify-between text-[11px]">
+                                            <span>Sign-on Bonus:</span>
+                                            <span class="font-medium">10,000,000 VND</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px]">
+                                        <span class="text-amber-700 font-medium">Expires in 3d</span>
+                                        <span class="text-primary font-semibold">Awaiting Sign</span>
+                                    </div>
+                                </div>
+
+                                <!-- Card 10 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-primary-container/40 hover:border-primary-container cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Bùi Thùy Dung" data-role="Senior QA Automation" data-score="93"
+                                    data-cand-id="CAND-10" onclick="openCandidateDrawer('CAND-10')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCITlndezrdQSlUWyKqKNuu7GZGNeiH4XVbkKtdnnNBIQcoLPI7R0cM2u_L6QQCZwkk9GQ9aq84lj3kkfEungP358TLg8BDDixc5LlcCKVGbll0dHxAtb19KTl7yDVpwr3jdM5UKGft757hhFpUWCYcjBV2iHo__xJORuY35g3d9kDFutCepEu0rMtvStPR7AGKucFPfXU2jDIoI5Puzau__v3evNMPNmvnAuRtST6W1onkwiqsXszz-w" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Bùi Thùy Dung</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Senior QA
+                                                    Automation</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold flex-shrink-0 whitespace-nowrap">Offer
+                                            Sent</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-emerald-50 rounded-lg text-xs text-emerald-950 space-y-0.5 min-h-[34px]">
+                                        <div class="flex justify-between text-[11px]">
+                                            <span>Base Salary:</span>
+                                            <span class="font-bold">42,000,000 VND</span>
+                                        </div>
+                                        <div class="flex justify-between text-[11px]">
+                                            <span>Annual Bonus:</span>
+                                            <span class="font-medium">1.5 Months</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px]">
+                                        <span class="text-amber-700 font-medium">Expires in 5d</span>
+                                        <span class="text-secondary font-medium">Under Review</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STAGE 6: HIRED & READY -->
+                        <div
+                            class="kanban-col bg-surface-container-low/80 p-3 rounded-2xl flex flex-col space-y-3 w-[285px] min-w-[285px] max-w-[285px] flex-shrink-0 border border-surface-variant/40 shadow-sm">
+                            <div class="flex items-center justify-between px-1.5 py-0.5">
+                                <div class="flex items-center gap-2">
+                                    <span
+                                        class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-emerald-200"></span>
+                                    <span class="font-bold text-xs text-on-surface tracking-tight">6. Hired &amp;
+                                        Ready</span>
+                                </div>
+                                <span
+                                    class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">2</span>
+                            </div>
+                            <div class="space-y-3">
+                                <!-- Card 11 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-emerald-300 hover:border-emerald-500 cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Vũ Mai Chi" data-role="Product Designer" data-score="95"
+                                    data-cand-id="CAND-11" onclick="openCandidateDrawer('CAND-11')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuCITlndezrdQSlUWyKqKNuu7GZGNeiH4XVbkKtdnnNBIQcoLPI7R0cM2u_L6QQCZwkk9GQ9aq84lj3kkfEungP358TLg8BDDixc5LlcCKVGbll0dHxAtb19KTl7yDVpwr3jdM5UKGft757hhFpUWCYcjBV2iHo__xJORuY35g3d9kDFutCepEu0rMtvStPR7AGKucFPfXU2jDIoI5Puzau__v3evNMPNmvnAuRtST6W1onkwiqsXszz-w" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">Vũ
+                                                    Mai Chi</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Product Designer
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold flex-shrink-0 whitespace-nowrap">Hired</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-surface-container rounded-lg text-xs text-on-surface flex items-center justify-between min-h-[34px]">
+                                        <span>Start Date:</span>
+                                        <span class="font-semibold text-emerald-700">Oct 01, 2026</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px]">
+                                        <span class="text-secondary">Onboarding Task:</span>
+                                        <span class="text-primary font-medium hover:underline">View Checklist
+                                            &rarr;</span>
+                                    </div>
+                                </div>
+
+                                <!-- Card 12 -->
+                                <div class="candidate-card bg-surface-container-lowest p-3.5 rounded-xl shadow-sm border border-emerald-300 hover:border-emerald-500 cursor-pointer transition-all flex flex-col justify-between space-y-2.5"
+                                    data-name="Cao Thanh Tùng" data-role="Senior Cloud DevOps" data-score="96"
+                                    data-cand-id="CAND-12" onclick="openCandidateDrawer('CAND-12')">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div class="flex items-center gap-2.5 min-w-0">
+                                            <img class="w-9 h-9 rounded-full object-cover flex-shrink-0 ring-1 ring-surface-variant"
+                                                src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0VEJCyMITv4AsRHFexn5B9LzNrgXl5FwEFEvAfuHiOkqRBJ_jhezX_j4HtTFpS40iXrdY7jNNvu1k14pF1-h4Go86XgO-yeLtUDX-qtiluAZpKrRI1AhfUxxzyhAlboFDsAoRj43lFjEir8KsURU08-qDXr6bm2YjYkA8SdS1fVMsqxIcjn9fc2BdkOoCza8oPodm4RvI5fInzInX4hF8hQTcMbwdqgWCnqwLN4ub8knV3ZAAEXuFhg" />
+                                            <div class="min-w-0">
+                                                <div class="font-bold text-xs text-on-surface truncate leading-tight">
+                                                    Cao Thanh Tùng</div>
+                                                <div class="text-[11px] text-outline truncate mt-0.5">Senior Cloud
+                                                    DevOps</div>
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold flex-shrink-0 whitespace-nowrap">Hired</span>
+                                    </div>
+                                    <div
+                                        class="p-2 bg-surface-container rounded-lg text-xs text-on-surface flex items-center justify-between min-h-[34px]">
+                                        <span>Start Date:</span>
+                                        <span class="font-semibold text-emerald-700">Oct 15, 2026</span>
+                                    </div>
+                                    <div
+                                        class="flex items-center justify-between pt-2.5 border-t border-surface-container text-[11px]">
+                                        <span class="text-secondary">Equipment:</span>
+                                        <span class="text-emerald-700 font-medium">IT Ready</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- VIEW 2: JOB POSTINGS & REQUISITIONS -->
+                <!-- ======================================================== -->
+                <div id="view-jobs" class="tab-view hidden space-y-4">
+                    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-4 space-y-4">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div class="flex items-center gap-2 flex-1 max-w-md">
+                                <div class="relative w-full">
+                                    <span
+                                        class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-base">search</span>
+                                    <input id="jobSearchInput" onkeyup="filterJobTable()"
+                                        class="w-full h-8 pl-9 pr-4 rounded bg-surface-container-low text-on-surface placeholder:text-outline text-xs focus:outline-none focus:bg-surface-container-lowest"
+                                        placeholder="Search job title, hiring manager, department..." type="text" />
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button onclick="openPostJobModal()"
+                                    class="flex items-center gap-1 bg-primary-container text-on-primary px-3 py-1.5 rounded text-xs font-medium">
+                                    <span class="material-symbols-outlined text-base">add</span>
+                                    <span>Create Requisition</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Requisitions Table -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr
+                                        class="bg-surface-container-low text-secondary uppercase font-semibold tracking-wider">
+                                        <th class="py-3 px-4">Job Title &amp; ID</th>
+                                        <th class="py-3 px-3">Department</th>
+                                        <th class="py-3 px-3">Hiring Lead</th>
+                                        <th class="py-3 px-3">Headcount</th>
+                                        <th class="py-3 px-3">Applicants</th>
+                                        <th class="py-3 px-3">Published Channels</th>
+                                        <th class="py-3 px-3">Status</th>
+                                        <th class="py-3 px-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-surface-container text-on-surface" id="jobsTableBody">
+                                    <tr class="job-row hover:bg-surface-container-low transition-colors">
+                                        <td class="py-3 px-4 font-semibold text-primary cursor-pointer hover:underline"
+                                            onclick="switchTab('pipeline')">
+                                            Lead Systems Architect
+                                            <div class="text-[11px] text-outline font-mono">REQ-2026-08 • Full-time
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3">Platform Engineering</td>
+                                        <td class="py-3 px-3">David Chen (Dir)</td>
+                                        <td class="py-3 px-3 font-semibold">1 of 2 Hired</td>
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-on-surface">48</span>
+                                            <span class="text-[11px] text-emerald-700 font-medium">(+6 new)</span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <div class="flex gap-1">
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 text-[10px]">LinkedIn</span>
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px]">TopCV</span>
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-surface-container text-[10px]">Careers</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span
+                                                class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[11px] font-bold">Active
+                                                Recruiting</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right">
+                                            <button onclick="switchTab('pipeline')"
+                                                class="p-1 rounded text-primary hover:bg-surface-container text-xs font-semibold">Pipeline
+                                                &rarr;</button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="job-row hover:bg-surface-container-low transition-colors">
+                                        <td class="py-3 px-4 font-semibold text-primary cursor-pointer hover:underline"
+                                            onclick="switchTab('pipeline')">
+                                            Senior Backend Engineer (Go)
+                                            <div class="text-[11px] text-outline font-mono">REQ-2026-11 • Hybrid</div>
+                                        </td>
+                                        <td class="py-3 px-3">Core Platform</td>
+                                        <td class="py-3 px-3">Marcus Vance (Lead)</td>
+                                        <td class="py-3 px-3 font-semibold">0 of 4 Hired</td>
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-on-surface">72</span>
+                                            <span class="text-[11px] text-emerald-700 font-medium">(+12 new)</span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <div class="flex gap-1">
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 text-[10px]">LinkedIn</span>
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[10px]">TopCV</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span
+                                                class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-[11px] font-bold">Active
+                                                Recruiting</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right">
+                                            <button onclick="switchTab('pipeline')"
+                                                class="p-1 rounded text-primary hover:bg-surface-container text-xs font-semibold">Pipeline
+                                                &rarr;</button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="job-row hover:bg-surface-container-low transition-colors">
+                                        <td class="py-3 px-4 font-semibold text-primary cursor-pointer hover:underline"
+                                            onclick="switchTab('pipeline')">
+                                            Principal Product Designer
+                                            <div class="text-[11px] text-outline font-mono">REQ-2026-04 • On-site</div>
+                                        </td>
+                                        <td class="py-3 px-3">Design &amp; Experience</td>
+                                        <td class="py-3 px-3">Elena Rostova (VP)</td>
+                                        <td class="py-3 px-3 font-semibold">1 of 1 Hired</td>
+                                        <td class="py-3 px-3">
+                                            <span class="font-bold text-on-surface">34</span>
+                                            <span class="text-[11px] text-secondary font-medium">(Closed)</span>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <div class="flex gap-1">
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-surface-container text-[10px]">Internal
+                                                    / Referral</span>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 px-3">
+                                            <span
+                                                class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[11px] font-medium">Position
+                                                Filled</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right">
+                                            <button
+                                                class="p-1 rounded text-outline hover:text-on-surface text-xs">Archive</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- VIEW 3: INTERVIEWS & SCORECARDS -->
+                <!-- ======================================================== -->
+                <div id="view-interviews" class="tab-view hidden space-y-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                        <!-- Upcoming Schedule -->
+                        <div class="lg:col-span-8 bg-surface-container-lowest rounded-xl shadow-sm p-4 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-bold text-base text-on-surface flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-primary">calendar_today</span>
+                                    <span>Interview Schedule &amp; Evaluations</span>
+                                </h3>
+                                <button onclick="openScheduleModal()"
+                                    class="flex items-center gap-1 bg-primary-container text-on-primary px-2.5 py-1 rounded text-xs font-medium">
+                                    <span class="material-symbols-outlined text-sm">add</span>
+                                    <span>Schedule New</span>
+                                </button>
+                            </div>
+
+                            <div class="space-y-3">
+                                <!-- Interview Item 1 -->
+                                <div
+                                    class="p-3.5 rounded-lg border border-surface-variant hover:border-primary-container/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-container-low/40">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="text-center p-2 rounded bg-surface-container-lowest border border-surface-variant min-w-[56px]">
+                                            <div class="text-[10px] uppercase font-bold text-primary">Today</div>
+                                            <div class="text-lg font-bold text-on-surface">15:30</div>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-sm text-on-surface flex items-center gap-2">
+                                                <span>Lê Quốc Huy</span>
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 text-[10px] font-bold">Round
+                                                    1: System Design</span>
+                                            </div>
+                                            <div class="text-xs text-outline mt-0.5">Role: Senior Backend Engineer •
+                                                Interviewer: Marcus Vance</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 self-end md:self-auto">
+                                        <a href="https://meet.google.com" target="_blank"
+                                            class="flex items-center gap-1 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium">
+                                            <span class="material-symbols-outlined text-sm">videocam</span>
+                                            <span>Join Meet</span>
+                                        </a>
+                                        <button onclick="openScorecardModal('Lê Quốc Huy', 'Senior Backend Engineer')"
+                                            class="flex items-center gap-1 px-3 py-1.5 rounded border border-surface-variant hover:bg-surface-container text-xs font-medium text-on-surface">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-amber-600">rate_review</span>
+                                            <span>Submit Scorecard</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Interview Item 2 -->
+                                <div
+                                    class="p-3.5 rounded-lg border border-surface-variant hover:border-primary-container/40 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-3 bg-surface-container-low/40">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="text-center p-2 rounded bg-surface-container-lowest border border-surface-variant min-w-[56px]">
+                                            <div class="text-[10px] uppercase font-bold text-secondary">Tomorrow</div>
+                                            <div class="text-lg font-bold text-on-surface">10:00</div>
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-sm text-on-surface flex items-center gap-2">
+                                                <span>Phạm Thanh Thảo</span>
+                                                <span
+                                                    class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-900 text-[10px] font-bold">Round
+                                                    2: Executive &amp; Culture</span>
+                                            </div>
+                                            <div class="text-xs text-outline mt-0.5">Role: Product Designer •
+                                                Interviewer: Elena Rostova (VP)</div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2 self-end md:self-auto">
+                                        <span class="text-xs text-secondary px-2">Conference Room 4B</span>
+                                        <button onclick="openScorecardModal('Phạm Thanh Thảo', 'Product Designer')"
+                                            class="flex items-center gap-1 px-3 py-1.5 rounded border border-surface-variant hover:bg-surface-container text-xs font-medium text-on-surface">
+                                            <span
+                                                class="material-symbols-outlined text-sm text-secondary">assignment</span>
+                                            <span>Prepare Rubric</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Scorecard Standards & Rubrics -->
+                        <div class="lg:col-span-4 bg-surface-container-lowest rounded-xl shadow-sm p-4 space-y-3">
+                            <h3 class="font-bold text-sm text-on-surface flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-primary text-base">checklist</span>
+                                <span>Standard Evaluation Criteria</span>
+                            </h3>
+                            <p class="text-xs text-secondary leading-relaxed">
+                                All hiring evaluations are normalized using calibrated scorecards to reduce interview
+                                bias:
+                            </p>
+                            <div class="space-y-2 pt-1 text-xs">
+                                <div class="p-2 rounded bg-surface-container-low">
+                                    <div class="font-semibold text-on-surface">1. Core Technical Competency (40%)</div>
+                                    <div class="text-[11px] text-outline">Architecture, clean code, scalability, API
+                                        design.</div>
+                                </div>
+                                <div class="p-2 rounded bg-surface-container-low">
+                                    <div class="font-semibold text-on-surface">2. Problem Solving &amp; Logic (30%)
+                                    </div>
+                                    <div class="text-[11px] text-outline">Trade-off evaluation, root cause diagnostics.
+                                    </div>
+                                </div>
+                                <div class="p-2 rounded bg-surface-container-low">
+                                    <div class="font-semibold text-on-surface">3. Values &amp; Communication (30%)</div>
+                                    <div class="text-[11px] text-outline">Collaboration, mentoring, constructive
+                                        feedback.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================== -->
+                <!-- VIEW 4: OFFERS & ONBOARDING HANDOFF -->
+                <!-- ======================================================== -->
+                <div id="view-offers" class="tab-view hidden space-y-4">
+                    <div class="bg-surface-container-lowest rounded-xl shadow-sm p-4 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-base text-on-surface">Offer Letter Governance &amp; Handoff
+                                </h3>
+                                <p class="text-xs text-secondary">Direct transition bridge from ATS candidate state into
+                                    QLNS Master Employee Data</p>
+                            </div>
+                            <button onclick="openOfferModal('Đặng Tuấn Anh', 'Lead Systems Architect')"
+                                class="flex items-center gap-1 bg-primary-container text-on-primary px-3 py-1.5 rounded text-xs font-medium">
+                                <span class="material-symbols-outlined text-base">add</span>
+                                <span>Generate New Offer</span>
+                            </button>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="bg-surface-container-low text-secondary uppercase font-semibold">
+                                        <th class="py-3 px-4">Candidate</th>
+                                        <th class="py-3 px-3">Position</th>
+                                        <th class="py-3 px-3">Compensation Package</th>
+                                        <th class="py-3 px-3">Start Date</th>
+                                        <th class="py-3 px-3">Expiry</th>
+                                        <th class="py-3 px-3">Status</th>
+                                        <th class="py-3 px-3 text-right">QLNS Handoff</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-surface-container text-on-surface">
+                                    <tr class="hover:bg-surface-container-low transition-colors">
+                                        <td class="py-3 px-4 font-semibold">Đặng Tuấn Anh</td>
+                                        <td class="py-3 px-3">Lead Systems Architect</td>
+                                        <td class="py-3 px-3">
+                                            <div class="font-bold">85,000,000 VND / month</div>
+                                            <div class="text-[11px] text-outline">+10M Sign-on Bonus</div>
+                                        </td>
+                                        <td class="py-3 px-3">Nov 01, 2026</td>
+                                        <td class="py-3 px-3 text-amber-800 font-semibold">Sep 15, 2026 (4d left)</td>
+                                        <td class="py-3 px-3">
+                                            <span
+                                                class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 text-[11px] font-bold">DocuSign
+                                                Awaiting</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right">
+                                            <button
+                                                class="px-2.5 py-1 rounded bg-surface-container text-on-surface-variant text-xs font-medium cursor-not-allowed"
+                                                disabled>
+                                                Pending Sign
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    <tr class="hover:bg-surface-container-low transition-colors">
+                                        <td class="py-3 px-4 font-semibold">Vũ Mai Chi</td>
+                                        <td class="py-3 px-3">Product Designer</td>
+                                        <td class="py-3 px-3">
+                                            <div class="font-bold">45,000,000 VND / month</div>
+                                            <div class="text-[11px] text-outline">Standard Healthcare</div>
+                                        </td>
+                                        <td class="py-3 px-3">Oct 01, 2026</td>
+                                        <td class="py-3 px-3 text-emerald-800 font-semibold">Signed &amp; Accepted</td>
+                                        <td class="py-3 px-3">
+                                            <span
+                                                class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-900 text-[11px] font-bold">Executed</span>
+                                        </td>
+                                        <td class="py-3 px-3 text-right">
+                                            <a href="main.html"
+                                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm">
+                                                <span class="material-symbols-outlined text-xs">how_to_reg</span>
+                                                <span>Convert to Employee</span>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- SLIDE-OVER DRAWER: CANDIDATE DETAIL & AI EXTRACTOR -->
+    <!-- ======================================================== -->
+    <div id="candidateDrawer" class="fixed inset-0 z-50 pointer-events-none hidden transition-all">
+        <!-- Backdrop -->
+        <div id="drawerBackdrop" onclick="closeCandidateDrawer()"
+            class="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto opacity-0 transition-opacity duration-300">
+        </div>
+
+        <!-- Drawer Content -->
+        <div id="drawerPanel"
+            class="absolute right-0 top-0 bottom-0 w-full max-w-2xl bg-surface-container-lowest shadow-2xl pointer-events-auto transform translate-x-full transition-transform duration-300 flex flex-col">
+            <!-- Header -->
+            <div
+                class="p-4 border-b border-surface-variant flex items-center justify-between bg-surface-container-low/50">
+                <div class="flex items-center gap-3">
+                    <img id="drawerAvatar" class="w-12 h-12 rounded-full object-cover border border-surface-variant"
+                        src="" alt="Candidate" />
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 id="drawerName" class="text-base font-bold text-on-surface">Candidate Name</h2>
+                            <span id="drawerScore"
+                                class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-xs font-bold">96% AI
+                                Match</span>
+                        </div>
+                        <div id="drawerRole" class="text-xs text-outline font-medium">Applied for Senior Backend
+                            Engineer</div>
+                    </div>
+                </div>
+                <button onclick="closeCandidateDrawer()"
+                    class="p-1 rounded-lg text-outline hover:text-on-surface hover:bg-surface-container">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Drawer Tabs -->
+            <div class="flex border-b border-surface-variant px-4 bg-surface-container-lowest text-xs">
+                <button onclick="switchDrawerSubTab('ai')" id="subTab-ai"
+                    class="py-2.5 px-3 font-semibold text-primary border-b-2 border-primary-container flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">psychology</span>
+                    <span>AI Extracted CV</span>
+                </button>
+                <button onclick="switchDrawerSubTab('scorecards')" id="subTab-scorecards"
+                    class="py-2.5 px-3 text-on-surface-variant hover:text-on-surface flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">reviews</span>
+                    <span>Scorecards &amp; Feedback</span>
+                </button>
+                <button onclick="switchDrawerSubTab('history')" id="subTab-history"
+                    class="py-2.5 px-3 text-on-surface-variant hover:text-on-surface flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-sm">history</span>
+                    <span>Timeline &amp; Notes</span>
+                </button>
+            </div>
+
+            <!-- Drawer Body -->
+            <div class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+                <!-- AI Extracted Section -->
+                <div id="drawerSubSection-ai" class="space-y-4">
+                    <!-- AI Confidence Meter -->
+                    <div class="p-3 rounded-lg bg-emerald-50/70 border border-emerald-200 text-emerald-950 space-y-1.5">
+                        <div class="flex items-center justify-between font-semibold">
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm text-emerald-700">verified</span>
+                                <span>AI Suitability Recommendation: Strong Match</span>
+                            </span>
+                            <span class="text-xs bg-emerald-600 text-white px-1.5 py-0.5 rounded">Grade: A+</span>
+                        </div>
+                        <p class="text-[11px] text-emerald-900 leading-relaxed">
+                            Candidate possesses 6+ years in distributed microservices architecture, aligning with 94% of
+                            our target tech stack requirements (Golang, PostgreSQL, Kubernetes, Kafka).
+                        </p>
+                    </div>
+
+                    <!-- Extracted Contact & Summary -->
+                    <div class="bg-surface-container-low p-3 rounded-lg space-y-2">
+                        <div class="font-bold text-on-surface text-xs uppercase tracking-wider">Candidate Master
+                            Information</div>
+                        <div class="grid grid-cols-2 gap-2 text-[11px]">
+                            <div><span class="text-outline">Email:</span> <span class="font-medium text-on-surface"
+                                    id="drawerEmail">candidate@email.com</span></div>
+                            <div><span class="text-outline">Phone:</span> <span class="font-medium text-on-surface"
+                                    id="drawerPhone">+84 987 654 321</span></div>
+                            <div><span class="text-outline">Location:</span> <span
+                                    class="font-medium text-on-surface">Hanoi, Vietnam</span></div>
+                            <div><span class="text-outline">Notice Period:</span> <span
+                                    class="font-medium text-on-surface">30 Days</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Extracted Skills Matrix -->
+                    <div class="space-y-2">
+                        <div class="font-bold text-on-surface text-xs uppercase tracking-wider">Extracted Skill Matrix
+                        </div>
+                        <div class="flex flex-wrap gap-1.5" id="drawerSkills">
+                            <span
+                                class="px-2 py-1 rounded bg-surface-container font-mono text-[11px] text-primary font-medium">Golang
+                                (Expert)</span>
+                            <span
+                                class="px-2 py-1 rounded bg-surface-container font-mono text-[11px] text-primary font-medium">PostgreSQL
+                                (Advanced)</span>
+                            <span
+                                class="px-2 py-1 rounded bg-surface-container font-mono text-[11px] text-primary font-medium">Docker
+                                / K8s</span>
+                            <span
+                                class="px-2 py-1 rounded bg-surface-container font-mono text-[11px] text-primary font-medium">gRPC</span>
+                            <span
+                                class="px-2 py-1 rounded bg-surface-container font-mono text-[11px] text-primary font-medium">Redis</span>
+                        </div>
+                    </div>
+
+                    <!-- Work History Timeline -->
+                    <div class="space-y-2">
+                        <div class="font-bold text-on-surface text-xs uppercase tracking-wider">Experience Extracted
+                            From CV</div>
+                        <div class="space-y-2 pl-2 border-l-2 border-primary-container/30">
+                            <div class="pl-2">
+                                <div class="font-semibold text-on-surface">Senior Backend Software Engineer • VNG Corp
+                                </div>
+                                <div class="text-[11px] text-outline">2022 - Present (2.5 yrs)</div>
+                                <div class="text-[11px] text-secondary mt-0.5">Architected payment transaction engine
+                                    handling 120k peak TPS with 99.99% uptime.</div>
+                            </div>
+                            <div class="pl-2">
+                                <div class="font-semibold text-on-surface">Backend Developer • FPT Software</div>
+                                <div class="text-[11px] text-outline">2019 - 2022 (3 yrs)</div>
+                                <div class="text-[11px] text-secondary mt-0.5">Designed RESTful microservices and cloud
+                                    deployment pipelines for enterprise clients.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Download CV Attachment -->
+                    <div class="p-3 rounded-lg border border-surface-variant flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-red-500">picture_as_pdf</span>
+                            <div>
+                                <div class="font-semibold text-xs text-on-surface">
+                                    Resume_TranHoangMinh_SeniorBackend.pdf</div>
+                                <div class="text-[10px] text-outline">Extracted on Sep 09, 2026 • 2.4 MB</div>
+                            </div>
+                        </div>
+                        <button
+                            class="px-2.5 py-1 rounded bg-surface-container text-on-surface text-xs font-medium hover:bg-surface-container-high">
+                            View PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scorecards SubSection -->
+                <div id="drawerSubSection-scorecards" class="space-y-3 hidden">
+                    <div class="p-3 rounded-lg bg-surface-container-low space-y-2">
+                        <div class="flex justify-between items-center">
+                            <div class="font-bold text-xs">Technical Assessment Round</div>
+                            <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-xs">4.7 /
+                                5.0 (Strong Hire)</span>
+                        </div>
+                        <div class="text-xs text-secondary">
+                            "Demonstrated strong mastery over database concurrency, locking mechanisms, and event-driven
+                            architecture. Crisp communication when presenting system trade-offs."
+                        </div>
+                        <div class="text-[11px] text-outline font-medium pt-1">Evaluated by: Marcus Vance (Lead
+                            Architect)</div>
+                    </div>
+                </div>
+
+                <!-- History SubSection -->
+                <div id="drawerSubSection-history" class="space-y-2.5 hidden text-xs">
+                    <div class="p-2 rounded bg-surface-container-low flex justify-between">
+                        <span>Application Submitted</span>
+                        <span class="text-outline">Sep 09, 2026</span>
+                    </div>
+                    <div class="p-2 rounded bg-surface-container-low flex justify-between">
+                        <span>AI Parsing Succeeded</span>
+                        <span class="text-outline">Sep 09, 2026 (14:02)</span>
+                    </div>
+                    <div class="p-2 rounded bg-surface-container-low flex justify-between">
+                        <span>Screening Approved</span>
+                        <span class="text-outline">Sep 10, 2026</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drawer Footer Actions -->
+            <div
+                class="p-4 border-t border-surface-variant bg-surface-container-low flex items-center justify-between gap-2">
+                <button onclick="disqualifyCandidate()"
+                    class="px-3 py-2 rounded text-error hover:bg-error-container text-xs font-semibold">
+                    Disqualify / Reject
+                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="openScheduleModal()"
+                        class="px-3 py-2 rounded bg-surface-container text-on-surface text-xs font-medium hover:bg-surface-container-high">
+                        Schedule Next Round
+                    </button>
+                    <button onclick="advanceCandidate()"
+                        class="px-4 py-2 rounded bg-primary-container text-on-primary text-xs font-semibold shadow hover:bg-primary">
+                        Advance Stage &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 1: POST NEW JOB REQUISITION -->
+    <!-- ======================================================== -->
+    <div id="postJobModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+        <div
+            class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-xl p-6 space-y-4 border border-surface-variant">
+            <div class="flex items-center justify-between border-b border-surface-variant pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">post_add</span>
+                    <h3 class="font-bold text-base text-on-surface">Create Job Requisition</h3>
+                </div>
+                <button onclick="closePostJobModal()" class="text-outline hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form onsubmit="handlePostJob(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-on-surface mb-1">Job Title *</label>
+                    <input type="text" required
+                        class="w-full h-8 px-3 rounded bg-surface-container-low border border-surface-variant text-on-surface"
+                        placeholder="e.g. Senior Fullstack Engineer" />
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-on-surface mb-1">Department *</label>
+                        <select
+                            class="w-full h-8 px-2 rounded bg-surface-container-low border border-surface-variant text-on-surface">
+                            <option>Platform Engineering</option>
+                            <option>Experience Design</option>
+                            <option>Product &amp; Strategy</option>
+                            <option>People &amp; Culture</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-on-surface mb-1">Target Headcount</label>
+                        <input type="number" min="1" value="2"
+                            class="w-full h-8 px-3 rounded bg-surface-container-low border border-surface-variant text-on-surface" />
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-semibold text-on-surface mb-1">Work Arrangement</label>
+                        <select
+                            class="w-full h-8 px-2 rounded bg-surface-container-low border border-surface-variant text-on-surface">
+                            <option>Hybrid (2 days remote)</option>
+                            <option>Full Remote</option>
+                            <option>On-site</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-on-surface mb-1">Salary Budget Range (VND)</label>
+                        <input type="text" placeholder="e.g. 40,000,000 - 65,000,000"
+                            class="w-full h-8 px-3 rounded bg-surface-container-low border border-surface-variant text-on-surface" />
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-semibold text-on-surface mb-1">Publish Channels</label>
+                    <div class="flex gap-4 pt-1">
+                        <label class="flex items-center gap-1.5"><input type="checkbox" checked
+                                class="rounded text-primary-container" /> Website Portal</label>
+                        <label class="flex items-center gap-1.5"><input type="checkbox" checked
+                                class="rounded text-primary-container" /> LinkedIn</label>
+                        <label class="flex items-center gap-1.5"><input type="checkbox" checked
+                                class="rounded text-primary-container" /> TopCV</label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-surface-variant">
+                    <button type="button" onclick="closePostJobModal()"
+                        class="px-3 py-1.5 rounded text-secondary hover:bg-surface-container">Cancel</button>
+                    <button type="submit"
+                        class="px-4 py-1.5 rounded bg-primary-container text-on-primary font-semibold shadow">Publish
+                        Requisition</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 2: AI CV PARSER DEMO SIMULATION -->
+    <!-- ======================================================== -->
+    <div id="aiParserModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+        <div
+            class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 border border-surface-variant">
+            <div class="flex items-center justify-between border-b border-surface-variant pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">auto_awesome</span>
+                    <h3 class="font-bold text-base text-on-surface">AI CV Parsing &amp; Entity Extraction</h3>
+                </div>
+                <button onclick="closeAiParserModal()" class="text-outline hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div class="border-2 border-dashed border-primary-container/40 rounded-xl p-6 text-center hover:bg-primary-fixed/10 transition-colors cursor-pointer"
+                    onclick="simulateParsing()">
+                    <span class="material-symbols-outlined text-3xl text-primary mb-1">upload_file</span>
+                    <div class="font-semibold text-on-surface">Click to upload CV (PDF / DOCX)</div>
+                    <div class="text-[11px] text-outline mt-1">Automatic OCR &amp; entity recognition into ATS Candidate
+                        Model</div>
+                </div>
+
+                <!-- Simulation progress -->
+                <div id="parsingProgress" class="hidden space-y-2 p-3 rounded-lg bg-surface-container-low">
+                    <div class="flex justify-between font-semibold text-[11px]">
+                        <span class="text-primary flex items-center gap-1">
+                            <span class="material-symbols-outlined text-xs animate-spin">refresh</span>
+                            <span>Extracting candidate schema via AI...</span>
+                        </span>
+                        <span id="parsingPercent" class="text-on-surface">65%</span>
+                    </div>
+                    <div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+                        <div id="parsingBar" class="bg-primary-container h-full w-[65%] transition-all duration-300">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Parsed Result Card -->
+                <div id="parsedResult"
+                    class="hidden p-3 rounded-lg bg-emerald-50 text-emerald-950 space-y-2 border border-emerald-200">
+                    <div class="flex items-center gap-2 font-bold text-emerald-900">
+                        <span class="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+                        <span>Successfully Extracted: Hoàng Kim Long</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-1 text-[11px]">
+                        <div>Role Match: <strong>Senior DevOps</strong></div>
+                        <div>Score: <strong>94% Fit</strong></div>
+                        <div>Skills: <strong>Docker, AWS, K8s, CI/CD</strong></div>
+                        <div>Experience: <strong>5.5 Years</strong></div>
+                    </div>
+                    <button onclick="addExtractedCandidate()"
+                        class="w-full mt-2 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm">
+                        + Add Candidate to ATS Pipeline
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL 3: INTERVIEW SCORECARD SUBMIT -->
+    <!-- ======================================================== -->
+    <div id="scorecardModal"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm hidden">
+        <div
+            class="bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 border border-surface-variant">
+            <div class="flex items-center justify-between border-b border-surface-variant pb-3">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">rate_review</span>
+                    <h3 class="font-bold text-base text-on-surface">Submit Interview Scorecard</h3>
+                </div>
+                <button onclick="closeScorecardModal()" class="text-outline hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="space-y-3 text-xs">
+                <div>
+                    <div class="font-semibold text-on-surface text-sm" id="scorecardCandidateName">Lê Quốc Huy</div>
+                    <div class="text-[11px] text-outline" id="scorecardCandidateRole">Senior Backend Engineer</div>
+                </div>
+
+                <!-- Rating 1 -->
+                <div class="p-2.5 rounded bg-surface-container-low space-y-1">
+                    <div class="flex justify-between font-semibold">
+                        <span>1. Technical Architecture &amp; Coding (1-5)</span>
+                        <span class="text-primary font-bold">5 / 5</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <label><input type="radio" name="tech" checked /> 5 - Expert</label>
+                        <label><input type="radio" name="tech" /> 4 - Strong</label>
+                        <label><input type="radio" name="tech" /> 3 - Meets Bar</label>
+                    </div>
+                </div>
+
+                <!-- Rating 2 -->
+                <div class="p-2.5 rounded bg-surface-container-low space-y-1">
+                    <div class="flex justify-between font-semibold">
+                        <span>2. Problem Solving &amp; System Scaling</span>
+                        <span class="text-primary font-bold">4.5 / 5</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <label><input type="radio" name="problem" checked /> 5 - Outstanding</label>
+                        <label><input type="radio" name="problem" /> 4 - Good</label>
+                        <label><input type="radio" name="problem" /> 3 - Average</label>
+                    </div>
+                </div>
+
+                <!-- Recommendation -->
+                <div>
+                    <label class="block font-semibold text-on-surface mb-1">Final Recommendation *</label>
+                    <select
+                        class="w-full h-8 px-2 rounded bg-surface-container-low border border-surface-variant text-on-surface font-semibold">
+                        <option class="text-emerald-700">Strong Hire (Top 5%)</option>
+                        <option class="text-emerald-600">Hire</option>
+                        <option class="text-amber-700">Hold / Need More Info</option>
+                        <option class="text-red-700">Reject</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-on-surface mb-1">Interviewer Notes &amp; Rationale</label>
+                    <textarea rows="3"
+                        class="w-full p-2 rounded bg-surface-container-low border border-surface-variant text-on-surface"
+                        placeholder="Key strengths, architectural depth, potential gaps..."></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3 border-t border-surface-variant">
+                    <button onclick="closeScorecardModal()"
+                        class="px-3 py-1.5 rounded text-secondary hover:bg-surface-container">Cancel</button>
+                    <button onclick="saveScorecard()"
+                        class="px-4 py-1.5 rounded bg-primary-container text-on-primary font-semibold shadow">Save &amp;
+                        Advance to Offer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Tab switching logic
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn flex items-center gap-2 px-4 py-2 rounded-lg text-on-surface-variant hover:bg-surface-container text-xs font-medium transition-all";
+            });
+            document.querySelectorAll('.tab-view').forEach(view => {
+                view.classList.add('hidden');
+            });
+
+            const activeBtn = document.getElementById('tabBtn-' + tabId);
+            const activeView = document.getElementById('view-' + tabId);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-container text-on-primary text-xs font-semibold transition-all";
+            }
+            if (activeView) {
+                activeView.classList.remove('hidden');
+            }
+        }
+
+        // Candidate drawer logic
+        const candidateData = {
+            'CAND-01': {
+                name: 'Trần Hoàng Minh',
+                role: 'Senior Backend Engineer',
+                score: '92%',
+                email: 'minh.tran@email.com',
+                phone: '+84 912 345 678',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDwFBEjCj76V5bSoiuPVWmmxS4yQovKscOeaLsxTi1y4VvfLcivBJ8b6z1Y0hLgNbWq4qBxsalaEjuJLmEnKWKNbxg6FPsRVtuGLCTs40GkFcn-XJ0zrAJxvqHR2eGDUSgBRAXZRMGBQX7Gnlfu13LGPv455wqZOBOLpxYFAvwgBdgEOkHekwRWjaH3P1-lWr6eX2dtrLbAfEggqWEhUgWBp40ahh848mVGTLJYv5KJwSL_eeNGDj1sRQ'
+            },
+            'CAND-02': {
+                name: 'Jessica Sterling',
+                role: 'Product Designer',
+                score: '86%',
+                email: 'jessica.sterling@design.co',
+                phone: '+1 415 892 1029',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCITlndezrdQSlUWyKqKNuu7GZGNeiH4XVbkKtdnnNBIQcoLPI7R0cM2u_L6QQCZwkk9GQ9aq84lj3kkfEungP358TLg8BDDixc5LlcCKVGbll0dHxAtb19KTl7yDVpwr3jdM5UKGft757hhFpUWCYcjBV2iHo__xJORuY35g3d9kDFutCepEu0rMtvStPR7AGKucFPfXU2jDIoI5Puzau__v3evNMPNmvnAuRtST6W1onkwiqsXszz-w'
+            },
+            'CAND-03': {
+                name: 'Nguyễn Văn Đức',
+                role: 'Lead Systems Architect',
+                score: '96%',
+                email: 'duc.nguyen@cloudtech.vn',
+                phone: '+84 988 776 554',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDa3IHO3fHVUUX220_CWZ-2wbm1w-0FLS8MgF7fhIuUrs-nvJzz0_tpDmifqOgZyrPlpyoaQPANaPr_VVyfmnUoWSjbWd_TxQzHUwkSYie_PGbgLlInzd0XRGD6hW0O-8V3Z97iQ8fZnanD3k-5OMNKYbTnApRoUrmp3QPB2hPiRv4w0_vu6PQu88t1jpRxzO9T0-JkalR4LUSEdBz_GeVESFrlEh38HV-K-JtTk8BzE2FU2FFROqutSQ'
+            },
+            'CAND-04': {
+                name: 'Sophia Martinez',
+                role: 'DevOps & Cloud Lead',
+                score: '89%',
+                email: 'sophia.martinez@cloudops.org',
+                phone: '+1 408 555 0192',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBHKe-EpnMvaqdpuYXWJ4APhecVvfkMlMMOkqtRvDb2YLhDTxc0pJmtjf4i4Gby0YP2RLgHQ7fgWKSXQes887yktL6zfMUez31OJryutc9HplUrL-yaB-tfIh9ilqBxwTEUgwOHem37s_6piG5x9_Om-YJR34eehL0Nn0Ce27Y-4a6HE_FyQtZ_5WNu7vDbKF867TYIKaNYur5VAfrYWSgVwFUeExFT4auuEJ9FQ441IXuKPIKzXoeikg'
+            },
+            'CAND-05': {
+                name: 'Lê Quốc Huy',
+                role: 'Senior Backend Engineer',
+                score: '94%',
+                email: 'huy.le@gotech.io',
+                phone: '+84 903 881 229',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB0VEJCyMITv4AsRHFexn5B9LzNrgXl5FwEFEvAfuHiOkqRBJ_jhezX_j4HtTFpS40iXrdY7jNNvu1k14pF1-h4Go86XgO-yeLtUDX-qtiluAZpKrRI1AhfUxxzyhAlboFDsAoRj43lFjEir8KsURU08-qDXr6bm2YjYkA8SdS1fVMsqxIcjn9fc2BdkOoCza8oPodm4RvI5fInzInX4hF8hQTcMbwdqgWCnqwLN4ub8knV3ZAAEXuFhg'
+            },
+            'CAND-06': {
+                name: 'Đặng Minh Khôi',
+                role: 'Frontend Lead Engineer',
+                score: '91%',
+                email: 'khoi.dang@uiuxdev.vn',
+                phone: '+84 918 223 344',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDwFBEjCj76V5bSoiuPVWmmxS4yQovKscOeaLsxTi1y4VvfLcivBJ8b6z1Y0hLgNbWq4qBxsalaEjuJLmEnKWKNbxg6FPsRVtuGLCTs40GkFcn-XJ0zrAJxvqHR2eGDUSgBRAXZRMGBQX7Gnlfu13LGPv455wqZOBOLpxYFAvwgBdgEOkHekwRWjaH3P1-lWr6eX2dtrLbAfEggqWEhUgWBp40ahh848mVGTLJYv5KJwSL_eeNGDj1sRQ'
+            },
+            'CAND-07': {
+                name: 'Phạm Thanh Thảo',
+                role: 'Product Designer',
+                score: '91%',
+                email: 'thao.pham@creativelab.com',
+                phone: '+84 934 556 677',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDsYZJVXQz9kHiVce4tGh2l7pQh-vIEPPOWWPjsKLwhkiZVnbD_z3UwuVM3JBbJBJkzU2Zo-hrChD5upWaBCl1wkw6DJdyzCygfdSCu0a1dWcwfMeO5TPTyuTVTgOuqxq595APdDxMLXU6eZtUrErwNJx1ysXUh9x1F2--9iRQt9YNneZ7m7G1-WJOfo3ck2agLT2LxjEMmUorJAHc7PdYbiqu4_TJSpsLt0OGVe8Id4ojk8ig_cDHu5w'
+            },
+            'CAND-08': {
+                name: 'Hoàng Minh Tuấn',
+                role: 'Engineering Manager',
+                score: '93%',
+                email: 'tuan.hoang@techleader.org',
+                phone: '+84 977 123 889',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDwFBEjCj76V5bSoiuPVWmmxS4yQovKscOeaLsxTi1y4VvfLcivBJ8b6z1Y0hLgNbWq4qBxsalaEjuJLmEnKWKNbxg6FPsRVtuGLCTs40GkFcn-XJ0zrAJxvqHR2eGDUSgBRAXZRMGBQX7Gnlfu13LGPv455wqZOBOLpxYFAvwgBdgEOkHekwRWjaH3P1-lWr6eX2dtrLbAfEggqWEhUgWBp40ahh848mVGTLJYv5KJwSL_eeNGDj1sRQ'
+            },
+            'CAND-09': {
+                name: 'Đặng Tuấn Anh',
+                role: 'Lead Systems Architect',
+                score: '98%',
+                email: 'tuananh.dang@fintechcorp.vn',
+                phone: '+84 909 998 877',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDa3IHO3fHVUUX220_CWZ-2wbm1w-0FLS8MgF7fhIuUrs-nvJzz0_tpDmifqOgZyrPlpyoaQPANaPr_VVyfmnUoWSjbWd_TxQzHUwkSYie_PGbgLlInzd0XRGD6hW0O-8V3Z97iQ8fZnanD3k-5OMNKYbTnApRoUrmp3QPB2hPiRv4w0_vu6PQu88t1jpRxzO9T0-JkalR4LUSEdBz_GeVESFrlEh38HV-K-JtTk8BzE2FU2FFROqutSQ'
+            },
+            'CAND-10': {
+                name: 'Bùi Thùy Dung',
+                role: 'Senior QA Automation',
+                score: '93%',
+                email: 'dung.bui@testqa.io',
+                phone: '+84 945 678 123',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCITlndezrdQSlUWyKqKNuu7GZGNeiH4XVbkKtdnnNBIQcoLPI7R0cM2u_L6QQCZwkk9GQ9aq84lj3kkfEungP358TLg8BDDixc5LlcCKVGbll0dHxAtb19KTl7yDVpwr3jdM5UKGft757hhFpUWCYcjBV2iHo__xJORuY35g3d9kDFutCepEu0rMtvStPR7AGKucFPfXU2jDIoI5Puzau__v3evNMPNmvnAuRtST6W1onkwiqsXszz-w'
+            },
+            'CAND-11': {
+                name: 'Vũ Mai Chi',
+                role: 'Product Designer',
+                score: '95%',
+                email: 'chi.vu@uxstudio.design',
+                phone: '+84 962 110 998',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCITlndezrdQSlUWyKqKNuu7GZGNeiH4XVbkKtdnnNBIQcoLPI7R0cM2u_L6QQCZwkk9GQ9aq84lj3kkfEungP358TLg8BDDixc5LlcCKVGbll0dHxAtb19KTl7yDVpwr3jdM5UKGft757hhFpUWCYcjBV2iHo__xJORuY35g3d9kDFutCepEu0rMtvStPR7AGKucFPfXU2jDIoI5Puzau__v3evNMPNmvnAuRtST6W1onkwiqsXszz-w'
+            },
+            'CAND-12': {
+                name: 'Cao Thanh Tùng',
+                role: 'Senior Cloud DevOps',
+                score: '96%',
+                email: 'tung.cao@cloudnative.dev',
+                phone: '+84 983 456 789',
+                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB0VEJCyMITv4AsRHFexn5B9LzNrgXl5FwEFEvAfuHiOkqRBJ_jhezX_j4HtTFpS40iXrdY7jNNvu1k14pF1-h4Go86XgO-yeLtUDX-qtiluAZpKrRI1AhfUxxzyhAlboFDsAoRj43lFjEir8KsURU08-qDXr6bm2YjYkA8SdS1fVMsqxIcjn9fc2BdkOoCza8oPodm4RvI5fInzInX4hF8hQTcMbwdqgWCnqwLN4ub8knV3ZAAEXuFhg'
+            }
+        };
+
+        function openCandidateDrawer(candId) {
+            const data = candidateData[candId] || candidateData['CAND-01'];
+            document.getElementById('drawerName').textContent = data.name;
+            document.getElementById('drawerRole').textContent = 'Applied for ' + data.role;
+            document.getElementById('drawerScore').textContent = data.score + ' AI Match';
+            document.getElementById('drawerEmail').textContent = data.email;
+            document.getElementById('drawerPhone').textContent = data.phone;
+            document.getElementById('drawerAvatar').src = data.avatar;
+
+            const drawer = document.getElementById('candidateDrawer');
+            const backdrop = document.getElementById('drawerBackdrop');
+            const panel = document.getElementById('drawerPanel');
+
+            drawer.classList.remove('hidden');
+            setTimeout(() => {
+                backdrop.classList.remove('opacity-0');
+                backdrop.classList.add('opacity-100');
+                panel.classList.remove('translate-x-full');
+            }, 10);
+        }
+
+        function closeCandidateDrawer() {
+            const backdrop = document.getElementById('drawerBackdrop');
+            const panel = document.getElementById('drawerPanel');
+            backdrop.classList.remove('opacity-100');
+            backdrop.classList.add('opacity-0');
+            panel.classList.add('translate-x-full');
+            setTimeout(() => {
+                document.getElementById('candidateDrawer').classList.add('hidden');
+            }, 300);
+        }
+
+        function switchDrawerSubTab(subId) {
+            ['ai', 'scorecards', 'history'].forEach(id => {
+                const btn = document.getElementById('subTab-' + id);
+                const section = document.getElementById('drawerSubSection-' + id);
+                if (id === subId) {
+                    btn.className = "py-2.5 px-3 font-semibold text-primary border-b-2 border-primary-container flex items-center gap-1.5";
+                    section.classList.remove('hidden');
+                } else {
+                    btn.className = "py-2.5 px-3 text-on-surface-variant hover:text-on-surface flex items-center gap-1.5";
+                    section.classList.add('hidden');
+                }
+            });
+        }
+
+        function advanceCandidate() {
+            alert("Candidate has been promoted to next interview stage in the ATS pipeline!");
+            closeCandidateDrawer();
+        }
+
+        function disqualifyCandidate() {
+            if (confirm("Are you sure you want to mark this candidate as rejected?")) {
+                closeCandidateDrawer();
+            }
+        }
+
+        // Search & Filter in Kanban
+        function filterPipelineCards() {
+            const query = (document.getElementById('pipelineSearch').value || '').toLowerCase();
+            const role = document.getElementById('roleFilter').value;
+            const score = document.getElementById('scoreFilter').value;
+
+            document.querySelectorAll('.candidate-card').forEach(card => {
+                const name = (card.getAttribute('data-name') || '').toLowerCase();
+                const cardRole = card.getAttribute('data-role') || '';
+                const cardScore = parseInt(card.getAttribute('data-score') || '0', 10);
+
+                const matchQuery = name.includes(query) || cardRole.toLowerCase().includes(query);
+                const matchRole = (role === 'all' || cardRole === role);
+                const matchScore = (score === 'all' || cardScore >= parseInt(score, 10));
+
+                card.style.display = (matchQuery && matchRole && matchScore) ? '' : 'none';
+            });
+        }
+
+        // Filter Jobs Table
+        function filterJobTable() {
+            const query = (document.getElementById('jobSearchInput').value || '').toLowerCase();
+            document.querySelectorAll('.job-row').forEach(row => {
+                row.style.display = row.textContent.toLowerCase().includes(query) ? '' : 'none';
+            });
+        }
+
+        // Modals Logic
+        function openPostJobModal() {
+            document.getElementById('postJobModal').classList.remove('hidden');
+        }
+        function closePostJobModal() {
+            document.getElementById('postJobModal').classList.add('hidden');
+        }
+        async function handlePostJob(e) {
+            e.preventDefault();
+            const form = e.target;
+            const title = form.querySelector('input[placeholder*="Senior Fullstack Engineer"]')?.value || "Senior Software Engineer";
+            const headcount = parseInt(form.querySelector('input[type="number"]')?.value || "1", 10);
+
+            try {
+                const res = await fetch('http://localhost:8000/api/recruitment/jobs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: title,
+                        department_id: 2,
+                        target_headcount: headcount,
+                        location: "Hanoi / Hybrid",
+                        employment_type: "Full-time",
+                        channels: "LinkedIn, TopCV, Careers",
+                        status: "Active Recruiting"
+                    })
+                });
+                if (res.ok) {
+                    alert(`Job Requisition "${title}" published and saved directly to PostgreSQL!`);
+                } else {
+                    alert(`Job Requisition "${title}" published!`);
+                }
+            } catch (err) {
+                alert(`Job Requisition "${title}" published successfully across internal website, LinkedIn, and TopCV!`);
+            }
+            closePostJobModal();
+        }
+
+        function openAiParserModal() {
+            document.getElementById('aiParserModal').classList.remove('hidden');
+            document.getElementById('parsingProgress').classList.add('hidden');
+            document.getElementById('parsedResult').classList.add('hidden');
+        }
+        function closeAiParserModal() {
+            document.getElementById('aiParserModal').classList.add('hidden');
+        }
+        function simulateParsing() {
+            const progress = document.getElementById('parsingProgress');
+            const percent = document.getElementById('parsingPercent');
+            const bar = document.getElementById('parsingBar');
+            const result = document.getElementById('parsedResult');
+
+            progress.classList.remove('hidden');
+            result.classList.add('hidden');
+            let p = 20;
+            const interval = setInterval(() => {
+                p += 25;
+                if (p > 100) p = 100;
+                percent.textContent = p + '%';
+                bar.style.width = p + '%';
+                if (p >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        progress.classList.add('hidden');
+                        result.classList.remove('hidden');
+                    }, 400);
+                }
+            }, 250);
+        }
+        function addExtractedCandidate() {
+            alert("Hoàng Kim Long has been parsed and added directly into Stage 1 (Sourced & Applied)!");
+            closeAiParserModal();
+            switchTab('pipeline');
+        }
+
+        function openScorecardModal(name, role) {
+            document.getElementById('scorecardCandidateName').textContent = name;
+            document.getElementById('scorecardCandidateRole').textContent = role;
+            document.getElementById('scorecardModal').classList.remove('hidden');
+        }
+        function closeScorecardModal() {
+            document.getElementById('scorecardModal').classList.add('hidden');
+        }
+        function saveScorecard() {
+            alert("Scorecard submitted! Recommendation: Strong Hire. Candidate advanced to Offer Stage.");
+            closeScorecardModal();
+        }
+
+        // ==========================================
+        // FASTAPI ATS BACKEND INTEGRATION
+        // ==========================================
+        const RECRUITMENT_API_BASE = 'http://localhost:8000/api/recruitment';
+
+        async function loadRecruitmentPipelineFromBackend() {
+            const badge = document.getElementById('recruitmentBackendBadge');
+            try {
+                const res = await fetch(`${RECRUITMENT_API_BASE}/pipeline`);
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                const data = await res.json();
+
+                if (data && data.stages) {
+                    if (badge) {
+                        badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold border border-emerald-200";
+                        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> FastAPI ATS Live (${data.total_candidates} Candidates)`;
+                    }
+
+                    // Update candidateData dictionary with data from backend
+                    data.stages.forEach(stage => {
+                        (stage.cards || []).forEach(card => {
+                            const key = `CAND-${String(card.candidate_id).padStart(2, '0')}`;
+                            if (candidateData[key]) {
+                                candidateData[key].name = card.name;
+                                candidateData[key].role = card.role;
+                                candidateData[key].score = `${card.ai_score}%`;
+                                if (card.avatar_url) candidateData[key].avatar = card.avatar_url;
+                            }
+                        });
+                    });
+                }
+            } catch (err) {
+                console.warn("Recruitment API not reached, using offline cache:", err);
+                if (badge) {
+                    badge.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-medium";
+                    badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-400"></span> Local Demo Mode`;
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadRecruitmentPipelineFromBackend();
+        });
+    </script>
+</body>
+
+</html>

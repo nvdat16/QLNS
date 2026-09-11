@@ -1,18 +1,15 @@
-# 📑 Database Design: Employee Records Module
+# 📑 HRMS Database Design
 
-This database design document for the **Employee Records** module defines seven core tables:
+This document provides a unified database design for the **Employee Records** and **Recruitment Management** modules. It defines 14 core tables across the employee lifecycle and hiring workflow.
 
-1. **`departments`**: Manages company departments.
-2. **`positions`**: Manages job titles and seniority levels.
-3. **`employees`**: Stores core employee information and links employees to departments and positions.
-4. **`onboarding_tasks`**: Tracks new-employee onboarding tasks, assignees, and due dates.
-5. **`employee_documents`**: Stores related documents, records, qualifications, and scanned contracts.
-6. **`contracts`**: Manages employment contracts, terms, and salaries.
-7. **`employee_events`**: Records employee history, including promotions, department transfers, salary adjustments, and status changes.
+| Module | Tables |
+| :--- | :--- |
+| **Employee Records** | `departments`, `positions`, `employees`, `onboarding_tasks`, `employee_documents`, `contracts`, `employee_events` |
+| **Recruitment Management** | `job_postings`, `candidates`, `resumes`, `applications`, `interviews`, `evaluations`, `offers` |
 
 ---
 
-## 1. Entity–Relationship Diagram (Mermaid ERD)
+## 1. Overall Entity–Relationship Diagram (Mermaid ERD)
 
 ```mermaid
 erDiagram
@@ -22,6 +19,14 @@ erDiagram
     employees ||--o{ employee_documents : "has"
     employees ||--o{ contracts : "has"
     employees ||--o{ employee_events : "has"
+    departments ||--o{ job_postings : "owns"
+    candidates ||--o{ resumes : "uploads"
+    candidates ||--o{ applications : "submits"
+    job_postings ||--o{ applications : "receives"
+    resumes ||--o{ applications : "supports"
+    applications ||--o{ interviews : "includes"
+    interviews ||--o{ evaluations : "receives"
+    applications ||--o{ offers : "receives"
 
     departments {
         integer id PK
@@ -105,11 +110,83 @@ erDiagram
         integer created_by
         timestamp created_at
     }
+
+    job_postings {
+        integer id PK
+        varchar job_code UK
+        varchar title
+        integer department_id FK
+        varchar employment_type
+        decimal salary_min
+        decimal salary_max
+        integer target_headcount
+        varchar status
+        date closing_date
+    }
+
+    candidates {
+        integer id PK
+        varchar first_name
+        varchar last_name
+        varchar email UK
+        varchar phone
+        varchar linkedin_url
+        varchar portfolio_url
+    }
+
+    resumes {
+        integer id PK
+        integer candidate_id FK
+        varchar file_name
+        varchar file_url
+        text parsed_text
+        jsonb parsed_data
+        timestamp uploaded_at
+    }
+
+    applications {
+        integer id PK
+        integer candidate_id FK
+        integer job_posting_id FK
+        integer resume_id FK
+        varchar stage
+        integer ai_score
+        varchar source
+        jsonb stage_metadata
+        timestamp applied_at
+    }
+
+    interviews {
+        integer id PK
+        integer application_id FK
+        varchar interview_type
+        timestamp scheduled_at
+        integer interviewer_id
+        varchar status
+    }
+
+    evaluations {
+        integer id PK
+        integer interview_id FK
+        integer evaluator_id
+        decimal overall_score
+        varchar recommendation
+    }
+
+    offers {
+        integer id PK
+        integer application_id FK
+        decimal base_salary
+        decimal bonus_amount
+        date start_date
+        date expiration_date
+        varchar status
+    }
 ```
 
 ---
 
-## 2. Table Details (Data Dictionary)
+## 2. Employee Records Module
 
 ### 2.1. `departments` Table (Departments)
 | Column | Data Type | Constraints | Description |
@@ -200,3 +277,121 @@ erDiagram
 | `description` | `TEXT` | `NULL` | Reason or decision details |
 | `created_by` | `INTEGER` | `FOREIGN KEY` -> `employees(id)`, `NULL` | Employee who created the record |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Record creation timestamp |
+
+---
+
+## 3. Recruitment Management Module
+
+### 3.1. `job_postings` Table
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Primary key |
+| `job_code` | `VARCHAR` | `UNIQUE`, `NULL` | Human-readable job requisition code |
+| `title` | `VARCHAR` | `NOT NULL` | Job title |
+| `department_id` | `INTEGER` | `FOREIGN KEY` -> `departments(id)`, `NOT NULL` | Department requesting the role |
+| `description` | `TEXT` | `NULL` | Job description |
+| `requirements` | `TEXT` | `NULL` | Required qualifications and skills |
+| `location` | `VARCHAR` | `NULL` | Work location |
+| `employment_type` | `VARCHAR` | `DEFAULT 'Full-time'` | Employment arrangement |
+| `salary_min` | `DECIMAL(15, 2)` | `NULL` | Minimum salary range |
+| `salary_max` | `DECIMAL(15, 2)` | `NULL` | Maximum salary range |
+| `target_headcount` | `INTEGER` | `DEFAULT 1` | Number of positions to fill |
+| `status` | `VARCHAR` | `DEFAULT 'Active Recruiting'` | Recruitment status |
+| `channels` | `VARCHAR` | `DEFAULT 'LinkedIn, TopCV, Careers'` | Publishing channels |
+| `published_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Publication timestamp |
+| `closing_date` | `DATE` | `NULL` | Application deadline |
+| `created_by` | `INTEGER` | `NULL` | User who created the job posting |
+| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
+| `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |
+
+### 3.2. `candidates` Table
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Primary key |
+| `first_name` | `VARCHAR` | `NOT NULL` | Given name |
+| `last_name` | `VARCHAR` | `NOT NULL` | Family and middle name(s) |
+| `email` | `VARCHAR` | `UNIQUE`, `NOT NULL` | Candidate email address |
+| `phone` | `VARCHAR` | `NULL` | Contact phone number |
+| `avatar_url` | `VARCHAR` | `NULL` | Profile image URL |
+| `address` | `TEXT` | `NULL` | Candidate address |
+| `linkedin_url` | `VARCHAR` | `NULL` | LinkedIn profile URL |
+| `portfolio_url` | `VARCHAR` | `NULL` | Portfolio URL |
+| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
+| `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |
+
+### 3.3. `resumes` Table
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Primary key |
+| `candidate_id` | `INTEGER` | `FOREIGN KEY` -> `candidates(id)`, `NOT NULL` | Candidate who owns the resume |
+| `file_name` | `VARCHAR` | `NOT NULL` | Original uploaded file name |
+| `file_url` | `VARCHAR` | `NULL` | File-storage location |
+| `parsed_text` | `TEXT` | `NULL` | Plain text extracted from the resume |
+| `skills` | `TEXT` | `NULL` | Extracted skills, stored as text |
+| `parsed_data` | `JSONB` | `NULL` | Structured data extracted by the CV parser |
+| `uploaded_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Upload timestamp |
+
+### 3.4. `applications` Table
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Primary key |
+| `candidate_id` | `INTEGER` | `FOREIGN KEY` -> `candidates(id)`, `NOT NULL` | Applicant |
+| `job_posting_id` | `INTEGER` | `FOREIGN KEY` -> `job_postings(id)`, `NOT NULL` | Job posting applied for |
+| `resume_id` | `INTEGER` | `FOREIGN KEY` -> `resumes(id)`, `NULL` | Resume submitted with the application |
+| `stage` | `VARCHAR` | `NOT NULL`, `DEFAULT 'Sourced & Applied'` | Current recruitment stage |
+| `ai_score` | `INTEGER` | `NULL` | Automated screening score |
+| `source` | `VARCHAR` | `DEFAULT 'Direct'` | Application source or channel |
+| `stage_metadata` | `JSONB` | `NULL` | Stage-specific data for the recruitment workflow |
+| `applied_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Application timestamp |
+| `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |
+
+### 3.5. `interviews` Table
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Primary key |
+| `application_id` | `INTEGER` | `FOREIGN KEY` -> `applications(id)`, `NOT NULL` | Application being interviewed |
+| `interview_type` | `VARCHAR` | `NOT NULL` | Interview round or format |
+| `scheduled_at` | `TIMESTAMP` | `NOT NULL` | Scheduled interview time |
+| `location` | `VARCHAR` | `NULL` | In-person location |
+| `meeting_url` | `VARCHAR` | `NULL` | Online-meeting link |
+| `interviewer_id` | `INTEGER` | `NULL` | Employee assigned as interviewer |
+| `status` | `VARCHAR` | `DEFAULT 'Scheduled'` | Interview status |
+| `notes` | `TEXT` | `NULL` | Scheduling or interview notes |
+| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
+
+### 3.6. `evaluations` Table
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Primary key |
+| `interview_id` | `INTEGER` | `FOREIGN KEY` -> `interviews(id)`, `NOT NULL` | Interview being evaluated |
+| `evaluator_id` | `INTEGER` | `NOT NULL` | Employee who completed the scorecard |
+| `technical_score` | `INTEGER` | `NULL` | Technical competency score |
+| `communication_score` | `INTEGER` | `NULL` | Communication score |
+| `problem_solving_score` | `INTEGER` | `NULL` | Problem-solving score |
+| `teamwork_score` | `INTEGER` | `NULL` | Teamwork score |
+| `overall_score` | `DECIMAL(3, 1)` | `NULL` | Overall evaluation score |
+| `recommendation` | `VARCHAR` | `NULL` | Hiring recommendation |
+| `feedback` | `TEXT` | `NULL` | Qualitative feedback |
+| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
+
+### 3.7. `offers` Table
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | `PRIMARY KEY` | Primary key |
+| `application_id` | `INTEGER` | `FOREIGN KEY` -> `applications(id)`, `NOT NULL` | Application receiving the offer |
+| `base_salary` | `DECIMAL(15, 2)` | `NOT NULL` | Offered base salary |
+| `bonus_amount` | `DECIMAL(15, 2)` | `NULL` | Offered bonus amount |
+| `employment_type` | `VARCHAR` | `DEFAULT 'Permanent Full-time'` | Proposed employment arrangement |
+| `start_date` | `DATE` | `NOT NULL` | Proposed employment start date |
+| `expiration_date` | `DATE` | `NOT NULL` | Offer acceptance deadline |
+| `status` | `VARCHAR` | `DEFAULT 'Sent'` | Offer status |
+| `offer_letter_url` | `VARCHAR` | `NULL` | URL of the generated offer letter |
+| `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
+| `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |

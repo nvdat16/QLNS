@@ -18,8 +18,9 @@
   - [3.7. Reports & Analytics](#37-reports--analytics)
   - [3.8. System Administration & Access Control](#38-system-administration--access-control)
 - [4. Technology Stack](#4-technology-stack)
-- [5. Project Structure](#5-project-structure)
-- [6. Getting Started (Docker Compose)](#6-getting-started-docker-compose)
+- [5. Detailed Documentation & Diagrams](#5-detailed-documentation--diagrams)
+- [6. Project Structure](#6-project-structure)
+- [7. Getting Started (Docker Compose)](#7-getting-started-docker-compose)
 
 ---
 
@@ -112,44 +113,76 @@ The system is organized into **eight core functional pillars**:
 - **Backend API**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12, Uvicorn, SQLAlchemy 2.0 ORM, Pydantic v2)
 - **Database**: [PostgreSQL 16](https://www.postgresql.org/) (Official Docker Alpine image)
 - **Containerization**: [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
-- **Frontend**: Clean Modern HTML5 / CSS3 (Inter & Plus Jakarta Sans, glassmorphism, responsive) with asynchronous client fetching & graceful offline fallback.
+- **Frontend**: 
+  - **React SPA**: [React 18](https://react.dev/) + [Vite 5](https://vitejs.dev/) with hot-reloading on port `5173`.
+  - **Static Mockups**: Standalone HTML5 / Tailwind pages in `uiux/` and `frontend/*.html`.
 
 ---
 
-## 5. Project Structure
+## 5. Detailed Documentation & Diagrams
+
+Tài liệu đặc tả chi tiết và bộ sơ đồ luồng hệ thống đã được chuẩn bị đầy đủ:
+
+- 📘 **[Tài Liệu Đặc Tả Tính Năng Chi Tiết (SRS)](docs/functional_specifications.md)**:
+  - Ma trận phân quyền (RBAC Matrix) cho 6 vai trò: `ROLE_ADMIN`, `ROLE_HR_MGR`, `ROLE_RECRUITER`, `ROLE_INTERVIEWER`, `ROLE_HR_OFFICER`, `ROLE_EMPLOYEE`.
+  - Đặc tả 4 phân hệ cốt lõi: Tuyển dụng thông minh (ATS), Hồ sơ & Vòng đời nhân sự (Core HR), Quản lý hợp đồng lao động, Báo cáo phân tích số liệu.
+  - Chi tiết từng tính năng với Tiền điều kiện, Luồng xử lý chính, Dữ liệu vào/ra và Hậu điều kiện.
+
+- 📊 **[Hệ Thống Sơ Đồ Kiến Trúc & Luồng Nghiệp Vụ (Mermaid Diagrams)](docs/system_diagrams.md)**:
+  - **Sơ đồ kiến trúc hệ thống 3 tầng** (Client React, Docker Bridge Network, FastAPI Backend, PostgreSQL 16 DB).
+  - **Sơ đồ Use Case tổng quan** thể hiện tương tác giữa các tác nhân và chức năng.
+  - **Sơ đồ Máy trạng thái (State Machine)** cho chu trình tuyển dụng ATS qua 6 giai đoạn.
+  - **3 Sơ đồ Tuần tự (Sequence Diagrams)**: ATS Hiring & Scorecard, Tiếp nhận Onboarding chuyển đổi ứng viên thành nhân viên, Quản lý biến động nhân sự (Promotion / Transfer).
+  - **Sơ đồ Luồng hoạt động (Activity Flowchart)** toàn trình tuyển dụng.
+  - **Sơ đồ Triển khai Docker Container** với cấu hình mạng nội bộ và volume mount.
+
+- 🗄️ **[Thiết Kế Cơ Sở Dữ Liệu & Sơ Đồ ERD](database/database_design.md)**: Chi tiết 14 bảng quan hệ và cấu trúc DDL PostgreSQL.
+
+---
+
+## 6. Project Structure
 
 ```text
 QLNS/
-├── backend/
+├── backend/                  # FastAPI Application (Python 3.12, SQLAlchemy 2.0)
 │   ├── app/
-│   │   ├── models/           # SQLAlchemy 2.0 declarative models (Employee & Recruitment)
-│   │   ├── routers/          # FastAPI APIRouters (/api/employees, /api/recruitment)
-│   │   ├── schemas/          # Pydantic validation & response schemas
-│   │   ├── config.py         # App settings & env loading
-│   │   ├── database.py       # DB engine, sessionmaker & get_db dependency
-│   │   └── main.py           # FastAPI entrypoint, CORS setup, healthcheck
-│   ├── Dockerfile            # Python 3.12-slim container image
+│   │   ├── models/           # Declarative ORM models (Employee & Recruitment)
+│   │   ├── routers/          # REST API endpoints
+│   │   ├── schemas/          # Pydantic validation schemas
+│   │   └── main.py           # FastAPI entrypoint, CORS & healthcheck
+│   ├── Dockerfile            # Python container image
 │   └── requirements.txt      # Python dependencies
+├── frontend/                 # React 18 + Vite 5 Application
+│   ├── src/
+│   │   ├── App.jsx           # Main React App with live backend integration
+│   │   ├── main.jsx          # React DOM entrypoint
+│   │   └── styles.css        # App styling & responsive design tokens
+│   ├── Dockerfile            # Node.js 20 Alpine container image
+│   ├── vite.config.js        # Vite config with React plugin
+│   └── package.json          # Frontend dependencies & scripts
 ├── database/
-│   ├── init.sql              # PostgreSQL DDL schema & rich initial seed data
+│   ├── init.sql              # PostgreSQL DDL schema & seed data
 │   ├── postgres_db.sql       # Original DDL schema reference
-│   └── database_design.md    # Mermaid ERD diagrams & database documentation
-├── uiux/
-│   ├── main.html             # Employee records & profile dashboard
-│   ├── recruitment.html      # Recruitment ATS Kanban pipeline & candidate tracker
-│   └── *.png / assets        # UI design mockups & screenshots
-├── docker-compose.yml        # Orchestrates PostgreSQL + FastAPI services
+│   └── database_design.md    # Mermaid ERD diagrams & schema docs
+├── docs/                     # System Specifications & Diagrams
+│   ├── functional_specifications.md  # Detailed SRS & Feature Specifications
+│   └── system_diagrams.md    # Full Mermaid System & Workflow Diagrams
+├── uiux/                     # Standalone HTML previews & design assets
+│   ├── main.html             # Employee records standalone page
+│   └── recruitment.html      # Recruitment ATS standalone page
+├── docker-compose.yml        # Orchestrates PostgreSQL + FastAPI + React Frontend
+├── package.json              # Root npm scripts (npm run dev)
 └── README.md                 # System overview and operational guide
 ```
 
 ---
 
-## 6. Getting Started (Docker Compose)
+## 7. Getting Started (Docker Compose)
 
 ### 6.1. Prerequisites
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on your machine.
 
-### 6.2. Start the Backend & Database
+### 6.2. Start the Full System
 
 From the project root directory, run:
 
@@ -158,43 +191,29 @@ docker compose up -d --build
 ```
 
 This command will:
-1. Initialize the PostgreSQL 16 container (`qlns_postgres`) on port `5432`.
-2. Automatically run `database/init.sql` to create all 14 tables, sequences, and insert seed data (6 departments, 6 positions, 5 employees, 5 contracts, 5 job requisitions, 12 candidate applications across 6 Kanban stages).
-3. Build and launch the FastAPI container (`qlns_backend`) on port `8000` with hot-reload enabled.
+1. Launch **PostgreSQL 16** container (`qlns_postgres`) on port `5432` with auto-seeded demo data.
+2. Build & start **FastAPI** container (`qlns_backend`) on port `8000`.
+3. Build & start **React Frontend** container (`qlns_frontend`) on port `5173`.
 
 ### 6.3. Service URLs & Interactive API Docs
 
+- **React Web Application**: [http://localhost:5173](http://localhost:5173)
 - **Swagger UI Interactive Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **ReDoc Interactive Documentation**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
 - **Health Check Endpoint**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
-- **Employee API**:
-  - `GET /api/employees` - List employees (supports search & department filter)
-  - `GET /api/employees/{id}` - Detailed profile with contract & event history
-  - `POST /api/employees` - Create a new employee record
-  - `GET /api/employees/stats/summary` - Statistical headcount metrics
-  - `GET /api/departments` - List departments with manager details
-  - `GET /api/positions` - List positions
-- **Recruitment ATS API**:
-  - `GET /api/recruitment/pipeline` - Full Kanban stages and candidate cards
-  - `GET /api/recruitment/jobs` - Job requisitions with applicant count
-  - `POST /api/recruitment/jobs` - Create new job posting
-  - `GET /api/recruitment/candidates/{id}` - Candidate application detail
-  - `POST /api/recruitment/applications/{id}/advance` - Advance candidate stage
 
-### 6.4. Database Credentials
+### 6.4. Running Frontend Locally without Docker
 
-| Parameter | Value |
-|:---|:---|
-| **Host** | `localhost` |
-| **Port** | `5432` |
-| **Database Name** | `qlns_db` |
-| **Username** | `postgres` |
-| **Password** | `postgres123` |
+If you prefer running the frontend directly with Node.js on your Mac:
 
-### 6.5. Open the Web Frontend
+```bash
+# From project root:
+npm run dev
 
-Simply open the HTML files in your browser:
-- **Employee Management**: Open `uiux/main.html` in Chrome, Safari, or Edge.
-- **Recruitment ATS**: Open `uiux/recruitment.html` in your browser.
+# Or from the frontend directory:
+cd frontend
+npm install
+npm run dev
+```
 
-> When the backend is running, a green **"Backend Online"** badge appears in the top navigation bar, and data is synchronized in real time with PostgreSQL. If the backend is turned off, the interface seamlessly falls back to offline demo mode.
+Then open [http://localhost:5173](http://localhost:5173) in your browser.

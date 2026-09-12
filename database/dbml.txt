@@ -178,6 +178,97 @@ Table offers {
   updated_at timestamp
 }
 
+// ==============================
+// Attendance & Leave Management
+// ==============================
+
+// Work Shifts
+Table work_shifts {
+  id integer [primary key]
+  name varchar
+  code varchar [unique]
+  start_time time
+  end_time time
+  break_duration integer
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+// Employee Shift Assignment
+Table employee_shifts {
+  id integer [primary key]
+  employee_id integer [not null]
+  shift_id integer [not null]
+  start_date date
+  end_date date
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+// Work Schedule
+Table work_schedules {
+  id integer [primary key]
+  employee_id integer [not null]
+  shift_id integer [not null]
+  work_date date
+  status varchar
+  created_at timestamp
+}
+
+// Attendance Records
+Table attendance_records {
+  id integer [primary key]
+  employee_id integer [not null]
+  work_date date
+  check_in timestamp
+  check_out timestamp
+  late_minutes integer
+  early_leave_minutes integer
+  total_work_hours decimal
+  status varchar
+  notes text
+  created_at timestamp
+  updated_at timestamp
+}
+
+// Leave Types
+Table leave_types {
+  id integer [primary key]
+  name varchar
+  code varchar [unique]
+  description text
+  max_days integer
+  status varchar
+  created_at timestamp
+}
+
+// Leave Requests
+Table leave_requests {
+  id integer [primary key]
+  employee_id integer [not null]
+  leave_type_id integer [not null]
+  start_date date
+  end_date date
+  total_days decimal
+  reason text
+  status varchar
+  created_at timestamp
+  updated_at timestamp
+}
+
+// Leave Approvals
+Table leave_approvals {
+  id integer [primary key]
+  leave_request_id integer [not null]
+  approver_id integer [not null]
+  action varchar
+  comment text
+  approved_at timestamp
+  created_at timestamp
+}
+
 Ref job_department: job_postings.department_id > departments.id
 
 Ref candidate_resumes: resumes.candidate_id > candidates.id
@@ -206,3 +297,21 @@ Ref employee_onboarding: onboarding_tasks.employee_id > employees.id // many-to-
 
 Ref employee_documents: employee_documents.employee_id > employees.id // many-to-one
 
+// Work Shifts
+Ref employee_shift_employee: employee_shifts.employee_id > employees.id
+Ref employee_shift_shift: employee_shifts.shift_id > work_shifts.id
+
+// Work Schedule
+Ref schedule_employee: work_schedules.employee_id > employees.id
+Ref schedule_shift: work_schedules.shift_id > work_shifts.id
+
+// Attendance
+Ref attendance_employee: attendance_records.employee_id > employees.id
+
+// Leave
+Ref leave_type: leave_requests.leave_type_id > leave_types.id
+Ref leave_employee: leave_requests.employee_id > employees.id
+
+// Leave Approval
+Ref leave_approval_request: leave_approvals.leave_request_id > leave_requests.id
+Ref leave_approval_approver: leave_approvals.approver_id > employees.id

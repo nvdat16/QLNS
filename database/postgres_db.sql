@@ -175,6 +175,86 @@ CREATE TABLE "offers" (
   "updated_at" timestamp
 );
 
+CREATE TABLE "work_shifts" (
+  "id" integer PRIMARY KEY,
+  "name" varchar,
+  "code" varchar UNIQUE,
+  "start_time" time,
+  "end_time" time,
+  "break_duration" integer,
+  "status" varchar,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+CREATE TABLE "employee_shifts" (
+  "id" integer PRIMARY KEY,
+  "employee_id" integer NOT NULL,
+  "shift_id" integer NOT NULL,
+  "start_date" date,
+  "end_date" date,
+  "status" varchar,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+CREATE TABLE "work_schedules" (
+  "id" integer PRIMARY KEY,
+  "employee_id" integer NOT NULL,
+  "shift_id" integer NOT NULL,
+  "work_date" date,
+  "status" varchar,
+  "created_at" timestamp
+);
+
+CREATE TABLE "attendance_records" (
+  "id" integer PRIMARY KEY,
+  "employee_id" integer NOT NULL,
+  "work_date" date,
+  "check_in" timestamp,
+  "check_out" timestamp,
+  "late_minutes" integer,
+  "early_leave_minutes" integer,
+  "total_work_hours" decimal,
+  "status" varchar,
+  "notes" text,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+CREATE TABLE "leave_types" (
+  "id" integer PRIMARY KEY,
+  "name" varchar,
+  "code" varchar UNIQUE,
+  "description" text,
+  "max_days" integer,
+  "status" varchar,
+  "created_at" timestamp
+);
+
+CREATE TABLE "leave_requests" (
+  "id" integer PRIMARY KEY,
+  "employee_id" integer NOT NULL,
+  "leave_type_id" integer NOT NULL,
+  "start_date" date,
+  "end_date" date,
+  "total_days" decimal,
+  "reason" text,
+  "status" varchar,
+  "created_at" timestamp,
+  "updated_at" timestamp
+);
+
+CREATE TABLE "leave_approvals" (
+  "id" integer PRIMARY KEY,
+  "leave_request_id" integer NOT NULL,
+  "approver_id" integer NOT NULL,
+  "action" varchar,
+  "comment" text,
+  "approved_at" timestamp,
+  "created_at" timestamp
+);
+
 ALTER TABLE "job_postings" ADD CONSTRAINT "job_department" FOREIGN KEY ("department_id") REFERENCES "departments" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "resumes" ADD CONSTRAINT "candidate_resumes" FOREIGN KEY ("candidate_id") REFERENCES "candidates" ("id") DEFERRABLE INITIALLY IMMEDIATE;
@@ -202,3 +282,21 @@ ALTER TABLE "employee_events" ADD CONSTRAINT "employee_events" FOREIGN KEY ("emp
 ALTER TABLE "onboarding_tasks" ADD CONSTRAINT "employee_onboarding" FOREIGN KEY ("employee_id") REFERENCES "employees" ("id") DEFERRABLE INITIALLY IMMEDIATE;
 
 ALTER TABLE "employee_documents" ADD CONSTRAINT "employee_documents" FOREIGN KEY ("employee_id") REFERENCES "employees" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "employee_shifts" ADD CONSTRAINT "employee_shift_employee" FOREIGN KEY ("employee_id") REFERENCES "employees" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "employee_shifts" ADD CONSTRAINT "employee_shift_shift" FOREIGN KEY ("shift_id") REFERENCES "work_shifts" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "work_schedules" ADD CONSTRAINT "schedule_employee" FOREIGN KEY ("employee_id") REFERENCES "employees" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "work_schedules" ADD CONSTRAINT "schedule_shift" FOREIGN KEY ("shift_id") REFERENCES "work_shifts" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "attendance_records" ADD CONSTRAINT "attendance_employee" FOREIGN KEY ("employee_id") REFERENCES "employees" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_type" FOREIGN KEY ("leave_type_id") REFERENCES "leave_types" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "leave_requests" ADD CONSTRAINT "leave_employee" FOREIGN KEY ("employee_id") REFERENCES "employees" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "leave_approvals" ADD CONSTRAINT "leave_approval_request" FOREIGN KEY ("leave_request_id") REFERENCES "leave_requests" ("id") DEFERRABLE INITIALLY IMMEDIATE;
+
+ALTER TABLE "leave_approvals" ADD CONSTRAINT "leave_approval_approver" FOREIGN KEY ("approver_id") REFERENCES "employees" ("id") DEFERRABLE INITIALLY IMMEDIATE;

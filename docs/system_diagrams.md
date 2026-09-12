@@ -5,14 +5,14 @@
 
 ## Danh Mục Sơ Đồ
 
-1. [1. Sơ đồ Kiến trúc Hệ thống Tổng thể (System Architecture Diagram)](#1-sơ-đồ-kiến-trúc-hệ-thống-tổng-thể-system-architecture-diagram)
-2. [2. Sơ đồ Use Case Tổng quan (Overall Use Case Diagram)](#2-sơ-đồ-use-case-tổng-quan-overall-use-case-diagram)
-3. [3. Sơ đồ Máy Trạng thái Quy trình Tuyển dụng (Recruitment ATS State Machine)](#3-sơ-đồ-máy-trạng-thái-quy-trình-tuyển-dụng-recruitment-ats-state-machine)
-4. [4. Sơ đồ Tuần tự: Quy trình Tuyển dụng & Đánh giá (ATS Hiring Sequence Diagram)](#4-sơ-đồ-tuần-tự-quy-trình-tuyển-dụng--đánh-giá-ats-hiring-sequence-diagram)
-5. [5. Sơ đồ Tuần tự: Tiếp nhận Onboarding & Chuyển đổi Nhân viên (Onboarding Sequence Diagram)](#5-sơ-đồ-tuần-tự-tiếp-nhận-onboarding--chuyển-đổi-nhân-viên-onboarding-sequence-diagram)
-6. [6. Sơ đồ Tuần tự: Quản lý Biến động Nhân sự (Internal Mobility Sequence Diagram)](#6-sơ-đồ-tuần-tự-quản-lý-biến-động-nhân-sự-internal-mobility-sequence-diagram)
-7. [7. Sơ đồ Luồng Hoạt động Tuyển dụng Toàn trình (Recruitment Activity Flowchart)](#7-sơ-đồ-luồng-hoạt-động-tuyển-dụng-toàn-trình-recruitment-activity-flowchart)
-8. [8. Sơ đồ Triển khai Container Docker (Docker Deployment Diagram)](#8-sơ-đồ-triển-khai-container-docker-docker-deployment-diagram)
+1. [Sơ đồ Kiến trúc Hệ thống Tổng thể (System Architecture Diagram)](#1-sơ-đồ-kiến-trúc-hệ-thống-tổng-thể-system-architecture-diagram)
+2. [Sơ đồ Use Case Tổng quan (Overall Use Case Diagram)](#2-sơ-đồ-use-case-tổng-quan-overall-use-case-diagram)
+3. [Sơ đồ Máy Trạng thái Quy trình Tuyển dụng (Recruitment ATS State Machine)](#3-sơ-đồ-máy-trạng-thái-quy-trình-tuyển-dụng-recruitment-ats-state-machine)
+4. [Sơ đồ Tuần tự: Quy trình Tuyển dụng & Đánh giá (ATS Hiring Sequence Diagram)](#4-sơ-đồ-tuần-tự-quy-trình-tuyển-dụng--đánh-giá-ats-hiring-sequence-diagram)
+5. [Sơ đồ Tuần tự: Tiếp nhận Onboarding & Chuyển đổi Nhân viên (Onboarding Sequence Diagram)](#5-sơ-đồ-tuần-tự-tiếp-nhận-onboarding--chuyển-đổi-nhân-viên-onboarding-sequence-diagram)
+6. [Sơ đồ Tuần tự: Quản lý Biến động Nhân sự (Internal Mobility Sequence Diagram)](#6-sơ-đồ-tuần-tự-quản-lý-biến-động-nhân-sự-internal-mobility-sequence-diagram)
+7. [Sơ đồ Luồng Hoạt động Tuyển dụng Toàn trình (Recruitment Activity Flowchart)](#7-sơ-đồ-luồng-hoạt-động-tuyển-dụng-toàn-trình-recruitment-activity-flowchart)
+8. [Sơ đồ Triển khai Container Docker (Docker Deployment Diagram)](#8-sơ-đồ-triển-khai-container-docker-docker-deployment-diagram)
 
 ---
 

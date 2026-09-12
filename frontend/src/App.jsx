@@ -2,721 +2,199 @@ import { useEffect, useMemo, useState } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
-const initialEmployees = [
-  { id: 'EMP-2048', name: 'Marcus Vance', role: 'Lead Design Systems Architect', department: 'Experience Design', location: 'Hanoi HQ', status: 'Active', type: 'Permanent', initials: 'MV' },
-  { id: 'EMP-1092', name: 'Elena Rostova', role: 'VP of Product & Experience Design', department: 'Experience Design', location: 'Hanoi HQ', status: 'Active', type: 'Permanent', initials: 'ER' },
-  { id: 'EMP-3041', name: 'Sarah Lin', role: 'UX Researcher', department: 'Experience Design', location: 'Hanoi HQ', status: 'Active', type: 'Fixed-Term', initials: 'SL' },
-  { id: 'EMP-4109', name: 'Tobias Thorne', role: 'Platform Infrastructure Engineer', department: 'Platform Engineering', location: 'Hanoi HQ', status: 'In probation', type: 'Probation', initials: 'TT' },
-  { id: 'EMP-1822', name: 'Claire Dupond', role: 'Senior HR Business Partner', department: 'People & Culture', location: 'Hanoi HQ', status: 'Active', type: 'Permanent', initials: 'CD' },
+const employees = [
+  { id: 'NV-2023-089', name: 'Nguyễn Văn Hùng', initials: 'NH', title: 'Senior Tech Lead', department: 'Kỹ thuật & Công nghệ', email: 'hung.nguyen@nexushr.vn', contract: 'Không xác định thời hạn', status: 'Đang làm việc', joined: '15/03/2023' },
+  { id: 'NV-2022-142', name: 'Trần Thị Mai', initials: 'TM', title: 'HR Business Partner', department: 'Nhân sự & Đào tạo', email: 'mai.tran@nexushr.vn', contract: 'Xác định thời hạn', status: 'Đang làm việc', joined: '01/08/2022' },
+  { id: 'NV-2021-003', name: 'Lê Hoàng Nam', initials: 'LN', title: 'Head of Finance', department: 'Tài chính & Kế toán', email: 'nam.le@nexushr.vn', contract: 'Không xác định thời hạn', status: 'Đang làm việc', joined: '12/01/2021' },
+  { id: 'NV-2024-001', name: 'Phạm Thanh Sơn', initials: 'PS', title: 'Backend Engineer', department: 'Kỹ thuật & Công nghệ', email: 'son.pham@nexushr.vn', contract: 'Thử việc', status: 'Thử việc', joined: '02/09/2024' },
+  { id: 'NV-2023-112', name: 'Nguyễn Hồng Đào', initials: 'NĐ', title: 'Product Designer', department: 'Sản phẩm & Trải nghiệm', email: 'dao.nguyen@nexushr.vn', contract: 'Xác định thời hạn', status: 'Đang làm việc', joined: '20/06/2023' },
 ];
 
-const initialCandidates = [
-  { id: 'CAND-01', applicationId: 1, name: 'Trần Hoàng Minh', role: 'Senior Backend Engineer', stage: 'Applied', score: 92, skills: ['Go', 'Postgres', 'Kafka'], source: 'TopCV', initials: 'TM' },
-  { id: 'CAND-02', applicationId: 2, name: 'Jessica Sterling', role: 'Principal Product Designer', stage: 'Applied', score: 86, skills: ['Figma', 'Design systems'], source: 'LinkedIn', initials: 'JS' },
-  { id: 'CAND-03', applicationId: 3, name: 'Nguyễn Văn Đức', role: 'Lead Systems Architect', stage: 'AI screening', score: 96, skills: ['Kubernetes', 'AWS', 'Microservices'], source: 'Careers', initials: 'NĐ' },
-  { id: 'CAND-04', applicationId: 4, name: 'Sophia Martinez', role: 'DevOps & Cloud Lead', stage: 'AI screening', score: 89, skills: ['Terraform', 'Docker', 'CI/CD'], source: 'Referral', initials: 'SM' },
-  { id: 'CAND-05', applicationId: 5, name: 'Lê Quốc Huy', role: 'Senior Backend Engineer', stage: 'Technical interview', score: 94, skills: ['Go', 'Redis', 'gRPC'], source: 'Careers', initials: 'LH' },
-  { id: 'CAND-06', applicationId: 6, name: 'Phạm Thanh Thảo', role: 'Principal Product Designer', stage: 'Executive round', score: 91, skills: ['UX research', 'Figma', 'Strategy'], source: 'LinkedIn', initials: 'PT' },
-  { id: 'CAND-07', applicationId: 7, name: 'Đặng Tuấn Anh', role: 'Lead Systems Architect', stage: 'Offer', score: 98, skills: ['Cloud', 'Architecture', 'Python'], source: 'LinkedIn', initials: 'ĐA' },
-  { id: 'CAND-08', applicationId: 8, name: 'Bùi Thùy Dung', role: 'Senior QA Automation Engineer', stage: 'Hired', score: 93, skills: ['Playwright', 'TypeScript', 'CI/CD'], source: 'TopCV', initials: 'BD' },
+const candidates = [
+  { id: 1, name: 'Nguyễn Minh Anh', initials: 'MA', role: 'Senior Backend Engineer', stage: 'Ứng tuyển', score: 94, tags: ['Go', 'PostgreSQL'], source: 'TopCV' },
+  { id: 2, name: 'Trần Quốc Bảo', initials: 'QB', role: 'Product Designer', stage: 'Ứng tuyển', score: 88, tags: ['Figma', 'UX'], source: 'LinkedIn' },
+  { id: 3, name: 'Lê Gia Huy', initials: 'GH', role: 'DevOps Engineer', stage: 'Sàng lọc AI', score: 91, tags: ['AWS', 'Kubernetes'], source: 'Referral' },
+  { id: 4, name: 'Phạm Thu Hà', initials: 'TH', role: 'Senior Backend Engineer', stage: 'Phỏng vấn kỹ thuật', score: 96, tags: ['Go', 'Redis'], source: 'TopCV' },
+  { id: 5, name: 'Đỗ Anh Khoa', initials: 'AK', role: 'Product Designer', stage: 'Phỏng vấn vòng cuối', score: 90, tags: ['Research', 'Figma'], source: 'Careers' },
+  { id: 6, name: 'Bùi Khánh Linh', initials: 'KL', role: 'QA Automation Engineer', stage: 'Đề nghị tuyển dụng', score: 93, tags: ['Playwright', 'CI/CD'], source: 'LinkedIn' },
 ];
 
-const initialJobs = [
-  { id: 1, code: 'REQ-2026-08', title: 'Lead Systems Architect', team: 'Platform Engineering', candidates: 18, target: 2, status: 'Active recruiting' },
-  { id: 2, code: 'REQ-2026-11', title: 'Senior Backend Engineer (Go)', team: 'Platform Engineering', candidates: 42, target: 4, status: 'Active recruiting' },
-  { id: 3, code: 'REQ-2026-04', title: 'Principal Product Designer', team: 'Experience Design', candidates: 21, target: 1, status: 'Active recruiting' },
-  { id: 4, code: 'REQ-2026-15', title: 'DevOps & Cloud Lead', team: 'Platform Engineering', candidates: 17, target: 2, status: 'Active recruiting' },
-];
-
-const STAGE_CONFIG = [
-  { id: 'sourced', label: 'Applied', dbStage: 'Sourced & Applied' },
-  { id: 'screening', label: 'AI screening', dbStage: 'AI Screening' },
-  { id: 'interview', label: 'Technical interview', dbStage: 'Tech Interview' },
-  { id: 'executive', label: 'Executive round', dbStage: 'Executive Round' },
-  { id: 'offer', label: 'Offer', dbStage: 'Offer Letter' },
-  { id: 'hired', label: 'Hired', dbStage: 'Hired & Ready' },
-];
-
-function getInitials(name = '') {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-  }
-  return (name.slice(0, 2) || 'HR').toUpperCase();
-}
+const stages = ['Ứng tuyển', 'Sàng lọc AI', 'Phỏng vấn kỹ thuật', 'Phỏng vấn vòng cuối', 'Đề nghị tuyển dụng', 'Đã tuyển'];
+const departments = ['Kỹ thuật & Công nghệ', 'Kinh doanh & Tiếp thị', 'Nhân sự & Đào tạo', 'Tài chính & Kế toán', 'Vận hành & Hỗ trợ', 'Sản phẩm & Trải nghiệm'];
 
 function App() {
-  const [page, setPage] = useState('employees');
-  const [employeeQuery, setEmployeeQuery] = useState('');
-  const [department, setDepartment] = useState('All departments');
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [recruitmentTab, setRecruitmentTab] = useState('Pipeline');
-  const [candidateQuery, setCandidateQuery] = useState('');
-  const [selectedCandidate, setSelectedCandidate] = useState(null);
-  const [showJobForm, setShowJobForm] = useState(false);
-  const [jobNotice, setJobNotice] = useState('');
-
-  const [employeesList, setEmployeesList] = useState(initialEmployees);
-  const [candidatesList, setCandidatesList] = useState(initialCandidates);
-  const [jobsList, setJobsList] = useState(initialJobs);
-  const [backendOnline, setBackendOnline] = useState(false);
-  const [stats, setStats] = useState({ total_employees: 5, active_employees: 5, open_jobs_count: 5 });
-
-  // Load from FastAPI backend
-  async function loadDataFromBackend() {
-    try {
-      // 1. Employees
-      const empRes = await fetch(`${API_BASE}/employees`);
-      if (empRes.ok) {
-        const empData = await empRes.json();
-        if (empData && empData.length > 0) {
-          setEmployeesList(empData.map(e => ({
-            id: e.employee_code || `EMP-${e.id}`,
-            name: e.full_name || `${e.first_name} ${e.last_name}`,
-            role: e.position_name || 'Staff',
-            department: e.department_name || 'General',
-            location: e.office_location || 'Hanoi HQ',
-            status: e.status || 'Active',
-            type: e.status === 'Probation' ? 'Probation' : 'Permanent',
-            initials: getInitials(e.full_name || `${e.first_name} ${e.last_name}`)
-          })));
-        }
-        setBackendOnline(true);
-      }
-
-      // 2. Stats
-      const statsRes = await fetch(`${API_BASE}/employees/stats/summary`);
-      if (statsRes.ok) {
-        const s = await statsRes.json();
-        setStats(s);
-      }
-
-      // 3. Recruitment Pipeline
-      const pipeRes = await fetch(`${API_BASE}/recruitment/pipeline`);
-      if (pipeRes.ok) {
-        const pipeData = await pipeRes.json();
-        if (pipeData && pipeData.stages) {
-          const flatCandidates = [];
-          pipeData.stages.forEach(st => {
-            const mappedLabel = STAGE_CONFIG.find(c => c.id === st.stage_id)?.label || 'Applied';
-            (st.cards || []).forEach(c => {
-              flatCandidates.push({
-                id: `CAND-${String(c.candidate_id).padStart(2, '0')}`,
-                applicationId: c.application_id,
-                name: c.name,
-                role: c.role,
-                stage: mappedLabel,
-                score: c.ai_score || 90,
-                skills: c.skills && c.skills.length > 0 ? c.skills : ['Core Skill', 'Expertise'],
-                source: c.source || 'Direct Web',
-                initials: getInitials(c.name)
-              });
-            });
-          });
-          if (flatCandidates.length > 0) {
-            setCandidatesList(flatCandidates);
-          }
-        }
-      }
-
-      // 4. Jobs
-      const jobsRes = await fetch(`${API_BASE}/recruitment/jobs`);
-      if (jobsRes.ok) {
-        const jData = await jobsRes.json();
-        if (jData && jData.length > 0) {
-          setJobsList(jData.map(j => ({
-            id: j.id,
-            code: `REQ-2026-${String(j.id).padStart(2, '0')}`,
-            title: j.title,
-            team: j.department_name || 'Engineering',
-            candidates: j.applicant_count || 0,
-            target: j.target_headcount || 1,
-            status: j.status || 'Active recruiting'
-          })));
-        }
-      }
-    } catch (err) {
-      console.warn("Backend API not connected, using offline mock data:", err);
-      setBackendOnline(false);
-    }
-  }
+  const [section, setSection] = useState('profiles');
+  const [employeeView, setEmployeeView] = useState('profiles');
+  const [recruitmentView, setRecruitmentView] = useState('pipeline');
+  const [attendanceView, setAttendanceView] = useState('timesheet');
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [toast, setToast] = useState('');
+  const [mobileNav, setMobileNav] = useState(false);
+  const [employeeRows, setEmployeeRows] = useState(employees);
+  const [candidateRows, setCandidateRows] = useState(candidates);
 
   useEffect(() => {
-    loadDataFromBackend();
+    async function loadLiveData() {
+      try {
+        const [employeeResponse, pipelineResponse] = await Promise.all([
+          fetch(`${API_BASE}/employees`),
+          fetch(`${API_BASE}/recruitment/pipeline`),
+        ]);
+        if (employeeResponse.ok) {
+          const data = await employeeResponse.json();
+          if (data.length) setEmployeeRows(data.map((employee) => ({
+            id: employee.employee_code || `NV-${employee.id}`,
+            name: employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`.trim(),
+            initials: initials(employee.full_name || `${employee.first_name || ''} ${employee.last_name || ''}`),
+            title: employee.position_name || 'Nhân viên',
+            department: employee.department_name || 'Chưa phân phòng ban',
+            email: employee.email || 'Chưa cập nhật',
+            contract: employee.contract_type || 'Chưa cập nhật',
+            status: employee.status || 'Đang làm việc',
+            joined: employee.join_date || 'Chưa cập nhật',
+          })));
+        }
+        if (pipelineResponse.ok) {
+          const data = await pipelineResponse.json();
+          const liveCandidates = (data.stages || []).flatMap((stage) => (stage.cards || []).map((candidate) => ({
+            id: candidate.candidate_id,
+            name: candidate.name,
+            initials: initials(candidate.name),
+            role: candidate.role || 'Ứng viên',
+            stage: stageLabel(stage.stage_id),
+            score: candidate.ai_score || 0,
+            tags: candidate.skills?.length ? candidate.skills : ['Chưa cập nhật'],
+            source: candidate.source || 'Direct Web',
+          })));
+          if (liveCandidates.length) setCandidateRows(liveCandidates);
+        }
+      } catch {
+        // Prototype data remains available when the API is not running.
+      }
+    }
+    loadLiveData();
   }, []);
 
-  const visibleEmployees = useMemo(() => employeesList.filter((employee) => {
-    const matchesQuery = `${employee.name} ${employee.role} ${employee.id}`.toLowerCase().includes(employeeQuery.toLowerCase());
-    return matchesQuery && (department === 'All departments' || employee.department === department);
-  }), [employeesList, employeeQuery, department]);
+  const employeeResults = useMemo(() => employeeRows.filter((item) => `${item.name} ${item.id} ${item.department} ${item.title}`.toLowerCase().includes(query.toLowerCase())), [employeeRows, query]);
+  const candidateResults = useMemo(() => candidateRows.filter((item) => `${item.name} ${item.role} ${item.tags.join(' ')}`.toLowerCase().includes(query.toLowerCase())), [candidateRows, query]);
+  const notify = (message) => { setToast(message); window.setTimeout(() => setToast(''), 2800); };
+  const go = (next) => { setSection(next); setQuery(''); setMobileNav(false); if (next === 'profiles') setEmployeeView('profiles'); };
+  const title = section === 'recruitment' ? 'Quản lý tuyển dụng' : section === 'attendance' ? 'Chấm công & Nghỉ phép' : employeeView === 'contracts' ? 'Quản lý hợp đồng' : employeeView === 'org' ? 'Sơ đồ tổ chức' : 'Hồ sơ nhân viên';
 
-  const visibleCandidates = useMemo(() => candidatesList.filter((candidate) => (
-    `${candidate.name} ${candidate.role} ${(candidate.skills || []).join(' ')}`.toLowerCase().includes(candidateQuery.toLowerCase())
-  )), [candidatesList, candidateQuery]);
-
-  async function saveJob(jobData) {
-    setShowJobForm(false);
-    try {
-      const res = await fetch(`${API_BASE}/recruitment/jobs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: jobData.title,
-          department_id: jobData.deptId || 2,
-          target_headcount: jobData.headcount || 1,
-          location: 'Hanoi / Hybrid',
-          employment_type: jobData.employmentType || 'Full-time',
-          status: 'Active Recruiting',
-          channels: 'LinkedIn, TopCV, Careers'
-        })
-      });
-      if (res.ok) {
-        setJobNotice(`Requisition "${jobData.title}" published & saved to PostgreSQL!`);
-        await loadDataFromBackend();
-      } else {
-        setJobNotice(`Requisition "${jobData.title}" saved locally.`);
-      }
-    } catch (err) {
-      setJobNotice(`Requisition "${jobData.title}" saved (demo mode).`);
-    }
-    window.setTimeout(() => setJobNotice(''), 3500);
-  }
-
-  async function advanceCandidate(candidate) {
-    setSelectedCandidate(null);
-    if (!candidate.applicationId) {
-      setJobNotice(`${candidate.name} advanced to next stage!`);
-      window.setTimeout(() => setJobNotice(''), 3500);
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE}/recruitment/applications/${candidate.applicationId}/advance`, {
-        method: 'POST'
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setJobNotice(`${candidate.name} advanced to ${data.stage} in PostgreSQL!`);
-        await loadDataFromBackend();
-      } else {
-        setJobNotice(`${candidate.name} advanced to next interview stage!`);
-      }
-    } catch (err) {
-      setJobNotice(`${candidate.name} advanced to next stage (demo mode)!`);
-    }
-    window.setTimeout(() => setJobNotice(''), 3500);
-  }
-
-  return (
-    <div className="app-shell">
-      <Sidebar page={page} setPage={setPage} backendOnline={backendOnline} candidatesCount={candidatesList.length} />
-      <main className="main-content">
-        <Topbar page={page} onCreateJob={() => setShowJobForm(true)} backendOnline={backendOnline} />
-        {page === 'employees' ? (
-          <EmployeePage
-            query={employeeQuery}
-            onQueryChange={setEmployeeQuery}
-            department={department}
-            onDepartmentChange={setDepartment}
-            employees={visibleEmployees}
-            allDepartments={[...new Set(employeesList.map(e => e.department))]}
-            stats={stats}
-            onSelect={setSelectedEmployee}
-          />
-        ) : (
-          <RecruitmentPage
-            tab={recruitmentTab}
-            setTab={setRecruitmentTab}
-            query={candidateQuery}
-            onQueryChange={setCandidateQuery}
-            candidates={visibleCandidates}
-            jobs={jobsList}
-            onSelect={setSelectedCandidate}
-            onCreateJob={() => setShowJobForm(true)}
-          />
-        )}
-      </main>
-      {selectedEmployee && <EmployeeDrawer employee={selectedEmployee} onClose={() => setSelectedEmployee(null)} />}
-      {selectedCandidate && <CandidateDrawer candidate={selectedCandidate} onClose={() => setSelectedCandidate(null)} onAdvance={() => advanceCandidate(selectedCandidate)} />}
-      {showJobForm && <JobModal onClose={() => setShowJobForm(false)} onSubmit={saveJob} />}
-      {jobNotice && <div className="toast" role="status">{jobNotice}</div>}
-    </div>
-  );
-}
-
-function Sidebar({ page, setPage, backendOnline, candidatesCount }) {
-  const navigation = [
-    ['Overview', '⌂', null],
-    ['Employee records', '◉', 'employees'],
-    ['Teams & org chart', '⌘', null],
-    ['Recruitment / ATS', '◌', 'recruitment'],
-  ];
-  return (
-    <aside className="sidebar">
-      <div className="brand">
-        <span className="brand-mark">N</span>
-        <div>
-          <strong>NexusHR</strong>
-          <small>{backendOnline ? '🟢 FastAPI Live' : '⚪ Local Demo'}</small>
-        </div>
+  return <div className="app-shell">
+    {mobileNav && <button className="nav-backdrop" aria-label="Đóng menu" onClick={() => setMobileNav(false)} />}
+    <Sidebar section={section} employeeView={employeeView} go={go} setEmployeeView={setEmployeeView} mobileNav={mobileNav} />
+    <main className="workspace">
+      <header className="topbar">
+        <div className="topbar-title"><button className="mobile-menu" onClick={() => setMobileNav(true)} aria-label="Mở menu">☰</button><div><span>HR Management /</span><strong>{title}</strong></div></div>
+        <div className="top-actions"><label className="global-search"><span>⌕</span><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm kiếm nhanh..." /></label><button className="icon-button" aria-label="Thông báo">♢<b>3</b></button><button className="help-button">?</button><div className="top-avatar">LT</div></div>
+      </header>
+      <div className="page-content">
+        {section === 'profiles' && <PeopleArea view={employeeView} setView={setEmployeeView} rows={employeeResults} onOpen={(item) => { setSelected(item); setDrawerOpen(true); }} notify={notify} />}
+        {section === 'recruitment' && <RecruitmentArea view={recruitmentView} setView={setRecruitmentView} rows={candidateResults} onOpen={(item) => { setSelected(item); setDrawerOpen(true); }} notify={notify} />}
+        {section === 'attendance' && <AttendanceArea view={attendanceView} setView={setAttendanceView} notify={notify} />}
       </div>
-      <p className="nav-label">Workspace</p>
-      <nav>
-        {navigation.map(([label, icon, destination]) => (
-          <button
-            type="button"
-            key={label}
-            className={page === destination ? 'nav-item active' : 'nav-item'}
-            onClick={() => destination && setPage(destination)}
-          >
-            <span>{icon}</span>
-            {label}
-            {label === 'Recruitment / ATS' && <b>{candidatesCount}</b>}
-          </button>
-        ))}
-      </nav>
-      <p className="nav-label">Management</p>
-      <nav>
-        {['Time & attendance', 'Leave & time off', 'Performance & goals', 'Payroll & compensation'].map((item) => (
-          <button type="button" className="nav-item" key={item}>
-            <span>○</span>{item}
-          </button>
-        ))}
-      </nav>
-      <div className="sidebar-footer">
-        <div>
-          <span className="status-dot" style={{ background: backendOnline ? '#10b981' : '#94a3b8' }} />
-          {backendOnline ? 'PostgreSQL Connected' : 'Local Demo Cache'}
-        </div>
-        <div className="pool">
-          <span>Talent Pool</span>
-          <strong>{candidatesCount} candidates</strong>
-          <i><em style={{ width: backendOnline ? '100%' : '60%' }} /></i>
-        </div>
-      </div>
-    </aside>
-  );
+    </main>
+    {drawerOpen && <DetailDrawer item={selected} kind={section} onClose={() => setDrawerOpen(false)} notify={notify} />}
+    {toast && <div className="toast" role="status">✓ {toast}</div>}
+  </div>;
 }
 
-function Topbar({ page, onCreateJob, backendOnline }) {
-  return (
-    <header className="topbar">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-        <span className="crumb">Workforce management</span>
-        <span className="crumb-separator">/</span>
-        <strong>{page === 'employees' ? 'Employee Records & Master Data' : 'Recruitment & ATS Pipeline'}</strong>
-        <span style={{
-          marginLeft: '12px',
-          fontSize: '11px',
-          padding: '2px 8px',
-          borderRadius: '12px',
-          fontWeight: 600,
-          background: backendOnline ? '#ecfdf5' : '#f1f5f9',
-          color: backendOnline ? '#065f46' : '#64748b',
-          border: `1px solid ${backendOnline ? '#a7f3d0' : '#cbd5e1'}`
-        }}>
-          {backendOnline ? 'FastAPI Connected' : 'Offline Mode'}
-        </span>
-      </div>
-      <div className="topbar-actions">
-        <button className="company">Acme Global Inc. ⌄</button>
-        {page === 'recruitment' && <button className="primary" onClick={onCreateJob}>＋ New requisition</button>}
-        <button className="bell" aria-label="Notifications">♧<b>5</b></button>
-        <div className="user-avatar">SJ</div>
-      </div>
-    </header>
-  );
+function initials(name = '') {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return parts.length > 1 ? `${parts[0][0]}${parts.at(-1)[0]}`.toUpperCase() : (name.slice(0, 2) || 'HR').toUpperCase();
 }
 
-function EmployeePage({ query, onQueryChange, department, onDepartmentChange, employees: visibleEmployees, allDepartments, stats, onSelect }) {
-  return (
-    <section className="page">
-      <PageTitle eyebrow="Workforce management" title="Employee records & profile management" description="Keep people data, reporting structure, and contracts in one workspace." />
-      <div className="metric-grid">
-        <Metric label="Total headcount" value={stats.total_employees || visibleEmployees.length} detail="+12 this quarter" />
-        <Metric label="Active employees" value={stats.active_employees || visibleEmployees.length} detail="100% of workforce" />
-        <Metric label="Open requisitions" value={stats.open_jobs_count || 5} detail="Active hiring goals" />
-      </div>
-      <section className="panel">
-        <div className="panel-header">
-          <div>
-            <h2>Employee directory</h2>
-            <p>Search and review employee records synced with PostgreSQL.</p>
-          </div>
-          <button className="secondary">⇩ Export CSV</button>
-        </div>
-        <div className="filters">
-          <input value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search employees, roles, or ID…" />
-          <select value={department} onChange={(event) => onDepartmentChange(event.target.value)}>
-            <option>All departments</option>
-            {allDepartments.map((name) => <option key={name}>{name}</option>)}
-          </select>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Department</th>
-                <th>Location</th>
-                <th>Employment</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleEmployees.map((employee) => (
-                <tr key={employee.id} onClick={() => onSelect(employee)}>
-                  <td><Person name={employee.name} initials={employee.initials} subtext={`${employee.role} · ${employee.id}`} /></td>
-                  <td>{employee.department}</td>
-                  <td>{employee.location}</td>
-                  <td>{employee.type}</td>
-                  <td><Status label={employee.status} /></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </section>
-  );
+function stageLabel(id) {
+  return ({ sourced: 'Ứng tuyển', screening: 'Sàng lọc AI', interview: 'Phỏng vấn kỹ thuật', executive: 'Phỏng vấn vòng cuối', offer: 'Đề nghị tuyển dụng', hired: 'Đã tuyển' })[id] || 'Ứng tuyển';
 }
 
-function RecruitmentPage({ tab, setTab, query, onQueryChange, candidates: visibleCandidates, jobs, onSelect, onCreateJob }) {
-  const totalHeadcount = jobs.reduce((acc, j) => acc + (j.target || 1), 0);
-
-  return (
-    <section className="page">
-      <PageTitle
-        eyebrow="Talent acquisition"
-        title="Recruitment & applicant tracking"
-        description="Move candidates from sourcing to a signed offer with a shared pipeline."
-        action={<button className="primary" onClick={onCreateJob}>＋ Post new job</button>}
-      />
-      <div className="metric-grid">
-        <Metric label="Active requisitions" value={`${jobs.length} Jobs`} detail={`${totalHeadcount} headcount target`} />
-        <Metric label="Candidate pipeline" value={`${visibleCandidates.length} Active`} detail="Synced across ATS pipeline" />
-        <Metric label="Hiring velocity" value="18.5 Days" detail="Fast-track technical rounds" />
-      </div>
-      <div className="tabs">
-        {['Pipeline', 'Jobs', 'Interviews', 'Offers'].map((item) => (
-          <button type="button" key={item} className={tab === item ? 'tab active' : 'tab'} onClick={() => setTab(item)}>
-            {item}
-          </button>
-        ))}
-      </div>
-      {tab === 'Pipeline' && <Pipeline query={query} onQueryChange={onQueryChange} candidates={visibleCandidates} onSelect={onSelect} />}
-      {tab === 'Jobs' && <Jobs jobs={jobs} onCreateJob={onCreateJob} />}
-      {tab === 'Interviews' && <Interviews />}
-      {tab === 'Offers' && <Offers />}
-    </section>
-  );
+function Sidebar({ section, employeeView, go, setEmployeeView, mobileNav }) {
+  const profileNav = (view, icon, label) => <button className={`nav-item ${section === 'profiles' && employeeView === view ? 'active' : ''}`} onClick={() => { go('profiles'); setEmployeeView(view); }}><span>{icon}</span>{label}</button>;
+  return <aside className={`sidebar ${mobileNav ? 'open' : ''}`}>
+    <div className="brand"><div className="brand-icon">▣</div><div><strong>Hệ Thống Doanh Nghiệp</strong><small>NexusHR Enterprise</small></div></div>
+    <nav>
+      {profileNav('profiles', '♙', 'Hồ sơ nhân viên')}
+      {profileNav('org', '⌘', 'Sơ đồ tổ chức')}
+      {profileNav('contracts', '▤', 'Quản lý hợp đồng')}
+      <button className={`nav-item ${section === 'recruitment' ? 'active' : ''}`} onClick={() => go('recruitment')}><span>⌕</span>Quản lý tuyển dụng <em>ATS</em></button>
+      <button className={`nav-item ${section === 'attendance' ? 'active' : ''}`} onClick={() => go('attendance')}><span>◷</span>Chấm công & Nghỉ phép</button>
+    </nav>
+    <div className="sidebar-user"><div className="avatar">LT</div><div><strong>Lê Minh Trí</strong><small>Trưởng phòng Nhân sự</small></div></div>
+  </aside>;
 }
 
-function Pipeline({ query, onQueryChange, candidates: visibleCandidates, onSelect }) {
-  return (
-    <section className="panel pipeline-panel">
-      <div className="panel-header">
-        <div>
-          <h2>Candidate pipeline</h2>
-          <p>Real-time Kanban stages synchronized with PostgreSQL recruitment tables.</p>
-        </div>
-        <input className="compact-search" value={query} onChange={(event) => onQueryChange(event.target.value)} placeholder="Search candidates or skills…" />
-      </div>
-      <div className="kanban">
-        {STAGE_CONFIG.map(({ label }) => {
-          const inStage = visibleCandidates.filter((candidate) => candidate.stage === label);
-          return (
-            <div className="kanban-column" key={label}>
-              <div className="kanban-title">
-                <span>{label}</span>
-                <b>{inStage.length}</b>
-              </div>
-              {inStage.length ? (
-                inStage.map((candidate) => (
-                  <button type="button" className="candidate-card" key={candidate.id} onClick={() => onSelect(candidate)}>
-                    <div className="candidate-card-top">
-                      <Avatar initials={candidate.initials} />
-                      <span className="score">{candidate.score}% AI</span>
-                    </div>
-                    <strong>{candidate.name}</strong>
-                    <small>{candidate.role}</small>
-                    <div className="chips">
-                      {(candidate.skills || []).slice(0, 2).map((skill) => (
-                        <span key={skill}>{skill}</span>
-                      ))}
-                    </div>
-                    <footer>
-                      {candidate.source}
-                      <span>→</span>
-                    </footer>
-                  </button>
-                ))
-              ) : (
-                <div className="empty-stage">No candidates</div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
+function PeopleArea({ view, setView, rows, onOpen, notify }) {
+  if (view === 'org') return <Organization />;
+  if (view === 'contracts') return <Contracts rows={rows} onOpen={onOpen} notify={notify} />;
+  return <>
+    <PageHeading title="Hồ sơ nhân viên" description="Quản lý thông tin, vị trí công việc và vòng đời nhân sự." action={<button className="primary" onClick={() => notify('Đã mở biểu mẫu thêm nhân viên')}>＋ Thêm nhân viên</button>} />
+    <MetricGrid metrics={[['Tổng nhân viên', '312', '+8 mới trong tháng'], ['Đang làm việc', '284', '91% tổng số'], ['Thử việc (30–60 ngày)', '18', 'Cần lưu ý'], ['Đã nghỉ việc / Tạm hoãn', '10', 'Đã xử lý']]} />
+    <section className="panel"><Toolbar placeholder="Tìm nhân viên theo tên, mã NV..." /><EmployeeTable rows={rows} onOpen={onOpen} /></section>
+  </>;
 }
 
-function Jobs({ jobs, onCreateJob }) {
-  return (
-    <section className="panel">
-      <div className="panel-header">
-        <div>
-          <h2>Open requisitions</h2>
-          <p>Roles currently in the recruitment workflow saved in PostgreSQL.</p>
-        </div>
-        <button className="primary" onClick={onCreateJob}>＋ New requisition</button>
-      </div>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Requisition</th>
-              <th>Department</th>
-              <th>Applicants</th>
-              <th>Target Headcount</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {jobs.map((job) => (
-              <tr key={job.code}>
-                <td>
-                  <strong>{job.title}</strong>
-                  <small>{job.code}</small>
-                </td>
-                <td>{job.team}</td>
-                <td>{job.candidates} applicants</td>
-                <td>{job.target}</td>
-                <td><Status label={job.status} /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-  );
+function Organization() { return <>
+  <PageHeading title="Sơ đồ tổ chức" description="Cấu trúc phòng ban và số lượng nhân sự theo đơn vị." action={<button className="secondary">⇩ Xuất sơ đồ</button>} />
+  <section className="org-summary"><div className="company-node"><span>▣</span><div><strong>NexusHR Enterprise</strong><small>312 nhân sự · Hà Nội</small></div></div><div className="org-line" /></section>
+  <section className="department-grid">{departments.map((name, index) => <article className="department-card" key={name}><div className={`department-icon tone-${index}`} >{['⌘', '◉', '♙', '₫', '◌', '✦'][index]}</div><div><h3>{name}</h3><p>{[86, 52, 31, 24, 48, 71][index]} nhân sự</p></div><button aria-label={`Xem ${name}`}>→</button><footer><span>Trưởng phòng</span><strong>{['Nguyễn Văn Hùng', 'Vũ Minh Đức', 'Trần Thị Mai', 'Lê Hoàng Nam', 'Đặng Khánh An', 'Nguyễn Hồng Đào'][index]}</strong></footer></article>)}</section>
+  </>;
 }
 
-function Interviews() {
-  return (
-    <section className="panel">
-      <div className="panel-header">
-        <div>
-          <h2>Upcoming interviews</h2>
-          <p>Scheduled interviews across active requisitions.</p>
-        </div>
-        <button className="secondary">＋ Schedule interview</button>
-      </div>
-      {[
-        ['Today, 15:30', 'Lê Quốc Huy', 'Senior Backend Engineer', 'Google Meet'],
-        ['Tomorrow, 10:00', 'Phạm Thanh Thảo', 'Principal Product Designer', 'Room 3B']
-      ].map(([time, person, role, place]) => (
-        <div className="schedule-row" key={person}>
-          <span className="calendar">▣</span>
-          <div>
-            <strong>{person}</strong>
-            <small>{role} · {place}</small>
-          </div>
-          <time>{time}</time>
-          <button className="secondary">View scorecard</button>
-        </div>
-      ))}
-    </section>
-  );
+function Contracts({ rows, onOpen, notify }) { return <>
+  <PageHeading title="Quản lý hợp đồng" description="Theo dõi tình trạng, thời hạn và các mốc gia hạn hợp đồng lao động." action={<button className="primary" onClick={() => notify('Đã mở biểu mẫu tạo hợp đồng')}>＋ Tạo hợp đồng</button>} />
+  <MetricGrid metrics={[['Đang hiệu lực', '284', '91% tổng số'], ['Sắp hết hạn', '12', 'Trong 60 ngày tới'], ['Cần gia hạn', '7', 'Cần xử lý'], ['Thử việc', '18', 'Theo dõi đánh giá']]} />
+  <section className="panel"><Toolbar placeholder="Tìm theo mã hợp đồng, nhân viên..." /><div className="table-wrap"><table><thead><tr><th>Nhân viên</th><th>Mã hợp đồng</th><th>Loại hợp đồng</th><th>Ngày hiệu lực</th><th>Trạng thái</th><th /></tr></thead><tbody>{rows.map((row) => <tr key={row.id} onClick={() => onOpen(row)}><td><Person item={row} /></td><td><code>HĐ-{row.id.slice(3)}</code></td><td>{row.contract}</td><td>{row.joined} — 14/03/2026</td><td><Badge text={row.status === 'Thử việc' ? 'Thử việc' : 'Đang hiệu lực'} tone={row.status === 'Thử việc' ? 'amber' : 'green'} /></td><td><button className="more" aria-label="Xem chi tiết">⋮</button></td></tr>)}</tbody></table></div><Pagination /></section>
+  </>;
 }
 
-function Offers() {
-  return (
-    <section className="panel">
-      <div className="panel-header">
-        <div>
-          <h2>Offers in progress</h2>
-          <p>Track offer review and acceptance deadlines.</p>
-        </div>
-      </div>
-      {[
-        ['Đặng Tuấn Anh', 'Lead Systems Architect', '85,000,000 VND', 'Expires in 3 days'],
-        ['Bùi Thùy Dung', 'Senior QA Automation Engineer', '42,000,000 VND', 'Expires in 5 days']
-      ].map(([person, role, salary, expiry]) => (
-        <div className="schedule-row" key={person}>
-          <Avatar initials={person.slice(0, 2)} />
-          <div>
-            <strong>{person}</strong>
-            <small>{role} · Base salary: {salary}</small>
-          </div>
-          <time>{expiry}</time>
-          <Status label="Awaiting signature" />
-        </div>
-      ))}
-    </section>
-  );
+function RecruitmentArea({ view, setView, rows, onOpen, notify }) { return <>
+  <PageHeading title="Quản lý tuyển dụng" description="Theo dõi tuyển dụng từ yêu cầu nhân sự đến tiếp nhận nhân viên mới." action={<button className="primary" onClick={() => notify('Đã mở biểu mẫu tạo yêu cầu tuyển dụng')}>＋ Tạo yêu cầu tuyển dụng</button>} />
+  <MetricGrid metrics={[['Vị trí đang tuyển', '18', '+3 trong tháng'], ['Tổng ứng viên', '126', '34 hồ sơ mới'], ['Phỏng vấn tuần này', '16', '6 lịch hôm nay'], ['Tỷ lệ tuyển dụng', '72%', '+8% so với tháng trước']]} />
+  <Tabs tabs={[['pipeline', 'Đường ống ứng viên'], ['jobs', 'Yêu cầu tuyển dụng'], ['interviews', 'Lịch phỏng vấn'], ['onboarding', 'Tiếp nhận nhân sự']]} active={view} setActive={setView} />
+  {view === 'pipeline' && <section className="panel pipeline-panel"><div className="panel-header"><div><h2>Đường ống tuyển dụng</h2><p>Kéo thả ứng viên qua từng giai đoạn của quy trình tuyển dụng.</p></div><button className="secondary" onClick={() => notify('Bộ lọc vị trí đã được mở')}>☷ Lọc vị trí</button></div><div className="kanban">{stages.map((stage) => <KanbanColumn key={stage} stage={stage} candidates={rows.filter((candidate) => candidate.stage === stage)} onOpen={onOpen} />)}</div></section>}
+  {view === 'jobs' && <JobTable notify={notify} />}
+  {view === 'interviews' && <Interviews notify={notify} />}
+  {view === 'onboarding' && <Onboarding notify={notify} />}
+  </>;
 }
 
-function PageTitle({ eyebrow, title, description, action }) {
-  return (
-    <div className="page-title">
-      <div>
-        <span className="eyebrow">{eyebrow}</span>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
-      {action}
-    </div>
-  );
+function KanbanColumn({ stage, candidates: cards, onOpen }) { return <div className="kanban-column"><div className="kanban-head"><span>{stage}</span><b>{cards.length}</b></div>{cards.length ? cards.map((card) => <button className="candidate-card" onClick={() => onOpen(card)} key={card.id}><div><Avatar initials={card.initials} /><span className="score">AI {card.score}</span></div><strong>{card.name}</strong><small>{card.role}</small><p>{card.tags.map((tag) => <i key={tag}>{tag}</i>)}</p><footer><span>{card.source}</span><span>→</span></footer></button>) : <div className="empty-column">Chưa có ứng viên</div>}</div>; }
+
+function JobTable({ notify }) { const jobs = [['REQ-2026-08', 'Lead Systems Architect', 'Kỹ thuật & Công nghệ', '18', '2'], ['REQ-2026-11', 'Senior Backend Engineer', 'Kỹ thuật & Công nghệ', '42', '4'], ['REQ-2026-04', 'Principal Product Designer', 'Sản phẩm & Trải nghiệm', '21', '1'], ['REQ-2026-15', 'DevOps & Cloud Lead', 'Kỹ thuật & Công nghệ', '17', '2']]; return <section className="panel"><div className="panel-header"><div><h2>Yêu cầu tuyển dụng</h2><p>Các vị trí đang mở và tiến độ tuyển dụng.</p></div><button className="secondary" onClick={() => notify('Đã xuất danh sách yêu cầu')}>⇩ Xuất danh sách</button></div><div className="table-wrap"><table><thead><tr><th>Mã yêu cầu</th><th>Vị trí</th><th>Phòng ban</th><th>Ứng viên</th><th>Chỉ tiêu</th><th>Trạng thái</th><th /></tr></thead><tbody>{jobs.map((job) => <tr key={job[0]}><td><code>{job[0]}</code></td><td><strong>{job[1]}</strong></td><td>{job[2]}</td><td>{job[3]} hồ sơ</td><td>{job[4]} người</td><td><Badge text="Đang tuyển" tone="blue" /></td><td><button className="more">⋮</button></td></tr>)}</tbody></table></div><Pagination /></section>; }
+
+function Interviews({ notify }) { const items = [['Hôm nay, 15:30', 'Lê Gia Huy', 'DevOps Engineer', 'Technical interview', 'Google Meet'], ['13/09, 10:00', 'Phạm Thu Hà', 'Senior Backend Engineer', 'Technical interview', 'Phòng họp 3B'], ['14/09, 14:30', 'Đỗ Anh Khoa', 'Product Designer', 'Final interview', 'Google Meet']]; return <section className="panel"><div className="panel-header"><div><h2>Lịch phỏng vấn sắp tới</h2><p>Điều phối lịch hẹn và phiếu đánh giá cho từng ứng viên.</p></div><button className="primary" onClick={() => notify('Đã mở lịch phỏng vấn')}>＋ Lên lịch phỏng vấn</button></div><div className="schedule-list">{items.map(([time, name, role, type, place]) => <article className="schedule-row" key={name}><div className="calendar-icon">▣</div><div><strong>{name}</strong><p>{role} · {type}</p></div><time>{time}<small>{place}</small></time><button className="secondary" onClick={() => notify(`Đã mở scorecard của ${name}`)}>Xem scorecard</button></article>)}</div></section>; }
+
+function Onboarding({ notify }) { const hires = [['Bùi Khánh Linh', 'QA Automation Engineer', 'Kỹ thuật & Công nghệ', '01/10/2026', 'Đã ký offer'], ['Ngô Minh Quân', 'Sales Executive', 'Kinh doanh & Tiếp thị', '15/10/2026', 'Chờ giấy tờ'], ['Lý Bảo Ngọc', 'HR Specialist', 'Nhân sự & Đào tạo', '20/10/2026', 'Đã ký offer']]; return <section className="panel"><div className="panel-header"><div><h2>Tiếp nhận nhân sự mới</h2><p>Hoàn thiện các bước trước ngày nhận việc.</p></div><button className="secondary" onClick={() => notify('Đã gửi lời nhắc onboarding')}>Gửi lời nhắc</button></div><div className="table-wrap"><table><thead><tr><th>Ứng viên</th><th>Vị trí</th><th>Phòng ban</th><th>Ngày nhận việc</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>{hires.map((hire) => <tr key={hire[0]}><td><strong>{hire[0]}</strong></td><td>{hire[1]}</td><td>{hire[2]}</td><td>{hire[3]}</td><td><Badge text={hire[4]} tone={hire[4] === 'Đã ký offer' ? 'green' : 'amber'} /></td><td><button className="secondary small" onClick={() => notify(`${hire[0]} đã được tiếp nhận`)}>Tiếp nhận</button></td></tr>)}</tbody></table></div></section>; }
+
+function AttendanceArea({ view, setView, notify }) { return <>
+  <PageHeading title="Chấm công & Quản lý nghỉ phép" description="Theo dõi thời gian làm việc, lịch ca và đơn nghỉ phép của nhân sự." action={<div className="heading-actions"><button className="secondary" onClick={() => notify('Đã ghi nhận chấm công')}>◷ Chấm công nhanh</button><button className="primary" onClick={() => notify('Đã mở biểu mẫu nghỉ phép')}>＋ Tạo đơn nghỉ phép</button></div>} />
+  <MetricGrid metrics={[['Có mặt hôm nay', '268', '86% nhân sự'], ['Đi muộn / Về sớm', '12', 'Cần theo dõi'], ['Đang nghỉ phép', '9', '3 đơn có lương'], ['Chờ phê duyệt', '7', 'Cần xử lý']]} />
+  <Tabs tabs={[['timesheet', 'Bảng công & điểm danh'], ['shifts', 'Ca làm việc'], ['leaves', 'Đơn nghỉ phép'], ['approvals', 'Xét duyệt nghỉ phép']]} active={view} setActive={setView} />
+  {view === 'timesheet' && <Timesheet notify={notify} />}{view === 'shifts' && <Shifts notify={notify} />}{view === 'leaves' && <Leaves notify={notify} />}{view === 'approvals' && <Approvals notify={notify} />}
+  </>;
 }
 
-function Metric({ label, value, detail }) {
-  return (
-    <article className="metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{detail}</small>
-    </article>
-  );
-}
+function Timesheet({ notify }) { const records = [['Nguyễn Văn Hùng', 'Kỹ thuật & Công nghệ', '08:02', '17:34', '8h 32m', 'Đúng giờ'], ['Trần Thị Mai', 'Nhân sự & Đào tạo', '07:58', '17:28', '8h 30m', 'Đúng giờ'], ['Lê Hoàng Nam', 'Tài chính & Kế toán', '08:18', '17:47', '8h 29m', 'Đi muộn'], ['Phạm Thanh Sơn', 'Kỹ thuật & Công nghệ', '08:07', '17:19', '8h 12m', 'Đúng giờ'], ['Nguyễn Hồng Đào', 'Sản phẩm & Trải nghiệm', '08:23', '17:52', '8h 29m', 'Đi muộn']]; return <section className="panel"><div className="panel-header"><div><h2>Bảng công hôm nay</h2><p>Thứ Bảy, 12 tháng 09, 2026 · Dữ liệu được cập nhật theo thời gian thực.</p></div><button className="secondary" onClick={() => notify('Đã xuất bảng công')}>⇩ Xuất bảng công</button></div><div className="table-wrap"><table><thead><tr><th>Nhân viên</th><th>Phòng ban</th><th>Check-in</th><th>Check-out</th><th>Giờ làm</th><th>Trạng thái</th><th /></tr></thead><tbody>{records.map((record, index) => <tr key={record[0]}><td><Person item={{ name: record[0], initials: record[0].split(' ').map(x => x[0]).slice(-2).join(''), title: index === 0 ? 'Senior Tech Lead' : 'Nhân viên' }} /></td><td>{record[1]}</td><td><strong>{record[2]}</strong></td><td><strong>{record[3]}</strong></td><td>{record[4]}</td><td><Badge text={record[5]} tone={record[5] === 'Đúng giờ' ? 'green' : 'amber'} /></td><td><button className="more">⋮</button></td></tr>)}</tbody></table></div><Pagination /></section>; }
 
-function Avatar({ initials }) {
-  return <span className="avatar">{initials}</span>;
-}
+function Shifts({ notify }) { const shifts = [['HC', 'Ca hành chính', '08:00 — 17:30', 'Thứ Hai — Thứ Sáu', '242 nhân sự'], ['S1', 'Ca sáng', '06:00 — 14:00', 'Thứ Hai — Chủ Nhật', '38 nhân sự'], ['S2', 'Ca chiều', '14:00 — 22:00', 'Thứ Hai — Chủ Nhật', '21 nhân sự'], ['N1', 'Ca trực đêm', '22:00 — 06:00', 'Thứ Hai — Chủ Nhật', '11 nhân sự']]; return <section className="panel"><div className="panel-header"><div><h2>Danh mục ca làm việc</h2><p>Thiết lập giờ làm, ngày áp dụng và nhân sự thuộc từng ca.</p></div><button className="primary" onClick={() => notify('Đã mở biểu mẫu thêm ca')}>＋ Thêm ca làm việc</button></div><div className="shift-grid">{shifts.map((shift) => <article className="shift-card" key={shift[0]}><span className="shift-code">{shift[0]}</span><h3>{shift[1]}</h3><strong>{shift[2]}</strong><p>{shift[3]}</p><footer><span>♙ {shift[4]}</span><button onClick={() => notify(`Đã mở chỉnh sửa ${shift[1]}`)}>Chỉnh sửa</button></footer></article>)}</div></section>; }
 
-function Person({ name, initials, subtext }) {
-  return (
-    <div className="person">
-      <Avatar initials={initials} />
-      <div>
-        <strong>{name}</strong>
-        <small>{subtext}</small>
-      </div>
-    </div>
-  );
-}
+function Leaves({ notify }) { const rows = [['Nguyễn Hồng Đào', 'Nghỉ phép năm', '15/09/2026 — 16/09/2026', '2 ngày', 'Chờ phê duyệt'], ['Phạm Thanh Sơn', 'Nghỉ ốm', '12/09/2026', '1 ngày', 'Đã phê duyệt'], ['Trần Thị Mai', 'Việc riêng', '20/09/2026', '1 ngày', 'Đã phê duyệt'], ['Vũ Minh Đức', 'Nghỉ không lương', '22/09/2026 — 24/09/2026', '3 ngày', 'Chờ phê duyệt']]; return <section className="panel"><div className="panel-header"><div><h2>Đơn nghỉ phép</h2><p>Lịch sử đơn nghỉ và quỹ phép cá nhân của nhân sự.</p></div><button className="primary" onClick={() => notify('Đã mở biểu mẫu tạo đơn')}>＋ Tạo đơn nghỉ phép</button></div><div className="table-wrap"><table><thead><tr><th>Nhân viên</th><th>Loại nghỉ</th><th>Thời gian</th><th>Số ngày</th><th>Trạng thái</th><th /></tr></thead><tbody>{rows.map((row) => <tr key={row[0]}><td><strong>{row[0]}</strong></td><td>{row[1]}</td><td>{row[2]}</td><td>{row[3]}</td><td><Badge text={row[4]} tone={row[4] === 'Đã phê duyệt' ? 'green' : 'amber'} /></td><td><button className="more">⋮</button></td></tr>)}</tbody></table></div><Pagination /></section>; }
 
-function Status({ label }) {
-  return <span className={`status ${(label || '').toLowerCase().replaceAll(' ', '-')}`}>{label}</span>;
-}
+function Approvals({ notify }) { const pending = [['Nguyễn Hồng Đào', 'Nghỉ phép năm', '15/09 — 16/09/2026', '2 ngày'], ['Vũ Minh Đức', 'Nghỉ không lương', '22/09 — 24/09/2026', '3 ngày'], ['Đỗ Phương Linh', 'Việc riêng', '18/09/2026', '1 ngày']]; return <section className="panel"><div className="panel-header"><div><h2>Yêu cầu chờ phê duyệt</h2><p>Xử lý các đơn nghỉ phép cần phản hồi từ quản lý.</p></div><button className="primary" onClick={() => notify('Đã phê duyệt tất cả đơn hợp lệ')}>✓ Duyệt tất cả</button></div><div className="approval-list">{pending.map((request) => <article className="approval-row" key={request[0]}><Avatar initials={request[0].split(' ').map(x => x[0]).slice(-2).join('')} /><div><strong>{request[0]}</strong><p>{request[1]} · {request[2]} · {request[3]}</p></div><div><button className="secondary reject" onClick={() => notify(`Đã từ chối đơn của ${request[0]}`)}>Từ chối</button><button className="primary small" onClick={() => notify(`Đã phê duyệt đơn của ${request[0]}`)}>Duyệt đơn</button></div></article>)}</div></section>; }
 
-function Drawer({ title, children, onClose }) {
-  return (
-    <div className="drawer-backdrop" role="presentation" onMouseDown={onClose}>
-      <aside className="drawer" role="dialog" aria-modal="true" aria-label={title} onMouseDown={(event) => event.stopPropagation()}>
-        <button className="close" onClick={onClose} aria-label="Close">×</button>
-        {children}
-      </aside>
-    </div>
-  );
-}
-
-function EmployeeDrawer({ employee, onClose }) {
-  return (
-    <Drawer title="Employee profile" onClose={onClose}>
-      <Avatar initials={employee.initials} />
-      <span className="eyebrow">Employee profile</span>
-      <h2>{employee.name}</h2>
-      <p className="drawer-subtitle">{employee.role}</p>
-      <Status label={employee.status} />
-      <dl>
-        <dt>Employee ID</dt>
-        <dd>{employee.id}</dd>
-        <dt>Department</dt>
-        <dd>{employee.department}</dd>
-        <dt>Location</dt>
-        <dd>{employee.location}</dd>
-        <dt>Employment type</dt>
-        <dd>{employee.type}</dd>
-      </dl>
-      <button className="primary full" onClick={onClose}>Close profile</button>
-    </Drawer>
-  );
-}
-
-function CandidateDrawer({ candidate, onClose, onAdvance }) {
-  return (
-    <Drawer title="Candidate profile" onClose={onClose}>
-      <Avatar initials={candidate.initials} />
-      <span className="eyebrow">Candidate profile</span>
-      <h2>{candidate.name}</h2>
-      <p className="drawer-subtitle">{candidate.role}</p>
-      <div className="candidate-score">
-        <b>{candidate.score}%</b>
-        <span>AI match score</span>
-      </div>
-      <h3>Skills</h3>
-      <div className="chips large">
-        {(candidate.skills || []).map((skill) => <span key={skill}>{skill}</span>)}
-      </div>
-      <dl>
-        <dt>Current stage</dt>
-        <dd>{candidate.stage}</dd>
-        <dt>Source</dt>
-        <dd>{candidate.source}</dd>
-        <dt>Next action</dt>
-        <dd>Advance candidate stage in ATS</dd>
-      </dl>
-      <button className="primary full" onClick={onAdvance}>Advance candidate →</button>
-    </Drawer>
-  );
-}
-
-function JobModal({ onClose, onSubmit }) {
-  const [title, setTitle] = useState('');
-  const [deptId, setDeptId] = useState(2);
-  const [headcount, setHeadcount] = useState(1);
-  const [employmentType, setEmploymentType] = useState('Full-time');
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    onSubmit({ title, deptId, headcount, employmentType });
-  }
-
-  return (
-    <div className="modal-backdrop" role="presentation">
-      <form className="modal" onSubmit={handleSubmit}>
-        <button type="button" className="close" onClick={onClose} aria-label="Close">×</button>
-        <span className="eyebrow">Recruitment</span>
-        <h2>Create a new requisition</h2>
-        <p>Publish job requisition directly to PostgreSQL and recruitment pipeline.</p>
-        <label>
-          Job title
-          <input required placeholder="e.g. Senior Backend Engineer" value={title} onChange={(e) => setTitle(e.target.value)} />
-        </label>
-        <label>
-          Department
-          <select value={deptId} onChange={(e) => setDeptId(parseInt(e.target.value, 10))}>
-            <option value={2}>Platform Engineering</option>
-            <option value={1}>Experience Design</option>
-            <option value={3}>People & Culture</option>
-            <option value={4}>Global Enterprise Sales</option>
-            <option value={5}>Product & Strategy</option>
-            <option value={6}>Finance & Legal Compliance</option>
-          </select>
-        </label>
-        <div className="form-row">
-          <label>
-            Headcount
-            <input type="number" min="1" value={headcount} onChange={(e) => setHeadcount(parseInt(e.target.value, 10))} />
-          </label>
-          <label>
-            Employment type
-            <select value={employmentType} onChange={(e) => setEmploymentType(e.target.value)}>
-              <option value="Full-time">Full-time</option>
-              <option value="Part-time">Part-time</option>
-              <option value="Contract">Contract</option>
-            </select>
-          </label>
-        </div>
-        <div className="modal-actions">
-          <button type="button" className="secondary" onClick={onClose}>Cancel</button>
-          <button className="primary" type="submit">Publish requisition</button>
-        </div>
-      </form>
-    </div>
-  );
-}
+function PageHeading({ title, description, action }) { return <div className="page-heading"><div><p className="breadcrumb">HR MANAGEMENT</p><h1>{title}</h1><p className="description">{description}</p></div>{action}</div>; }
+function MetricGrid({ metrics }) { return <section className="metric-grid">{metrics.map(([label, value, detail], index) => <article className={`metric metric-${index}`} key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></article>)}</section>; }
+function Toolbar({ placeholder }) { return <div className="toolbar"><label><span>⌕</span><input placeholder={placeholder} /></label><select defaultValue="all"><option value="all">Tất cả phòng ban</option>{departments.map((department) => <option key={department}>{department}</option>)}</select><select defaultValue="status"><option value="status">Trạng thái hợp đồng</option><option>Đang làm việc</option><option>Thử việc</option></select><button className="secondary">☷ Bộ lọc</button></div>; }
+function EmployeeTable({ rows, onOpen }) { return <div className="table-wrap"><table><thead><tr><th>Nhân viên</th><th>Mã nhân viên</th><th>Phòng ban</th><th>Chức danh</th><th>Ngày vào làm</th><th>Trạng thái</th><th /></tr></thead><tbody>{rows.map((row) => <tr key={row.id} onClick={() => onOpen(row)}><td><Person item={row} /></td><td><code>{row.id}</code></td><td>{row.department}</td><td>{row.title}</td><td>{row.joined}</td><td><Badge text={row.status} tone={row.status === 'Thử việc' ? 'amber' : 'green'} /></td><td><button className="more">⋮</button></td></tr>)}</tbody></table>{!rows.length && <div className="empty-state">Không tìm thấy nhân viên phù hợp.</div>}</div>; }
+function Tabs({ tabs, active, setActive }) { return <div className="tabs">{tabs.map(([id, label]) => <button className={active === id ? 'active' : ''} onClick={() => setActive(id)} key={id}>{label}</button>)}</div>; }
+function Person({ item }) { return <div className="person"><Avatar initials={item.initials} /><div><strong>{item.name}</strong><small>{item.email || item.title}</small></div></div>; }
+function Avatar({ initials }) { return <span className="avatar">{initials}</span>; }
+function Badge({ text, tone = 'blue' }) { return <span className={`badge ${tone}`}>{text}</span>; }
+function Pagination() { return <div className="pagination"><span>Hiển thị 1–5 trong tổng số 312 kết quả</span><div><button disabled>‹</button><button className="current">1</button><button>2</button><button>3</button><button>›</button></div></div>; }
+function DetailDrawer({ item, kind, onClose, notify }) { const isCandidate = kind === 'recruitment'; return <div className="drawer-backdrop" onMouseDown={onClose}><aside className="drawer" onMouseDown={(event) => event.stopPropagation()} role="dialog" aria-modal="true"><button className="drawer-close" onClick={onClose}>×</button><Avatar initials={item.initials} /><p className="breadcrumb">{isCandidate ? 'HỒ SƠ ỨNG VIÊN' : 'HỒ SƠ NHÂN VIÊN'}</p><h2>{item.name}</h2><p className="drawer-role">{item.role || item.title}</p>{isCandidate ? <><div className="ai-score"><strong>{item.score}</strong><span>AI matching score</span></div><h3>Kỹ năng</h3><div className="tag-list">{item.tags.map((tag) => <span key={tag}>{tag}</span>)}</div><InfoList items={[['Vòng hiện tại', item.stage], ['Nguồn ứng tuyển', item.source], ['Hành động tiếp theo', 'Chuyển sang vòng kế tiếp']]} /><button className="primary full" onClick={() => { onClose(); notify(`${item.name} đã được chuyển sang vòng tiếp theo`); }}>Chuyển vòng ứng viên →</button></> : <><InfoList items={[['Mã nhân viên', item.id], ['Phòng ban', item.department], ['Email công việc', item.email], ['Loại hợp đồng', item.contract], ['Ngày vào làm', item.joined], ['Trạng thái', item.status]]} /><button className="primary full" onClick={() => notify(`Đã mở chỉnh sửa hồ sơ ${item.name}`)}>Chỉnh sửa hồ sơ</button></>}</aside></div>; }
+function InfoList({ items }) { return <dl className="info-list">{items.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>; }
 
 export default App;

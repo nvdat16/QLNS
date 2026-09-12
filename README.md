@@ -24,11 +24,12 @@ Each system directory includes a dedicated `README.md` with architecture details
 
 - [1. System Overview](#1-system-overview)
 - [2. Functional Architecture (Top-Down Mind Map)](#2-functional-architecture-top-down-mind-map)
-- [3. Visual Showcase](#3-visual-showcase)
-  - [3.1. Employee Records and Employment Contracts (Core HR)](#31-employee-records-and-employment-contracts-core-hr)
-  - [3.2. Smart Recruitment and Onboarding (ATS)](#32-smart-recruitment-and-onboarding-ats)
-  - [3.3. Attendance and Leave Management](#33-attendance-and-leave-management)
-  - [3.4. Database Design Diagram (DBML)](#34-database-design-diagram-dbml)
+- [3. Roles & Use Case Diagram](#3-roles--use-case-diagram)
+- [4. Visual Showcase](#4-visual-showcase)
+  - [4.1. Employee Records and Employment Contracts (Core HR)](#41-employee-records-and-employment-contracts-core-hr)
+  - [4.2. Smart Recruitment and Onboarding (ATS)](#42-smart-recruitment-and-onboarding-ats)
+  - [4.3. Attendance and Leave Management](#43-attendance-and-leave-management)
+  - [4.4. Database Design Diagram (DBML)](#44-database-design-diagram-dbml)
 
 ---
 
@@ -62,11 +63,64 @@ The system follows a top-down decomposition approach with **eight functional pil
 
 ---
 
-## 3. Visual Showcase
+## 3. Roles & Use Case Diagram
+
+Detailed documentation: [docs/system_diagrams.md](docs/system_diagrams.md#2-sơ-đồ-use-case-tổng-quan-overall-use-case-diagram)
+
+### Actors
+
+- **Super Admin:** Manages system accounts, role-based access control, configuration, audit trails, and organization-wide reporting.
+- **HR Director / Manager:** Approves hiring requests and offers, manages employee movements and contracts, and monitors workforce analytics.
+- **Recruiter (Talent Acquisition):** Publishes vacancies, screens CVs, manages the ATS pipeline, schedules interviews, and prepares offers.
+- **Hiring Manager / Interviewer:** Creates hiring requests, participates in interviews, and completes candidate scorecards.
+- **HR Officer (C&B / Records):** Maintains employee records, employment contracts, and onboarding checklists.
+- **Employee / Candidate:** Updates permitted profile information, views organization and contract information, or submits an application.
+
+### Use Case Diagram (Mermaid)
+
+```mermaid
+flowchart LR
+    Admin([Super Admin])
+    HRMgr([HR Director / Manager])
+    Recruiter([Recruiter])
+    Interviewer([Hiring Manager / Interviewer])
+    HROfficer([HR Officer])
+    User([Employee / Candidate])
+
+    subgraph HRMS["QLNS / HRMS"]
+        Jobs[Create & publish job requisitions]
+        ATS[Screen CVs & manage ATS pipeline]
+        Interviews[Schedule interviews & submit scorecards]
+        Offers[Approve offers & onboarding]
+        Records[Manage employee records & contracts]
+        Attendance[Manage attendance & leave]
+        Reports[View workforce reports]
+        Access[Manage accounts & RBAC]
+    end
+
+    Recruiter --> Jobs
+    Recruiter --> ATS
+    Recruiter --> Interviews
+    Interviewer --> Jobs
+    Interviewer --> Interviews
+    HRMgr --> Offers
+    HRMgr --> Records
+    HRMgr --> Reports
+    HROfficer --> Records
+    HROfficer --> Attendance
+    User --> ATS
+    User --> Records
+    Admin --> Access
+    Admin --> Reports
+```
+
+---
+
+## 4. Visual Showcase
 
 All modules include completed UI designs with representative enterprise data.
 
-### 3.1. Employee Records and Employment Contracts (Core HR)
+### 4.1. Employee Records and Employment Contracts (Core HR)
 
 #### 📷 Employee Profile List (`uiux/main.html`)
 
@@ -88,7 +142,7 @@ All modules include completed UI designs with representative enterprise data.
 
 ---
 
-### 3.2. Smart Recruitment and Onboarding (ATS)
+### 4.2. Smart Recruitment and Onboarding (ATS)
 
 #### Candidate Recruitment Pipeline
 
@@ -116,7 +170,7 @@ All modules include completed UI designs with representative enterprise data.
 
 ---
 
-### 3.3. Attendance and Leave Management
+### 4.3. Attendance and Leave Management
 
 #### Timesheet and Real-Time Attendance
 
@@ -144,7 +198,7 @@ All modules include completed UI designs with representative enterprise data.
 
 ---
 
-### 3.4. Database Design Diagram (DBML)
+### 4.4. Database Design Diagram (DBML)
 
 #### 14-Table Entity and Foreign-Key Relationship Diagram
 

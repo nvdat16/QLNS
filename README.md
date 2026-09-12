@@ -16,6 +16,8 @@ Mỗi thư mục trong hệ thống đều có file `README.md` riêng biệt đ
 | **`backend/`** | Dịch vụ RESTful API xây dựng bằng FastAPI (Python 3.12), SQLAlchemy 2.0 ORM, Pydantic v2, danh mục endpoints, tài liệu tương tác Swagger UI & ReDoc. | [Xem backend/README.md](backend/README.md) |
 | **`frontend/`** | Ứng dụng Single Page Application (SPA) xây dựng bằng React 18 và Vite 5, tích hợp gọi API thời gian thực và đồng bộ dữ liệu. | [Xem frontend/README.md](frontend/README.md) |
 
+> [Xem sơ đồ Use Case tổng quát](docs/system_diagrams.md#2-sơ-đồ-use-case-tổng-quan-overall-use-case-diagram)
+
 ---
 
 ## Mục Lục (Table of Contents)
@@ -125,4 +127,3 @@ Toàn bộ các phân hệ đã được thiết kế và xây dựng giao diệ
 #### Lược đồ 14 Bảng Thực thể & Quan hệ Khóa ngoại
 > Mô hình dữ liệu quan hệ chuẩn 3NF kết nối xuyên suốt giữa ứng viên tuyển dụng, hợp đồng và hồ sơ nhân sự chính thức.
 ![Sơ đồ Cơ sở Dữ liệu](database/dbml.png)
-

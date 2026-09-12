@@ -1,219 +1,128 @@
-# 🏢 Human Resource Management System (QLNS / HRMS)
+# Human Resource Management System (QLNS / HRMS)
 
-> A comprehensive **Human Resource Management System (HRMS)** designed with a top-down approach to streamline HR operations—from recruitment and employee records to attendance, payroll, training, and development.
-
----
-
-## 📌 Table of Contents
-
-- [1. Overview](#1-overview)
-- [2. Functional Architecture (Top-down Mind Map)](#2-functional-architecture-top-down-mind-map)
-- [3. Functional Modules](#3-functional-modules)
-  - [3.1. Recruitment Management](#31-recruitment-management)
-  - [3.2. Employee Records & Lifecycle Management](#32-employee-records--lifecycle-management)
-  - [3.3. Attendance & Leave Management](#33-attendance--leave-management)
-  - [3.4. Compensation, Benefits & Payroll Management](#34-compensation-benefits--payroll-management)
-  - [3.5. Performance Management (KPI / OKR)](#35-performance-management-kpi--okr)
-  - [3.6. Training & Development Management](#36-training--development-management)
-  - [3.7. Reports & Analytics](#37-reports--analytics)
-  - [3.8. System Administration & Access Control](#38-system-administration--access-control)
-- [4. Technology Stack](#4-technology-stack)
-- [5. Detailed Documentation & Diagrams](#5-detailed-documentation--diagrams)
-- [6. Project Structure](#6-project-structure)
-- [7. Getting Started (Docker Compose)](#7-getting-started-docker-compose)
+> A comprehensive, modern **Human Resource Management System (HRMS)** & **Applicant Tracking System (ATS)** designed with an enterprise top-down architecture—streamlining the entire employee lifecycle from job requisition, CV parsing, interview evaluation, and onboarding handoff to personnel records, labor contracts, organization charts, attendance, shift scheduling, and leave management.
 
 ---
 
-## 1. Overview
+## Bảng Điều Hướng Tài Liệu Chi Tiết (Documentation Hub)
 
-**QLNS** aims to digitize end-to-end HR processes within an organization, helping teams:
+Mỗi thư mục trong hệ thống đều có file `README.md` riêng biệt đặc tả chi tiết kiến trúc, hình ảnh và hướng dẫn thực thi:
 
-- **Automate routine work:** Minimize manual errors in attendance tracking, payroll, and employee-record management.
-- **Improve the employee experience:** Offer an Employee Self-Service portal for viewing payslips, submitting requests, and tracking individual goals.
-- **Support decision-making:** Provide multidimensional HR analytics, including workforce changes, payroll costs, and productivity.
-- **Maintain legal compliance:** Support insurance contributions, personal income tax, and employment-contract management in accordance with Vietnamese labor law.
+| Phân Hệ / Thư Mục | Nội Dung Đặc Tả | Liên Kết Trực Tiếp |
+| :--- | :--- | :--- |
+| **`uiux/`** | Giao diện nguyên mẫu tương tác (`main.html`, `recruitment.html`, `attendance.html`), thư viện ảnh chụp màn hình đầy đủ 11 màn hình thực tế, tiêu chuẩn thiết kế no-avatar, responsive layout không cuộn ngang. | [Xem uiux/README.md](uiux/README.md) |
+| **`docs/`** | Tài liệu đặc tả yêu cầu phần mềm (SRS), ma trận phân quyền RBAC 6 vai trò, 8 sơ đồ Mermaid (Kiến trúc 3 tầng, Use Case, State Machine ATS, 3 Sequence Diagrams, Flowchart, Docker). | [Xem docs/README.md](docs/README.md) |
+| **`database/`** | Lược đồ cơ sở dữ liệu quan hệ 14 bảng, ảnh sơ đồ DBML trực quan, file DDL PostgreSQL `init.sql` và dữ liệu mẫu khởi tạo. | [Xem database/README.md](database/README.md) |
+| **`backend/`** | Dịch vụ RESTful API xây dựng bằng FastAPI (Python 3.12), SQLAlchemy 2.0 ORM, Pydantic v2, danh mục endpoints, tài liệu tương tác Swagger UI & ReDoc. | [Xem backend/README.md](backend/README.md) |
+| **`frontend/`** | Ứng dụng Single Page Application (SPA) xây dựng bằng React 18 và Vite 5, tích hợp gọi API thời gian thực và đồng bộ dữ liệu. | [Xem frontend/README.md](frontend/README.md) |
 
 ---
 
-## 2. Functional Architecture (Top-down Mind Map)
+## Mục Lục (Table of Contents)
 
-The system is organized into **eight core functional pillars**:
+- [1. Tổng Quan Hệ Thống](#1-tổng-quan-hệ-thống)
+- [2. Kiến Trúc Chức Năng (Top-down Mind Map)](#2-kiến-trúc-chức-năng-top-down-mind-map)
+- [3. Thư Viện Hình Ảnh & Giao Diện Thực Tế (Visual Showcase)](#3-thư-viện-hình-ảnh--giao-diện-thực-tế-visual-showcase)
+  - [3.1. Phân hệ Quản lý Hồ sơ & Hợp đồng Lao động (Core HR)](#31-phân-hệ-quản-lý-hồ-sơ--hợp-đồng-lao-động-core-hr)
+  - [3.2. Phân hệ Tuyển dụng Thông minh & Onboarding (ATS)](#32-phân-hệ-tuyển-dụng-thông-minh--onboarding-ats)
+  - [3.3. Phân hệ Chấm công & Quản lý Nghỉ phép (Attendance & Leave Management)](#33-phân-hệ-chấm-công--quản-lý-nghỉ-phép-attendance--leave-management)
+  - [3.4. Sơ đồ Thiết kế Cơ sở Dữ liệu (Database DBML)](#34-sơ-đồ-thiết-kế-cơ-sở-dữ-liệu-database-dbml)
+
+---
+
+## 1. Tổng Quan Hệ Thống
+
+**QLNS** số hóa toàn diện quy trình quản trị nguồn nhân lực trong doanh nghiệp:
+
+- **Tự động hóa tác vụ định kỳ:** Loại bỏ sai sót thủ công trong chấm công, tính lương, quản lý hồ sơ và theo dõi thời hạn hợp đồng lao động.
+- **Tối ưu trải nghiệm tuyển dụng (ATS):** Rút ngắn thời gian tuyển dụng (Time-to-Hire) với đường ống Kanban trực quan, lịch phỏng vấn và phiếu chấm điểm (Scorecard) chuẩn hóa.
+- **Tiếp nhận Onboarding liền mạch:** Chuyển đổi trực tiếp ứng viên trúng tuyển thành nhân viên chính thức trong hệ thống chỉ với một cú nhấp chuột mà không phải nhập lại dữ liệu.
+- **Chấm công & Quản lý Nghỉ phép toàn trình:** Tích hợp đa phương thức điểm danh (Vân tay, GPS, FaceID, Wifi), ma trận phân ca hàng tuần (Work Schedule) và quy trình xét duyệt nghỉ phép thông minh.
+- **Hỗ trợ ra quyết định & Báo cáo:** Cung cấp số liệu phân tích đa chiều về biến động nhân sự, cơ cấu phòng ban và chi phí nhân sự theo thời gian thực.
+- **Tuân thủ pháp luật:** Chuẩn hóa quy trình quản lý hợp đồng, bảo hiểm xã hội, thuế TNCN theo Luật Lao động Việt Nam.
+
+---
+
+## 2. Kiến Trúc Chức Năng (Top-down Mind Map)
+
+Hệ thống được thiết kế theo phương pháp phân rã từ trên xuống (Top-down decomposition) gồm **8 trụ cột chức năng**:
 
 ![Top-down functional decomposition diagram](topdown-approach.png)
 
----
-
-## 3. Functional Modules
-
-### 3.1. Recruitment Management
-
-- **Job posting:** Manage job requisitions, create job descriptions, and publish openings to the internal website and external recruitment channels.
-- **Application intake & data extraction:** Maintain a talent pool and automatically parse key CV details—such as name, skills, experience, and contact information—using AI/OCR.
-- **Interview management:**
-  - **Scheduling:** Coordinate interview times between candidates and interview panels, with Google Calendar / Outlook integration.
-  - **Invitations:** Automatically send interview invitation emails with the location or online-meeting link.
-  - **Evaluation:** Use predefined scorecards for candidate assessment.
-  - **Offer letters:** Generate offer letters from templates and send them to candidates.
-
-### 3.2. Employee Records & Lifecycle Management
-
-- **Employee profile (master data):** Store complete personal, contact, employment-history, education, dependent, and bank-account information.
-- **Organization chart:** Visualize the company structure, departments, teams, and direct reporting relationships.
-- **Contract management:** Manage probationary, fixed-term, indefinite-term, and addendum contracts, with expiration reminders.
-- **Employee lifecycle:**
-  - **Onboarding:** Checklists for equipment, accounts, and orientation.
-  - **Internal mobility:** Workflows for department transfers, promotions, and new appointments.
-  - **Offboarding:** Resignation requests, work handover records, asset returns, outstanding-balance settlement, and contract termination.
-
-### 3.3. Attendance & Leave Management
-
-- **Work shifts:** Configure regular, rotating, split, and night shifts, as well as overtime (OT) rules.
-- **Check-in / check-out:** Support multiple attendance methods, including fingerprint/facial-recognition devices, GPS check-ins through mobile apps, and office Wi-Fi connectivity.
-- **Leave requests:** Employees can submit requests for annual leave, sick leave, maternity leave, or unpaid leave, with real-time leave-balance visibility.
-- **Leave approval:** Multi-level approval workflows (Direct Manager → Department Head → HR) with automatic notifications.
-
-### 3.4. Compensation, Benefits & Payroll Management
-
-- **Automated payroll:** A flexible, formula-based payroll engine that aggregates attendance, allowances, bonuses, and deductions.
-- **Insurance & tax:** Automatically calculate social, health, and unemployment insurance contributions, along with personal income tax under the latest progressive tax brackets.
-- **Bonuses & allowances:** Manage fixed and flexible allowances, KPI bonuses, project bonuses, and holiday bonuses.
-- **Salary adjustments & history:** Track salary increases and decreases, and retain salary decisions for future reference.
-- **Payslip generation & delivery:** Generate detailed payslips and securely distribute them by email or through the employee portal.
-- **Payment integration:** Export bank-standard payment files (e.g., Vietcombank, Techcombank, BIDV) or connect to payment gateways.
-
-### 3.5. Performance Management (KPI / OKR)
-
-- **Goal setting:** Define OKRs or KPIs for individuals, departments, and the entire organization.
-- **Review process:** Run recurring review cycles (monthly, quarterly, or annually), supporting employee self-reviews and manager reviews.
-- **360-degree feedback:** Enable peer and subordinate feedback on attitude, collaboration, and professional competency.
-
-### 3.6. Training & Development Management
-
-- **Course management:** Maintain a catalog of internal and external courses, learning materials, and instructors.
-- **Progress tracking:** Record attendance, learning time, and lesson-completion status.
-- **Post-training assessment:** Deliver quizzes and assessments to evaluate knowledge after training.
-- **Certification:** Automatically generate course-completion certificates and record them in employee competency profiles.
-
-### 3.7. Reports & Analytics
-
-- **Visual dashboards:** Display high-level metrics such as headcount, employee turnover rate, and today's attendance/leave rate.
-- **Analytics:** Analyze payroll funds, performance, employee tenure, and average recruitment cost per hire.
-- **Export:** Export data in Excel, CSV, and PDF formats for audits, inspections, and management reporting.
-
-### 3.8. System Administration & Access Control
-
-- **Account management:** Provide identity authentication, two-factor authentication (2FA), and single sign-on (SSO) through Google Workspace / Microsoft 365.
-- **Role & permission management (RBAC):** Apply granular permissions by role, such as Super Admin, HR Manager, HR Officer, Team Lead, and Employee.
-- **Audit logs:** Record all system activities—including sign-ins, payroll-data edits, and data exports—to improve information security and transparency.
+1. **Recruitment Management (Tuyển dụng thông minh ATS)**
+2. **Employee Records & Lifecycle (Hồ sơ & Vòng đời nhân sự)**
+3. **Attendance & Leave Management (Chấm công & Quản lý nghỉ phép)**
+4. **Compensation, Benefits & Payroll (Tiền lương, Thưởng & Phúc lợi)**
+5. **Performance Management (Đánh giá hiệu suất KPI / OKR)**
+6. **Training & Development (Đào tạo & Phát triển năng lực)**
+7. **Reports & Analytics (Báo cáo & Phân tích nhân sự)**
+8. **System Administration & Access Control (Quản trị hệ thống & Phân quyền RBAC)**
 
 ---
 
-## 4. Technology Stack
+## 3. Thư Viện Hình Ảnh & Giao Diện Thực Tế (Visual Showcase)
 
-- **Backend API**: [FastAPI](https://fastapi.tiangolo.com/) (Python 3.12, Uvicorn, SQLAlchemy 2.0 ORM, Pydantic v2)
-- **Database**: [PostgreSQL 16](https://www.postgresql.org/) (Official Docker Alpine image)
-- **Containerization**: [Docker](https://www.docker.com/) & [Docker Compose](https://docs.docker.com/compose/)
-- **Frontend**: 
-  - **React SPA**: [React 18](https://react.dev/) + [Vite 5](https://vitejs.dev/) with hot-reloading on port `5173`.
-  - **Static Mockups**: Standalone HTML5 / Tailwind pages in `uiux/` and `frontend/*.html`.
+Toàn bộ các phân hệ đã được thiết kế và xây dựng giao diện hoàn chỉnh với dữ liệu mẫu doanh nghiệp chuẩn xác:
 
----
+### 3.1. Phân hệ Quản lý Hồ sơ & Hợp đồng Lao động (Core HR)
 
-## 5. Detailed Documentation & Diagrams
+#### 📷 Danh sách Hồ sơ Nhân viên (`uiux/main.html`)
+> Thiết kế chuẩn doanh nghiệp, áp dụng tiêu chuẩn bảo mật loại bỏ avatar, bảng dữ liệu tối ưu với thanh tìm kiếm và bộ lọc responsive.
+![Danh sách Hồ sơ Nhân viên](uiux/profile/employee_profiles.png)
 
-Tài liệu đặc tả chi tiết và bộ sơ đồ luồng hệ thống đã được chuẩn bị đầy đủ:
+#### 📷 Quản lý Hợp đồng Lao động (`uiux/main.html`)
+> Quản lý thời hạn hợp đồng, loại hợp đồng (Thử việc, Xác định thời hạn, Vô thời hạn), mức lương đóng BH và trạng thái hiệu lực.
+![Quản lý Hợp đồng](uiux/profile/contracts.png)
 
-- 📘 **[Tài Liệu Đặc Tả Tính Năng Chi Tiết (SRS)](docs/functional_specifications.md)**:
-  - Ma trận phân quyền (RBAC Matrix) cho 6 vai trò: `ROLE_ADMIN`, `ROLE_HR_MGR`, `ROLE_RECRUITER`, `ROLE_INTERVIEWER`, `ROLE_HR_OFFICER`, `ROLE_EMPLOYEE`.
-  - Đặc tả 4 phân hệ cốt lõi: Tuyển dụng thông minh (ATS), Hồ sơ & Vòng đời nhân sự (Core HR), Quản lý hợp đồng lao động, Báo cáo phân tích số liệu.
-  - Chi tiết từng tính năng với Tiền điều kiện, Luồng xử lý chính, Dữ liệu vào/ra và Hậu điều kiện.
-
-- 📊 **[Hệ Thống Sơ Đồ Kiến Trúc & Luồng Nghiệp Vụ (Mermaid Diagrams)](docs/system_diagrams.md)**:
-  - **Sơ đồ kiến trúc hệ thống 3 tầng** (Client React, Docker Bridge Network, FastAPI Backend, PostgreSQL 16 DB).
-  - **Sơ đồ Use Case tổng quan** thể hiện tương tác giữa các tác nhân và chức năng.
-  - **Sơ đồ Máy trạng thái (State Machine)** cho chu trình tuyển dụng ATS qua 6 giai đoạn.
-  - **3 Sơ đồ Tuần tự (Sequence Diagrams)**: ATS Hiring & Scorecard, Tiếp nhận Onboarding chuyển đổi ứng viên thành nhân viên, Quản lý biến động nhân sự (Promotion / Transfer).
-  - **Sơ đồ Luồng hoạt động (Activity Flowchart)** toàn trình tuyển dụng.
-  - **Sơ đồ Triển khai Docker Container** với cấu hình mạng nội bộ và volume mount.
-
-- 🗄️ **[Thiết Kế Cơ Sở Dữ Liệu & Sơ Đồ ERD](database/database_design.md)**: Chi tiết 14 bảng quan hệ và cấu trúc DDL PostgreSQL.
+#### 📷 Sơ đồ Cây Cơ cấu Tổ chức (`uiux/main.html`)
+> Trực quan hóa cấu trúc phân cấp công ty từ Ban Giám đốc đến các phòng ban và nhân viên trực thuộc.
+![Sơ đồ Cơ cấu Tổ chức](uiux/profile/organizational.png)
 
 ---
 
-## 6. Project Structure
+### 3.2. Phân hệ Tuyển dụng Thông minh & Onboarding (ATS)
 
-```text
-QLNS/
-├── backend/                  # FastAPI Application (Python 3.12, SQLAlchemy 2.0)
-│   ├── app/
-│   │   ├── models/           # Declarative ORM models (Employee & Recruitment)
-│   │   ├── routers/          # REST API endpoints
-│   │   ├── schemas/          # Pydantic validation schemas
-│   │   └── main.py           # FastAPI entrypoint, CORS & healthcheck
-│   ├── Dockerfile            # Python container image
-│   └── requirements.txt      # Python dependencies
-├── frontend/                 # React 18 + Vite 5 Application
-│   ├── src/
-│   │   ├── App.jsx           # Main React App with live backend integration
-│   │   ├── main.jsx          # React DOM entrypoint
-│   │   └── styles.css        # App styling & responsive design tokens
-│   ├── Dockerfile            # Node.js 20 Alpine container image
-│   ├── vite.config.js        # Vite config with React plugin
-│   └── package.json          # Frontend dependencies & scripts
-├── database/
-│   ├── init.sql              # PostgreSQL DDL schema & seed data
-│   ├── postgres_db.sql       # Original DDL schema reference
-│   └── database_design.md    # Mermaid ERD diagrams & schema docs
-├── docs/                     # System Specifications & Diagrams
-│   ├── functional_specifications.md  # Detailed SRS & Feature Specifications
-│   └── system_diagrams.md    # Full Mermaid System & Workflow Diagrams
-├── uiux/                     # Standalone HTML previews & design assets
-│   ├── main.html             # Employee records standalone page
-│   └── recruitment.html      # Recruitment ATS standalone page
-├── docker-compose.yml        # Orchestrates PostgreSQL + FastAPI + React Frontend
-├── package.json              # Root npm scripts (npm run dev)
-└── README.md                 # System overview and operational guide
-```
+#### Đường ống Tuyển dụng Ứng viên
+> Quy trình tuyển dụng ATS với bảng Kanban 6 giai đoạn và bảng danh sách ứng viên; nút thao tác tiếp nhận ứng viên dạng icon trực quan.
+![Quy trình Tuyển dụng ATS](uiux/recruitment/candidate.png)
+
+#### Quản lý Yêu cầu Tuyển dụng
+> Quản lý danh sách các vị trí đang tuyển, chỉ tiêu tuyển dụng, phòng ban yêu cầu và thời hạn nộp hồ sơ.
+![Quản lý Yêu cầu Tuyển dụng](uiux/recruitment/job_requisitions.png)
+
+#### Lịch Phỏng vấn & Đánh giá Scorecard
+> Điều phối lịch phỏng vấn các vòng, hình thức phỏng vấn và bảng chấm điểm năng lực ứng viên.
+![Lịch Phỏng vấn & Đánh giá](uiux/recruitment/interviews.png)
+
+#### Đề xuất & Tiếp nhận Nhân sự Mới
+> Bảng tiếp nhận Onboarding 7 cột hiển thị trọn vẹn trên màn hình desktop **không cần cuộn ngang**, nút hành động "Tiếp nhận" chuyển đổi nhanh vào QLNS.
+![Tiếp nhận Onboarding](uiux/recruitment/onboard_handoff.png)
 
 ---
 
-## 7. Getting Started (Docker Compose)
+### 3.3. Phân hệ Chấm công & Quản lý Nghỉ phép (Attendance & Leave Management)
 
-### 6.1. Prerequisites
-- [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/) installed on your machine.
+#### Bảng công & Điểm danh Thời gian thực
+> Giám sát chi tiết nhật ký điểm danh: Giờ Check-in/Check-out, phân loại đúng giờ/đi muộn/về sớm, phương thức xác thực (Vân tay, GPS, FaceID, Wifi), số giờ công thực tế và Drawer xem chi tiết sự kiện.
+![Bảng công & Điểm danh](uiux/attendance/timesheet_attendance.png)
 
-### 6.2. Start the Full System
+#### Ca làm việc & Lịch phân ca Tuần
+> Quản lý danh mục định nghĩa ca làm việc (Ca Hành chính, Ca Sáng, Ca Trực Đêm có hệ số) và ma trận phân ca hàng tuần (Work Schedule) Thứ Hai → Chủ Nhật.
+![Ca làm việc & Lịch phân ca](uiux/attendance/work_shifts.png)
 
-From the project root directory, run:
+#### Đơn xin Nghỉ phép & Quỹ phép Cá nhân
+> Bảng theo dõi lịch sử đơn nghỉ phép, hạn mức quỹ phép (Phép năm, Nghỉ ốm BHXH, Việc riêng, Nghỉ không lương) và modal tạo đơn tự động tính số ngày nghỉ.
+![Đơn xin Nghỉ phép](uiux/attendance/leave_requests.png)
 
-```bash
-docker compose up -d --build
-```
+#### Xét duyệt Nghỉ phép
+> Quy trình xét duyệt các yêu cầu nghỉ phép đang chờ xử lý (Pending Requests), hỗ trợ duyệt nhanh từng đơn, duyệt tất cả (Batch Approve) hoặc từ chối kèm phản hồi.
+![Xét duyệt Nghỉ phép](uiux/attendance/leave_approval.png)
 
-This command will:
-1. Launch **PostgreSQL 16** container (`qlns_postgres`) on port `5432` with auto-seeded demo data.
-2. Build & start **FastAPI** container (`qlns_backend`) on port `8000`.
-3. Build & start **React Frontend** container (`qlns_frontend`) on port `5173`.
+---
 
-### 6.3. Service URLs & Interactive API Docs
+### 3.4. Sơ đồ Thiết kế Cơ sở Dữ liệu (Database DBML)
 
-- **React Web Application**: [http://localhost:5173](http://localhost:5173)
-- **Swagger UI Interactive Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
-- **ReDoc Interactive Documentation**: [http://localhost:8000/redoc](http://localhost:8000/redoc)
-- **Health Check Endpoint**: [http://localhost:8000/api/health](http://localhost:8000/api/health)
+#### Lược đồ 14 Bảng Thực thể & Quan hệ Khóa ngoại
+> Mô hình dữ liệu quan hệ chuẩn 3NF kết nối xuyên suốt giữa ứng viên tuyển dụng, hợp đồng và hồ sơ nhân sự chính thức.
+![Sơ đồ Cơ sở Dữ liệu](database/dbml.png)
 
-### 6.4. Running Frontend Locally without Docker
-
-If you prefer running the frontend directly with Node.js on your Mac:
-
-```bash
-# From project root:
-npm run dev
-
-# Or from the frontend directory:
-cd frontend
-npm install
-npm run dev
-```
-
-Then open [http://localhost:5173](http://localhost:5173) in your browser.

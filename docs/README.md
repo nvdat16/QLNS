@@ -8,6 +8,10 @@
 
 | Tài Liệu | Nội Dung Chính | Liên Kết |
 | :--- | :--- | :--- |
+| **arc42 — Introduction & Goals** | Bối cảnh, mục tiêu nghiệp vụ, phạm vi hiện tại/đích, mục tiêu chất lượng và các bên liên quan của QLNS. | [Xem Introduction & Goals](./arc42/01_introduction_and_goals.md) |
+| **arc42 — Architecture Constraints** | Ràng buộc kỹ thuật, dữ liệu, bảo mật, tuân thủ, quy trình và các khoảng trống cần xử lý trước production. | [Xem Architecture Constraints](./arc42/02_architecture_constraints.md) |
+| **arc42 — Context & Scope** | Ranh giới nghiệp vụ và kỹ thuật, tác nhân, hệ thống ngoài, giao diện, trust boundary và trạng thái triển khai. | [Xem Context & Scope](./arc42/03_context_and_scope.md) |
+| **arc42 — Solution Strategy** | Chiến lược kiến trúc, phân rã domain, API/workflow, dữ liệu, bảo mật, tích hợp, kiểm thử và lộ trình triển khai. | [Xem Solution Strategy](./arc42/04_solution_strategy.md) |
 | **Đặc Tả Tính Năng (SRS)** | Ma trận phân quyền 6 vai trò, đặc tả 4 phân hệ lớn (Tuyển dụng ATS, Hồ sơ nhân sự, Hợp đồng, Báo cáo phân tích), tiền/hậu điều kiện và luồng xử lý. | [Xem SRS chi tiết](./functional_specifications.md) |
 | **Hệ Thống Sơ Đồ Kiến Trúc** | 8 sơ đồ Mermaid: Kiến trúc 3 tầng, Use Case tổng quan, State Machine ATS, 3 Sequence Diagrams, Flowchart tuyển dụng và Sơ đồ triển khai Docker. | [Xem Sơ đồ Hệ thống](./system_diagrams.md) |
 

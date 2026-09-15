@@ -2,7 +2,7 @@
 
 > **Status:** Design/Prototype with first implementation slice. Repository có UI/UX prototype, canonical database contract, OpenAPI và source baseline cho REC-03.2 bằng React/.NET 10; deployment runtime và integration verification chưa được thiết lập.
 
-**Primary architecture:** [Architecture (arc42 + C4)](docs/architecture.md) · **Requirements:** [INVEST backlog](docs/requirements_invest.md) · **API:** [OpenAPI 3.0.3](api/openapi.yaml) · **Database:** [Canonical schema](database/schema.sql)
+**Primary architecture:** [Architecture (arc42 + C4)](docs/architecture.md) · **Requirements:** [INVEST User Stories](docs/user_stories.md) · **API:** [OpenAPI 3.0.3](api/openapi.yaml) · **Database:** [Canonical schema](database/schema.sql)
 
 ## Table of Contents
 
@@ -50,7 +50,7 @@ The system follows a top-down decomposition approach with **eight functional pil
 
 ## 3. Roles & Use Case Diagram
 
-Detailed documentation: [docs/system_diagrams.md](docs/system_diagrams.md#2-sơ-đồ-use-case-tổng-quan-overall-use-case-diagram)
+Detailed documentation: [Use Cases](docs/use_cases.md#1-use-case-tổng-quát)
 
 ### Actors
 

@@ -161,50 +161,79 @@ flowchart TB
 ### 5.1 C4 Level 2 — containers
 
 ```mermaid
-flowchart TB
-    user(["👤 QLNS User"])
+flowchart LR
+    candidate(["👤 Candidate"])
+    employee(["👤 Employee"])
+    manager(["👤 Hiring / Line Manager"])
+    hr(["👤 Recruiter / HR Officer / HR Manager"])
+    admin(["👤 System Administrator / Auditor"])
 
-    subgraph system["QLNS [System Boundary — Proposed]"]
-        web["Web Application<br/><i>[Container]</i><br/>Feature UI, client state, accessibility"]
-        api["Backend API<br/><i>[Container]</i><br/>Use cases, authorization, workflow, transactions"]
-        worker["Background Worker<br/><i>[Container]</i><br/>Outbox delivery, retry, reconciliation"]
-        db[("HRMS Database<br/><i>[Container: PostgreSQL]</i><br/>Transactional system of record")]
+    subgraph system["QLNS System Boundary"]
+        direction TB
+        web["React Web Application<br/><i>[Container · Presentation Tier — Partial baseline]</i><br/>Candidate portal and internal HR workspace"]
+        api["ASP.NET Core Backend API<br/><i>[Container · Application Tier — Partial baseline]</i><br/>Authorization, use cases, workflow and transactions"]
+        worker[".NET Background Worker<br/><i>[Container · Application Tier — Proposed]</i><br/>Scheduled jobs, outbox delivery and reconciliation"]
+        db[("PostgreSQL HRMS Database<br/><i>[Container · Data Tier — Schema contract]</i><br/>Transactional system of record")]
     end
 
-    idp["Identity Provider"]
-    providers["Job board / Email / Calendar / E-signature"]
-    devices["Attendance Devices"]
-    objects[("Private Object Storage")]
+    idp["Identity Provider<br/><i>[External System]</i>"]
+    jobboards["Job Boards<br/><i>[External System]</i>"]
+    comms["Email / Calendar<br/><i>[External System]</i>"]
+    esign["E-signature<br/><i>[External System]</i>"]
+    devices["Attendance Devices<br/><i>[External System]</i>"]
+    objects[("Private Object Storage<br/><i>[External System]</i>")]
+    observe["Observability Platform<br/><i>[External System]</i>"]
 
-    user -->|HTTPS| web
-    web -->|REST/JSON| api
-    api -->|SQL transaction| db
-    api -->|OIDC/OAuth2| idp
-    api -->|metadata / signed access| objects
-    api -->|outbox| db
-    worker -->|claim outbox| db
-    worker -->|HTTPS| providers
-    devices -->|authenticated webhook| api
+    candidate -->|"HTTPS: application and status"| web
+    employee -->|"HTTPS: profile, attendance and leave"| web
+    manager -->|"HTTPS: requisition, review and approval"| web
+    hr -->|"HTTPS: recruitment and HR operations"| web
+    admin -->|"HTTPS: account, role and audit"| web
 
-    style web fill:#1168bd,color:#fff
-    style api fill:#1168bd,color:#fff
-    style worker fill:#1168bd,color:#fff
+    web -->|"HTTPS REST/JSON; OpenAPI contract"| api
+    web -->|"OIDC Authorization Code + PKCE"| idp
+    api -->|"validate token metadata / JWKS"| idp
+    api -->|"EF Core / Npgsql; ACID transaction"| db
+    api -->|"object metadata and signed access"| objects
+    api -->|"transactional outbox"| db
+    devices -->|"authenticated, idempotent webhook"| api
+    jobboards -->|"signed webhook / polling result"| api
+    esign -->|"signed callback"| api
+
+    worker -->|"claim jobs/outbox; write delivery state"| db
+    worker -->|"publish jobs and reconcile status"| jobboards
+    worker -->|"notification and calendar API"| comms
+    worker -->|"send documents and reconcile signature"| esign
+    worker -->|"read/write document objects"| objects
+    api -->|"logs, metrics and traces"| observe
+    worker -->|"logs, metrics and traces"| observe
+
+    classDef partial fill:#1168bd,color:#fff,stroke:#0b4884
+    classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
+    classDef contract fill:#2f855a,color:#fff,stroke:#1f5b3d
+    classDef external fill:#777,color:#fff,stroke:#555
+    class web,api partial
+    class worker proposed
+    class db contract
+    class idp,jobboards,comms,esign,devices,objects,observe external
 ```
 
 **Container responsibilities and dependency direction**
 
 ```text
-Browser → Web Application → Backend API → Application/Domain
-                                             ↓          ↓
-                                      Persistence   Integration ports
-                                             ↓          ↓
-                                        PostgreSQL   Provider adapters
+Presentation Tier       Application Tier                         Data Tier
+React Web Application → ASP.NET Core API ─┬→ Business/Data Layer → PostgreSQL
+                                          └→ durable outbox
+                                             ↓
+                         .NET Background Worker → Provider adapters
 ```
 
-- Web Application không chứa security boundary hay business invariant.
-- Backend API là entry point duy nhất cho dữ liệu nghiệp vụ.
-- Worker chỉ xử lý side effect/reconciliation đã được ghi bền vững.
-- Database schema hiện có là design input; runtime và migration chưa tồn tại.
+- **React Web Application:** trình bày giao diện, điều hướng, local UI state và gọi API; không phải security boundary và không sở hữu business invariant.
+- **ASP.NET Core Backend API:** entry point duy nhất cho dữ liệu nghiệp vụ; xác thực/ủy quyền, thực thi use case, workflow và transaction.
+- **.NET Background Worker:** xử lý tác vụ bất đồng bộ hoặc theo lịch sau khi business state đã được commit; không nhận request trực tiếp từ người dùng.
+- **PostgreSQL:** system of record. `database/schema.sql` hiện là canonical contract; migration/runtime database chưa được xác minh.
+- **Private Object Storage:** giữ nội dung file; PostgreSQL chỉ giữ metadata và quyền tham chiếu.
+- Màu xanh dương là source baseline một phần, tím là thiết kế đề xuất, xanh lá là contract dữ liệu, xám là hệ thống ngoài.
 
 <a id="c4-level-3-web"></a>
 
@@ -212,33 +241,68 @@ Browser → Web Application → Backend API → Application/Domain
 
 ```mermaid
 flowchart TB
-    subgraph web["Web Application [Container — Proposed]"]
-        shell["Application Shell<br/><i>[Component]</i><br/>routing, session, navigation"]
-        corehr["Core HR Feature<br/><i>[Component]</i>"]
-        recruitment["Recruitment Feature<br/><i>[Component]</i>"]
-        attendance["Attendance Feature<br/><i>[Component]</i>"]
-        leave["Leave Feature<br/><i>[Component]</i>"]
-        shared["Shared UI<br/><i>[Component]</i><br/>tokens, forms, tables, feedback"]
-        client["API Client<br/><i>[Component]</i><br/>auth header, DTO, errors, correlation"]
+    user(["👤 Browser User"])
+    api["ASP.NET Core Backend API<br/><i>[Container]</i>"]
+    idp["Identity Provider<br/><i>[External System]</i>"]
+    observe["Observability Platform<br/><i>[External System]</i>"]
+
+    subgraph web["React Web Application [Container · Presentation Tier]"]
+        direction TB
+        shell["Application Shell & Router<br/><i>[Component — Partial]</i><br/>layout, routes, navigation and error boundary"]
+        auth["Session & Route Guards<br/><i>[Component — Proposed]</i><br/>OIDC session, claims and route access"]
+
+        subgraph features["Feature components"]
+            direction LR
+            recruitment["Recruitment<br/><i>[Partial]</i><br/>jobs, candidates, interviews, offers"]
+            corehr["Core HR<br/><i>[Proposed]</i><br/>employees, organization, contracts, onboarding"]
+            attendance["Attendance<br/><i>[Proposed]</i><br/>shifts, events and timesheets"]
+            leave["Leave<br/><i>[Proposed]</i><br/>balance, request and approval"]
+            reporting["Dashboard & Reporting<br/><i>[Proposed]</i><br/>authorized KPIs and export"]
+            administration["Administration<br/><i>[Proposed]</i><br/>users, roles, configuration and audit"]
+        end
+
+        shared["Shared UI & Accessibility<br/><i>[Component — Partial]</i><br/>design tokens, forms, tables, feedback and WCAG states"]
+        client["Typed API Client<br/><i>[Component — Partial]</i><br/>DTO, token, Problem Details, concurrency and correlation"]
+        telemetry["Client Telemetry<br/><i>[Component — Proposed]</i><br/>diagnostics without sensitive payloads"]
+
+        shell --> auth
+        shell --> recruitment
+        shell --> corehr
+        shell --> attendance
+        shell --> leave
+        shell --> reporting
+        shell --> administration
+
+        recruitment --> shared
+        corehr --> shared
+        attendance --> shared
+        leave --> shared
+        reporting --> shared
+        administration --> shared
+
+        recruitment --> client
+        corehr --> client
+        attendance --> client
+        leave --> client
+        reporting --> client
+        administration --> client
+        shell --> telemetry
     end
 
-    api["Backend API"]
-    shell --> corehr
-    shell --> recruitment
-    shell --> attendance
-    shell --> leave
-    corehr --> shared
-    recruitment --> shared
-    attendance --> shared
-    leave --> shared
-    corehr --> client
-    recruitment --> client
-    attendance --> client
-    leave --> client
-    client --> api
+    user -->|HTTPS| shell
+    auth -->|"Authorization Code + PKCE"| idp
+    client -->|"REST/JSON generated from OpenAPI"| api
+    telemetry -->|"logs, traces and web vitals"| observe
+
+    classDef partial fill:#1168bd,color:#fff,stroke:#0b4884
+    classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
+    classDef external fill:#777,color:#fff,stroke:#555
+    class shell,recruitment,shared,client partial
+    class auth,corehr,attendance,leave,reporting,administration,telemetry proposed
+    class api,idp,observe external
 ```
 
-Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên, không phải frontend implementation.
+Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên, không phải frontend implementation. Mỗi feature chỉ phụ thuộc `shared` và `client`; feature không import trực tiếp internals của feature khác. Route guard giúp trải nghiệm người dùng, nhưng Backend API vẫn phải kiểm tra quyền cho mọi request.
 
 <a id="c4-level-3-backend"></a>
 
@@ -246,50 +310,224 @@ Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên
 
 ```mermaid
 flowchart TB
-    subgraph api["ASP.NET Core API [Application Tier]"]
-        presentation["Qlns.Api<br/><i>[Presentation Layer]</i><br/>controllers, DTO, auth, Problem Details"]
-        business["Qlns.BusinessLogic<br/><i>[Business Layer]</i><br/>services, policies, domain workflow"]
-        data["Qlns.DataAccess<br/><i>[Data Layer]</i><br/>EF Core repositories, transactions"]
+    web["React Web Application<br/><i>[Container]</i>"]
+    callbacks["Provider / Device Callbacks<br/><i>[External Systems]</i>"]
+    idp["Identity Provider<br/><i>[External System]</i>"]
+    db[("PostgreSQL<br/><i>[Container]</i>")]
+    objects[("Private Object Storage<br/><i>[External System]</i>")]
+
+    subgraph api["ASP.NET Core Backend API [Application Tier]"]
+        direction TB
+
+        subgraph presentation["Qlns.Api — Presentation Layer"]
+            direction LR
+            pipeline["HTTP Pipeline<br/><i>[Component — Partial]</i><br/>auth, correlation, validation and Problem Details"]
+            recApi["Recruitment API<br/><i>[Partial]</i>"]
+            hrApi["Core HR API<br/><i>[Proposed]</i>"]
+            contractApi["Contract & Onboarding API<br/><i>[Proposed]</i>"]
+            attendanceApi["Attendance API<br/><i>[Proposed]</i>"]
+            leaveApi["Leave API<br/><i>[Proposed]</i>"]
+            reportApi["Reporting API<br/><i>[Proposed]</i>"]
+            adminApi["Administration API<br/><i>[Proposed]</i>"]
+            webhookApi["Integration Webhook API<br/><i>[Proposed]</i>"]
+        end
+
+        subgraph business["Qlns.BusinessLogic — Business Layer"]
+            direction LR
+            authorization["Authorization Policies<br/><i>[Component — Proposed]</i><br/>RBAC + data scope + field policy"]
+            recLogic["Recruitment Services & Domain<br/><i>[Partial]</i>"]
+            hrLogic["Core HR Services & Domain<br/><i>[Proposed]</i>"]
+            contractLogic["Contract & Onboarding Services<br/><i>[Proposed]</i>"]
+            attendanceLogic["Attendance Services & Domain<br/><i>[Proposed]</i>"]
+            leaveLogic["Leave Services & Domain<br/><i>[Proposed]</i>"]
+            reportLogic["Reporting Query Services<br/><i>[Proposed]</i>"]
+            adminLogic["Identity Administration Services<br/><i>[Proposed]</i>"]
+            integrationLogic["Webhook Verification & Mapping<br/><i>[Proposed]</i>"]
+            auditOutbox["Audit & Outbox Policies<br/><i>[Component — Proposed]</i>"]
+        end
+
+        subgraph data["Qlns.DataAccess — Data Layer"]
+            direction LR
+            recRepo["Recruitment Repositories<br/><i>[Partial]</i>"]
+            hrRepo["Core HR Repositories<br/><i>[Proposed]</i>"]
+            contractRepo["Contract Repositories<br/><i>[Proposed]</i>"]
+            attendanceRepo["Attendance Repositories<br/><i>[Proposed]</i>"]
+            leaveRepo["Leave Repositories<br/><i>[Proposed]</i>"]
+            reportRepo["Reporting Read Repositories<br/><i>[Proposed]</i>"]
+            identityRepo["Identity Repositories<br/><i>[Proposed]</i>"]
+            integrationRepo["Integration & Idempotency Store<br/><i>[Proposed]</i>"]
+            auditRepo["Audit & Outbox Repositories<br/><i>[Proposed]</i>"]
+            uow["EF Core DbContext & Unit of Work<br/><i>[Component — Partial]</i>"]
+            objectAdapter["Object Storage Adapter<br/><i>[Component — Proposed]</i>"]
+        end
     end
 
-    db[("PostgreSQL")]
-    ext["External Systems"]
+    web -->|"REST/JSON"| pipeline
+    callbacks -->|"authenticated/signed webhook"| pipeline
+    pipeline -->|"validate token / obtain claims"| idp
+    pipeline --> recApi
+    pipeline --> hrApi
+    pipeline --> contractApi
+    pipeline --> attendanceApi
+    pipeline --> leaveApi
+    pipeline --> reportApi
+    pipeline --> adminApi
+    pipeline --> webhookApi
+    pipeline --> authorization
 
-    presentation --> business
-    business -->|repository contract call| data
-    presentation -.->|composition root registration| data
-    data -.->|implements repository contract| business
-    data --> db
-    data --> ext
+    recApi --> recLogic
+    hrApi --> hrLogic
+    contractApi --> contractLogic
+    attendanceApi --> attendanceLogic
+    leaveApi --> leaveLogic
+    reportApi --> reportLogic
+    adminApi --> adminLogic
+    webhookApi --> integrationLogic
+
+    recLogic --> recRepo
+    hrLogic --> hrRepo
+    contractLogic --> contractRepo
+    attendanceLogic --> attendanceRepo
+    leaveLogic --> leaveRepo
+    reportLogic --> reportRepo
+    adminLogic --> identityRepo
+    integrationLogic --> integrationRepo
+
+    recLogic --> auditOutbox
+    hrLogic --> auditOutbox
+    contractLogic --> auditOutbox
+    attendanceLogic --> auditOutbox
+    leaveLogic --> auditOutbox
+    adminLogic --> auditOutbox
+    integrationLogic --> auditOutbox
+    auditOutbox --> auditRepo
+
+    recRepo --> uow
+    hrRepo --> uow
+    contractRepo --> uow
+    attendanceRepo --> uow
+    leaveRepo --> uow
+    reportRepo --> uow
+    identityRepo --> uow
+    integrationRepo --> uow
+    auditRepo --> uow
+    uow -->|"EF Core / Npgsql"| db
+    contractLogic --> objectAdapter
+    recLogic --> objectAdapter
+    objectAdapter -->|"authorized object API"| objects
+
+    classDef partial fill:#1168bd,color:#fff,stroke:#0b4884
+    classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
+    classDef external fill:#777,color:#fff,stroke:#555
+    class pipeline,recApi,recLogic,recRepo,uow partial
+    class authorization,hrApi,contractApi,attendanceApi,leaveApi,reportApi,adminApi,webhookApi,hrLogic,contractLogic,attendanceLogic,leaveLogic,reportLogic,adminLogic,integrationLogic,auditOutbox,hrRepo,contractRepo,attendanceRepo,leaveRepo,reportRepo,identityRepo,integrationRepo,auditRepo,objectAdapter proposed
+    class web,callbacks,idp,db,objects external
 ```
 
-Ba **tier runtime** là React Web, ASP.NET Core API và PostgreSQL. Ba **layer source code** bên trong application tier là Presentation, Business Logic và Data Access. Business Logic không phụ thuộc ASP.NET Core hoặc EF Core; Data Access triển khai repository contract do Business Logic sở hữu.
+Ba **tier runtime** là: Presentation Tier (React Web), Application Tier (ASP.NET Core API + .NET Worker) và Data Tier (PostgreSQL). Chúng là ranh giới triển khai/mạng; Worker không tạo tier thứ tư. Ba **layer source code** bên trong ASP.NET Core application tier là Presentation, Business Logic và Data Access:
 
-### 5.4 Business modules and data ownership
+- Presentation chỉ chuyển HTTP contract thành command/query, gọi Business Logic và map kết quả sang DTO/Problem Details.
+- Business Logic sở hữu use case, domain workflow, authorization theo tài nguyên và các repository/adapter contract; không phụ thuộc ASP.NET Core hoặc EF Core.
+- Data Access triển khai contract của Business Logic bằng EF Core/provider adapter. `Qlns.Api` chỉ tham chiếu Data Access tại composition root để đăng ký dependency.
+- Các module ghi dữ liệu phải đi qua Unit of Work và cùng transaction ghi audit/outbox; Reporting chỉ dùng read model đã áp dụng data scope.
+
+<a id="c4-level-3-worker"></a>
+
+### 5.4 C4 Level 3 — inside .NET Background Worker
+
+```mermaid
+flowchart LR
+    db[("PostgreSQL<br/><i>[Container]</i>")]
+    jobboards["Job Boards<br/><i>[External System]</i>"]
+    comms["Email / Calendar<br/><i>[External System]</i>"]
+    esign["E-signature<br/><i>[External System]</i>"]
+    observe["Observability Platform<br/><i>[External System]</i>"]
+
+    subgraph worker[".NET Background Worker [Container · Application Tier — Proposed]"]
+        direction TB
+        scheduler["Job Scheduler<br/><i>[Component]</i><br/>bounded cadence and distributed lock"]
+        outbox["Outbox Poller<br/><i>[Component]</i><br/>claim committed messages"]
+        dispatcher["Event Dispatcher<br/><i>[Component]</i><br/>route event to handler"]
+        contractExpiry["Contract Expiry Scanner<br/><i>[Component]</i>"]
+        offerExpiry["Offer Expiry Processor<br/><i>[Component]</i>"]
+        effectiveEvents["Effective-date Employee Processor<br/><i>[Component]</i>"]
+        notification["Notification & Calendar Handler<br/><i>[Component]</i>"]
+        providerSync["Provider Sync Handlers<br/><i>[Component]</i><br/>job board and e-signature reconciliation"]
+        retry["Retry, Dead-letter & Reconciliation<br/><i>[Component]</i>"]
+        adapters["Provider Adapters<br/><i>[Component]</i><br/>timeout, idempotency and signature validation"]
+        telemetry["Worker Telemetry<br/><i>[Component]</i>"]
+
+        scheduler --> contractExpiry
+        scheduler --> offerExpiry
+        scheduler --> effectiveEvents
+        scheduler --> providerSync
+        outbox --> dispatcher
+        dispatcher --> notification
+        dispatcher --> providerSync
+        notification --> adapters
+        providerSync --> adapters
+        notification --> retry
+        providerSync --> retry
+        contractExpiry --> retry
+        offerExpiry --> retry
+        effectiveEvents --> retry
+        retry --> telemetry
+    end
+
+    db -->|"claim pending jobs/outbox"| outbox
+    scheduler -->|"read due work"| db
+    contractExpiry -->|"transactional state + outbox"| db
+    offerExpiry -->|"transactional state + outbox"| db
+    effectiveEvents -->|"transactional state + outbox"| db
+    dispatcher -->|"delivery status"| db
+    retry -->|"attempt/dead-letter/reconciliation state"| db
+    adapters -->|HTTPS| jobboards
+    adapters -->|HTTPS| comms
+    adapters -->|HTTPS| esign
+    telemetry -->|"logs, metrics and traces"| observe
+
+    classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
+    classDef external fill:#777,color:#fff,stroke:#555
+    class scheduler,outbox,dispatcher,contractExpiry,offerExpiry,effectiveEvents,notification,providerSync,retry,adapters,telemetry proposed
+    class db,jobboards,comms,esign,observe external
+```
+
+Worker chưa có implementation đã xác minh. Mọi handler phải idempotent, claim công việc an toàn khi chạy nhiều instance, retry hữu hạn và chuyển dead-letter để đối soát; không giữ database transaction trong khi gọi provider ngoài.
+
+### 5.5 Business modules and data ownership
 
 | Module | Responsibilities | Designed tables | Current evidence |
 |---|---|---|---|
 | Core HR | employee, department, position, contract, lifecycle | `employees`, `departments`, `positions`, `contracts`, `employee_events`, `employee_documents`, `onboarding_tasks` | UI prototype + DB design |
-| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `interviews`, `evaluations`, `offers` | UI prototype + DB design |
+| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `interviews`, `evaluations`, `offers` | UI prototype + DB design + REC-03.2 source baseline |
 | Attendance | shift, schedule, check event, timesheet | deferred from canonical v1 | UI prototype only |
 | Leave | leave type, balance, request, decision | deferred from canonical v1 | UI prototype only |
 | Identity/Audit/Notification | actor, roles/data scope, audit, delivery state | `users`, `user_roles`, `audit_logs`, `outbox_messages` | canonical v1 design |
 | Reporting | authorized read models and export | chưa chốt | UI/SRS concept |
 
-### 5.5 Target code structure
+Database không có C4 Component diagram riêng vì đây là data-store container, không phải executable container. Thành phần bên trong được mô hình hóa bằng ownership ở bảng trên và ERD/DDL trong `database/`.
+
+### 5.6 Target code structure
 
 ```text
 frontend/
 ├── src/app/                      # composition, routing, session
 ├── src/features/
-│   └── recruitment/              # api, components, hooks, pages
+│   ├── recruitment/              # api, components, hooks, pages
+│   ├── core-hr/                  # proposed
+│   ├── contracts/                # proposed
+│   ├── attendance/               # proposed
+│   ├── leave/                    # proposed
+│   ├── reporting/                # proposed
+│   └── administration/           # proposed
 ├── src/shared/                   # design system and generic UI
 └── src/api/                      # shared client and Problem Details mapping
 
 backend/
 ├── src/Qlns.Api/                 # Presentation layer
-├── src/Qlns.BusinessLogic/       # Business layer + repository contracts
-├── src/Qlns.DataAccess/          # Data layer + EF Core/PostgreSQL
+├── src/Qlns.BusinessLogic/       # module services/domain + repository contracts
+├── src/Qlns.DataAccess/          # module repositories + EF Core/adapters
+├── src/Qlns.Worker/              # proposed background processing container
 └── tests/Qlns.BusinessLogic.UnitTests/
 
 api/openapi.yaml                  # contract-first OpenAPI 3.0.3
@@ -301,6 +539,8 @@ Một use case mới nằm trong module sở hữu nghiệp vụ, cùng command/
 ---
 
 ## 6. Runtime View
+
+Các sequence dưới đây mô tả các runtime scenario có ý nghĩa kiến trúc. Sequence nghiệp vụ chi tiết theo từng User Story được quản lý tại [Sequence Diagrams](sequence_diagrams.md).
 
 ### 6.1 Read employee list — happy path
 
@@ -558,7 +798,7 @@ Các gate dưới đây là target bắt buộc. Source baseline chỉ mới có
 |---|---|---|---|
 | `FrontendCannotAccessDatabase` | C2, §5.1 | frontend dependency/import chứa DB driver hoặc connection | Planned — `tests/architecture` |
 | `LayersPointInward` | §5.3 | domain phụ thuộc API, ORM hoặc provider SDK | Planned — `tests/architecture` |
-| `NoCrossModuleTableWrites` | §5.4 | module ghi trực tiếp bảng do module khác sở hữu | Planned — architecture/integration tests |
+| `NoCrossModuleTableWrites` | §5.5 | module ghi trực tiếp bảng do module khác sở hữu | Planned — architecture/integration tests |
 | `EveryBusinessEndpointRequiresAuthorization` | Q1 | endpoint nghiệp vụ thiếu policy/actor | Planned — security fitness tests |
 | `RestrictedFieldsAreAllowlisted` | Q1, §8 | response DTO vô tình expose salary/document/private field | Planned — contract tests |
 | `EveryStateChangeUsesACommand` | Q3 | API cho phép generic patch trạng thái | Planned — route/contract tests |
@@ -576,4 +816,4 @@ CI tương lai phải chạy các gate phù hợp trên mọi pull request. Mộ
 
 ---
 
-**Requirements:** [Functional specifications](functional_specifications.md) · **Diagrams:** [System diagrams](system_diagrams.md) · **Database:** [Database design](../database/database_design.md)
+**Requirements:** [Functional specifications](functional_specifications.md) · **User Stories:** [INVEST backlog](user_stories.md) · **Use Cases:** [Use case diagrams](use_cases.md) · **Sequences:** [Sequence diagrams](sequence_diagrams.md) · **Database:** [Database design](../database/database_design.md)

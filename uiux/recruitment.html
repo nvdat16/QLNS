@@ -96,9 +96,10 @@
             max-width: 320px;
         }
     </style>
+    <link rel="stylesheet" href="hrm-theme.css" />
 </head>
 
-<body class="bg-[#f8fafc] text-slate-800 antialiased min-h-screen flex relative overflow-x-hidden">
+<body class="hrm-app-shell bg-[#f8fafc] text-slate-800 antialiased min-h-screen flex relative overflow-x-hidden">
 
     <!-- Mobile Backdrop Overlay -->
     <div id="sidebarBackdrop" onclick="toggleMobileSidebar(false)"
@@ -115,9 +116,8 @@
                     <span class="material-symbols-outlined text-2xl">business_center</span>
                 </div>
                 <div class="flex flex-col min-w-0">
-                    <span class="font-bold text-slate-800 text-[15px] leading-tight tracking-tight truncate">Hệ Thống
-                        Doanh Nghiệp</span>
-                    <span class="text-[11px] text-slate-400 font-medium mt-0.5">NexusHR Enterprise</span>
+                    <span class="font-bold text-slate-800 text-[16px] leading-tight tracking-tight truncate">NexusHR</span>
+                    <span class="text-[11px] text-slate-400 font-medium mt-0.5">Human Resources</span>
                 </div>
             </div>
             <!-- Close button on mobile -->
@@ -129,6 +129,11 @@
 
         <!-- Navigation Menu -->
         <div class="flex-1 overflow-y-auto px-3 py-5 space-y-1">
+            <p class="nav-section-label">Menu chính</p>
+            <a href="main.html?view=dashboard"
+                class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
+                <span class="material-symbols-outlined text-[20px] text-slate-500">dashboard</span><span>Tổng quan</span>
+            </a>
             <!-- Item 1: Hồ sơ nhân viên -->
             <a href="main.html?view=profiles" id="nav-emp"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
@@ -163,6 +168,10 @@
                 <span class="material-symbols-outlined text-[20px] text-slate-500">calendar_clock</span>
                 <span>Chấm công & Nghỉ phép</span>
             </a>
+
+            <p class="nav-section-label !mt-6">Hỗ trợ & cài đặt</p>
+            <a href="javascript:void(0)" onclick="alert('Bảng tin đang ở chế độ prototype')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 font-medium text-sm"><span class="material-symbols-outlined text-[20px] text-slate-500">campaign</span><span>Bảng tin</span></a>
+            <a href="javascript:void(0)" onclick="alert('Cài đặt đang ở chế độ prototype')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 font-medium text-sm"><span class="material-symbols-outlined text-[20px] text-slate-500">settings</span><span>Cài đặt</span></a>
         </div>
 
         <!-- User Profile at Bottom -->

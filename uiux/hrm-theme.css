@@ -1,0 +1,192 @@
+:root {
+    --hrm-blue: #2868e8;
+    --hrm-blue-50: #eef4ff;
+    --hrm-ink: #171a25;
+    --hrm-muted: #667085;
+    --hrm-line: #e8ebf1;
+    --hrm-canvas: #eef1f6;
+    --hrm-card: #ffffff;
+    --hrm-radius: 16px;
+    --hrm-shadow: 0 8px 28px rgba(28, 39, 60, .055);
+}
+
+html { background: var(--hrm-canvas); }
+
+body {
+    background: var(--hrm-canvas) !important;
+    color: var(--hrm-ink) !important;
+    letter-spacing: -.01em;
+}
+
+#mainSidebar {
+    width: 260px !important;
+    border-color: var(--hrm-line) !important;
+    background: rgba(255, 255, 255, .98) !important;
+}
+
+#mainSidebar > div:first-child {
+    height: 74px !important;
+    border-color: var(--hrm-line) !important;
+}
+
+#mainSidebar nav,
+#mainSidebar > div:nth-child(2) {
+    padding: 18px 14px !important;
+}
+
+#mainSidebar a {
+    min-height: 44px;
+    border-radius: 10px !important;
+    color: #525866;
+}
+
+#mainSidebar a:hover {
+    color: var(--hrm-blue) !important;
+    background: #f5f8ff !important;
+}
+
+#mainSidebar .sidebar-active-item {
+    color: var(--hrm-blue) !important;
+    background: var(--hrm-blue-50) !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+#mainSidebar .sidebar-active-item .material-symbols-outlined {
+    color: var(--hrm-blue) !important;
+}
+
+#mainSidebar .nav-section-label {
+    margin: 8px 10px 7px;
+    color: #1f2937;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+
+#mainSidebar + div > header {
+    height: 74px !important;
+    background: rgba(255, 255, 255, .96) !important;
+    border-bottom: 1px solid var(--hrm-line);
+    backdrop-filter: blur(14px);
+}
+
+#mainSidebar + div > main {
+    padding-top: 28px !important;
+}
+
+main .bg-white.rounded-xl,
+main .hrm-card {
+    border-color: #edf0f4 !important;
+    border-radius: var(--hrm-radius) !important;
+    box-shadow: var(--hrm-shadow) !important;
+}
+
+main table thead,
+main .bg-slate-50\/80,
+main .bg-slate-50\/60 {
+    background: #fafbfc !important;
+}
+
+main table tbody tr {
+    border-color: #eef0f4 !important;
+}
+
+button, input, select, textarea { border-radius: 10px !important; }
+
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 3px solid rgba(40, 104, 232, .2) !important;
+    outline-offset: 2px;
+}
+
+.dashboard-chart {
+    position: relative;
+    display: flex;
+    align-items: end;
+    gap: clamp(10px, 2vw, 24px);
+    height: 230px;
+    padding: 22px 12px 0 44px;
+    border-bottom: 1px solid var(--hrm-line);
+    background: repeating-linear-gradient(to top, transparent 0, transparent 45px, #f2f4f7 46px);
+}
+
+.dashboard-chart::before {
+    content: "100%\A 80%\A 60%\A 40%\A 20%\A 0%";
+    white-space: pre;
+    position: absolute;
+    left: 0;
+    bottom: -4px;
+    height: 230px;
+    color: #98a2b3;
+    font-size: 10px;
+    line-height: 46px;
+}
+
+.chart-bar {
+    position: relative;
+    flex: 1;
+    min-width: 12px;
+    max-width: 36px;
+    height: var(--bar);
+    border-radius: 8px 8px 2px 2px;
+    background: linear-gradient(180deg, #cfe0ff 0 30%, var(--hrm-blue) 30% 100%);
+    transition: transform .2s ease, filter .2s ease;
+}
+
+.chart-bar:hover { transform: translateY(-4px); filter: saturate(1.2); }
+
+.chart-bar::after {
+    content: attr(data-month);
+    position: absolute;
+    left: 50%;
+    bottom: -25px;
+    transform: translateX(-50%);
+    color: #667085;
+    font-size: 10px;
+}
+
+.status-progress {
+    height: 7px;
+    overflow: hidden;
+    border-radius: 99px;
+    background: #edf0f4;
+}
+
+.status-progress > span { display: block; height: 100%; border-radius: inherit; }
+
+@media (min-width: 1024px) {
+    body.hrm-app-shell { padding: 0; }
+
+    #mainSidebar {
+        left: 0 !important;
+        top: 0 !important;
+        height: 100vh !important;
+        border-width: 0 1px 0 0 !important;
+        border-radius: 0;
+        overflow: hidden;
+    }
+
+    #mainSidebar + div {
+        flex: 0 0 auto !important;
+        width: calc(100% - 260px) !important;
+        margin: 0 0 0 260px;
+        padding-left: 0 !important;
+        min-height: 100vh;
+        overflow: hidden;
+        border: 0;
+        border-radius: 0;
+        background: #f5f7fb;
+    }
+
+    #mainSidebar + div > header { top: 0 !important; }
+}
+
+@media (max-width: 1023px) {
+    #mainSidebar + div > main { padding-top: 20px !important; }
+}
+
+@media (max-width: 640px) {
+    .dashboard-chart { gap: 8px; height: 190px; padding-left: 36px; }
+    .dashboard-chart::before { height: 190px; line-height: 38px; }
+}

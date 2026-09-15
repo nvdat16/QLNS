@@ -4,6 +4,8 @@
 
 > **Phạm vi:** các file HTML/CSS/JavaScript tại đây là **UI/UX prototype**, không phải frontend application. Mọi dữ liệu và thao tác là mô phỏng cục bộ; chưa có xác thực, Backend API, persistence hoặc xử lý nghiệp vụ phía server.
 
+Giao diện dùng design system chung trong [`hrm-theme.css`](./hrm-theme.css): sidebar trắng cố định, topbar tối giản, workspace xám nhạt, card bo góc, accent xanh và mật độ dữ liệu vừa phải.
+
 ---
 
 ## 📌 Mục Lục
@@ -29,7 +31,7 @@ Hệ thống cung cấp 4 file HTML độc lập hoàn chỉnh, chạy trực ti
 
 | Tên File | Chức Năng Chính | Đường Dẫn Trực Tiếp |
 | :--- | :--- | :--- |
-| **`main.html`** | Quản lý Hồ sơ Nhân sự, Quản lý Hợp đồng lao động, Sơ đồ tổ chức doanh nghiệp (Org Chart), Drawer chi tiết nhân sự | [Xem file main.html](./main.html) |
+| **`main.html`** | Dashboard tổng quan, Hồ sơ Nhân sự, Hợp đồng lao động, Sơ đồ tổ chức và Drawer chi tiết nhân sự | [Xem file main.html](./main.html) |
 | **`recruitment.html`** | Phân hệ Tuyển dụng ATS: Quản lý Ứng viên (Pipeline Kanban/Table), Yêu cầu tuyển dụng, Lịch phỏng vấn & Đánh giá, Chuyển tiếp Tiếp nhận (Onboarding Handoff) | [Xem file recruitment.html](./recruitment.html) |
 | **`attendance.html`** | Phân hệ Chấm công & Nghỉ phép: Bảng công & Điểm danh (Check-in/out), Định nghĩa & Lịch phân ca (Work Shifts), Đơn xin nghỉ phép & Quỹ phép (Leave Requests), Xét duyệt nghỉ phép (Leave Approval) | [Xem file attendance.html](./attendance.html) |
 | **`auth.html`** | Cổng xác thực: đăng nhập, đăng ký tài khoản, hiện/ẩn mật khẩu, kiểm tra biểu mẫu và điều hướng vào dashboard prototype. | [Xem file auth.html](./auth.html) |
@@ -37,6 +39,10 @@ Hệ thống cung cấp 4 file HTML độc lập hoàn chỉnh, chạy trực ti
 ---
 
 ## 2. Thư Viện Hình Ảnh Giao Diện (Visual Showcase)
+
+### Dashboard tổng quan (`main.html?view=dashboard`)
+
+Trang mặc định cung cấp KPI nhân sự, biểu đồ biến động, đơn nghỉ gần đây, cơ cấu trạng thái và danh sách nhân sự mới. Các view nghiệp vụ cũ tiếp tục truy cập qua sidebar.
 
 ### 2.1. Phân hệ Hồ sơ Nhân sự & Hợp đồng (`main.html`)
 

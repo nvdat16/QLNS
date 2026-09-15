@@ -139,11 +139,17 @@ Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chư
 
 ### 4.3. Smart Recruitment and Onboarding (ATS)
 
-#### Candidate Recruitment Pipeline
+#### Candidate Recruitment Pipeline — List View
 
-> ATS recruitment workflow with a six-stage Kanban board and candidate list, including an intuitive icon-based onboarding action.
+> Candidate list for searching, filtering, reviewing recruitment stages, and performing quick actions.
 
-![ATS Recruitment Pipeline](uiux/recruitment/candidate.png)
+![ATS Candidate Pipeline List](uiux/recruitment/candidate.png)
+
+#### Candidate Recruitment Pipeline — Kanban View
+
+> Six-stage visual pipeline from Sourced & Applied to Hired & Ready. Candidate cards use consistent dimensions and keep the primary action aligned across every stage.
+
+![ATS Candidate Pipeline Kanban](uiux/recruitment/candidate_kanban.png)
 
 #### Job Requisition Management
 

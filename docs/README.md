@@ -13,17 +13,17 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 
 | Document | Purpose | Status |
 |---|---|---|
-| [INVEST Requirements Backlog](requirements_invest.md) | Backlog triển khai được tách nhỏ theo INVEST, có acceptance criteria và traceability | Proposed · Authoritative for delivery |
+| [INVEST User Stories](user_stories.md) | User Story được tách nhỏ theo INVEST, có mẫu chuẩn, acceptance criteria và traceability | Proposed · Authoritative for delivery |
 | [REC-03.2 Vertical Slice](vertical_slice_rec_03_2.md) | Traceability, 3-tier/3-layer mapping, class and sequence diagrams for the first end-to-end slice | Source implemented · Runtime verification pending |
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules cho các phân hệ chính | Proposed · Authoritative |
-| [System Diagrams](system_diagrams.md) | Use case, ATS state machine, sequence và activity diagrams bổ sung | Proposed · Supporting |
 | [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho Tuyển dụng, Core HR, Hợp đồng, Attendance/Leave và Reporting/Administration | Proposed · Supporting |
+| [Sequence Diagrams](sequence_diagrams.md) | Sequence theo 3-tier/3-layer cho các workflow quản lý chính, gồm success và failure branches | Proposed · Supporting |
 | [Database Design](../database/database_design.md) | ERD và đặc tả 14 bảng cho Core HR, Contracts, Recruitment và Onboarding | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục DBML, PostgreSQL DDL và hướng dẫn kiểm tra schema tham chiếu | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
 
-`architecture.md` là nguồn chuẩn cho quyết định kiến trúc và C4. `system_diagrams.md` chỉ bổ sung góc nhìn nghiệp vụ; nếu hai tài liệu mâu thuẫn, ưu tiên `architecture.md` và cập nhật tài liệu còn lại trong cùng thay đổi.
+`architecture.md` là nguồn chuẩn cho quyết định kiến trúc và C4; `use_cases.md` là nguồn sơ đồ use case nghiệp vụ. Nếu hai tài liệu mâu thuẫn, ưu tiên ranh giới kỹ thuật trong `architecture.md` và business rule trong `functional_specifications.md`/`user_stories.md`.
 
 ---
 
@@ -63,7 +63,7 @@ Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác
 ### Developer starting implementation
 
 1. [Current project scope](#2-current-project-scope)
-2. [Target code structure](architecture.md#55-target-code-structure)
+2. [Target code structure](architecture.md#56-target-code-structure)
 3. [Runtime view](architecture.md#6-runtime-view)
 4. [Crosscutting concepts](architecture.md#8-crosscutting-concepts)
 5. [Architecture fitness functions](architecture.md#12-architecture-fitness-functions)

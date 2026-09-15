@@ -1,6 +1,6 @@
 # Use Cases — Tổng Quan và Các Chức Năng Quản Lý Chính
 
-> **Trạng thái:** Proposed business design. Các mã trong ngoặc vuông truy vết tới `requirements_invest.md` hoặc `functional_specifications.md`. Use case `REC-03.2` đã có source baseline; các use case còn lại chưa được xem là implemented.
+> **Trạng thái:** Proposed business design. Các mã trong ngoặc vuông truy vết tới `user_stories.md` hoặc `functional_specifications.md`. Use case `REC-03.2` đã có source baseline; các use case còn lại chưa được xem là implemented.
 
 ## Quy ước
 

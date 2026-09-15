@@ -92,8 +92,126 @@
         }
 
         .kanban-col {
-            min-width: 280px;
-            max-width: 320px;
+            width: 300px;
+            min-width: 300px;
+            max-width: 300px;
+        }
+
+        /* Keep every pipeline card aligned regardless of content length. */
+        #ats-kanban-view .kanban-col>div:first-child {
+            min-height: 41px;
+        }
+
+        #ats-kanban-view .kanban-col>.space-y-3>div {
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            height: 160px;
+        }
+
+        #ats-kanban-view .kanban-col>.space-y-3>div>div:first-child {
+            min-height: 18px;
+        }
+
+        #ats-kanban-view .kanban-col>.space-y-3>div>div:first-child>span:last-child {
+            max-width: 58%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #ats-kanban-view .kanban-col>.space-y-3>div>div:nth-child(2) {
+            min-height: 20px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        #ats-kanban-view .kanban-col>.space-y-3>div>div:nth-child(3) {
+            display: -webkit-box;
+            min-height: 40px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            line-height: 20px;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+        }
+
+        #ats-kanban-view .kanban-col>.space-y-3>div>:last-child {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 32px;
+            margin-top: auto;
+        }
+
+        .score-range {
+            --score-fill: 100%;
+            width: 100%;
+            height: 20px;
+            margin: 0;
+            padding: 0;
+            appearance: none;
+            -webkit-appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        .score-range::-webkit-slider-runnable-track {
+            height: 6px;
+            border-radius: 9999px;
+            background: linear-gradient(to right, #2563eb 0%, #2563eb var(--score-fill), #e2e8f0 var(--score-fill), #e2e8f0 100%);
+        }
+
+        .score-range::-webkit-slider-thumb {
+            width: 20px;
+            height: 20px;
+            margin-top: -7px;
+            appearance: none;
+            -webkit-appearance: none;
+            border: 3px solid #ffffff;
+            border-radius: 9999px;
+            background: #2563eb;
+            box-shadow: 0 0 0 1px #2563eb, 0 2px 5px rgba(15, 23, 42, 0.2);
+            transition: transform 150ms ease, box-shadow 150ms ease;
+        }
+
+        .score-range::-moz-range-track {
+            height: 6px;
+            border-radius: 9999px;
+            background: #e2e8f0;
+        }
+
+        .score-range::-moz-range-progress {
+            height: 6px;
+            border-radius: 9999px;
+            background: #2563eb;
+        }
+
+        .score-range::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            border: 3px solid #ffffff;
+            border-radius: 9999px;
+            background: #2563eb;
+            box-shadow: 0 0 0 1px #2563eb, 0 2px 5px rgba(15, 23, 42, 0.2);
+        }
+
+        .score-range:hover::-webkit-slider-thumb {
+            transform: scale(1.08);
+        }
+
+        .score-range:focus-visible {
+            outline: none;
+        }
+
+        .score-range:focus-visible::-webkit-slider-thumb {
+            box-shadow: 0 0 0 4px #bfdbfe, 0 0 0 1px #2563eb;
+        }
+
+        .score-range:focus-visible::-moz-range-thumb {
+            box-shadow: 0 0 0 4px #bfdbfe, 0 0 0 1px #2563eb;
         }
     </style>
     <link rel="stylesheet" href="hrm-theme.css" />
@@ -1863,41 +1981,80 @@
     <div id="scorecardModal"
         class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div
-            class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
                     <h3 class="font-bold text-slate-900 text-base">Chấm Điểm Phỏng Vấn (Scorecard)</h3>
                     <p id="scorecardCandidateTitle" class="text-xs text-blue-600 font-medium">Lê Quốc Huy • Senior Tech
                         Lead</p>
                 </div>
-                <button onclick="closeScorecardModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><span
+                <button type="button" aria-label="Đóng bảng chấm điểm" onclick="closeScorecardModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><span
                         class="material-symbols-outlined">close</span></button>
             </div>
-            <div class="p-5 space-y-3.5 text-xs">
-                <div>
-                    <label class="font-semibold text-slate-700 block mb-1">1. Kỹ năng Chuyên môn & Clean Code
-                        (40%)</label>
-                    <select class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800">
-                        <option>5.0 - Xuất sắc (Strong Hire)</option>
-                        <option>4.0 - Đạt yêu cầu tốt</option>
-                        <option>3.0 - Đạt mức trung bình</option>
-                    </select>
+            <div class="p-5 space-y-5 text-xs">
+                <div class="space-y-2">
+                    <div class="flex items-start justify-between gap-3">
+                        <label for="technicalScore" class="font-semibold text-slate-700 leading-5">1. Kỹ năng Chuyên môn &
+                            Clean Code <span class="text-slate-400 font-medium">(40%)</span></label>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span id="technicalScoreLabel"
+                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Xuất sắc</span>
+                            <output id="technicalScoreValue" for="technicalScore"
+                                class="min-w-[3.25rem] px-2 py-1 rounded-md bg-slate-900 text-white text-center font-bold tabular-nums">5.0</output>
+                        </div>
+                    </div>
+                    <input id="technicalScore" class="score-range" type="range" min="1" max="5" step="0.1"
+                        value="5" data-weight="0.4" aria-label="Điểm kỹ năng chuyên môn và Clean Code"
+                        oninput="updateScoreSlider(this)" />
+                    <div class="flex justify-between text-[10px] font-medium text-slate-400" aria-hidden="true">
+                        <span>1.0 · Chưa đạt</span><span>3.0 · Đạt yêu cầu</span><span>5.0 · Xuất sắc</span>
+                    </div>
                 </div>
-                <div>
-                    <label class="font-semibold text-slate-700 block mb-1">2. Giải quyết Vấn đề & Tư duy Kiến trúc
-                        (30%)</label>
-                    <select class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800">
-                        <option>4.8 - Rất ấn tượng</option>
-                        <option>4.0 - Đạt yêu cầu</option>
-                    </select>
+                <div class="space-y-2">
+                    <div class="flex items-start justify-between gap-3">
+                        <label for="problemSolvingScore" class="font-semibold text-slate-700 leading-5">2. Giải quyết Vấn đề &
+                            Tư duy Kiến trúc <span class="text-slate-400 font-medium">(30%)</span></label>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span id="problemSolvingScoreLabel"
+                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Xuất sắc</span>
+                            <output id="problemSolvingScoreValue" for="problemSolvingScore"
+                                class="min-w-[3.25rem] px-2 py-1 rounded-md bg-slate-900 text-white text-center font-bold tabular-nums">4.8</output>
+                        </div>
+                    </div>
+                    <input id="problemSolvingScore" class="score-range" type="range" min="1" max="5" step="0.1"
+                        value="4.8" data-weight="0.3" aria-label="Điểm giải quyết vấn đề và tư duy kiến trúc"
+                        oninput="updateScoreSlider(this)" />
+                    <div class="flex justify-between text-[10px] font-medium text-slate-400" aria-hidden="true">
+                        <span>1.0 · Chưa đạt</span><span>3.0 · Đạt yêu cầu</span><span>5.0 · Xuất sắc</span>
+                    </div>
                 </div>
-                <div>
-                    <label class="font-semibold text-slate-700 block mb-1">3. Phù hợp Văn hóa & Tinh thần Đồng đội
-                        (30%)</label>
-                    <select class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800">
-                        <option>5.0 - Tuyệt vời (Strong Cultural Add)</option>
-                        <option>4.0 - Hòa đồng</option>
-                    </select>
+                <div class="space-y-2">
+                    <div class="flex items-start justify-between gap-3">
+                        <label for="cultureScore" class="font-semibold text-slate-700 leading-5">3. Phù hợp Văn hóa & Tinh thần
+                            Đồng đội <span class="text-slate-400 font-medium">(30%)</span></label>
+                        <div class="flex items-center gap-1.5 shrink-0">
+                            <span id="cultureScoreLabel"
+                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Xuất sắc</span>
+                            <output id="cultureScoreValue" for="cultureScore"
+                                class="min-w-[3.25rem] px-2 py-1 rounded-md bg-slate-900 text-white text-center font-bold tabular-nums">5.0</output>
+                        </div>
+                    </div>
+                    <input id="cultureScore" class="score-range" type="range" min="1" max="5" step="0.1" value="5"
+                        data-weight="0.3" aria-label="Điểm phù hợp văn hóa và tinh thần đồng đội"
+                        oninput="updateScoreSlider(this)" />
+                    <div class="flex justify-between text-[10px] font-medium text-slate-400" aria-hidden="true">
+                        <span>1.0 · Chưa đạt</span><span>3.0 · Đạt yêu cầu</span><span>5.0 · Xuất sắc</span>
+                    </div>
+                </div>
+                <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 flex items-center justify-between gap-4">
+                    <div>
+                        <p class="font-semibold text-slate-700">Điểm tổng hợp theo trọng số</p>
+                        <p id="scorecardRecommendation" class="text-[11px] text-blue-600 font-medium mt-0.5">Khuyến nghị: Strong Hire</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                        <span id="scorecardTotal" class="text-xl font-bold text-slate-900 tabular-nums">4.9</span>
+                        <span class="text-slate-400 font-medium">/ 5.0</span>
+                    </div>
                 </div>
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                     <button type="button" onclick="closeScorecardModal()"
@@ -2291,13 +2448,49 @@
 
         function openScorecardModal(name, job) {
             document.getElementById('scorecardCandidateTitle').innerText = `${name} • ${job}`;
+            document.querySelectorAll('#scorecardModal .score-range').forEach(updateScoreSlider);
             document.getElementById('scorecardModal').classList.remove('hidden');
         }
         function closeScorecardModal() {
             document.getElementById('scorecardModal').classList.add('hidden');
         }
+
+        function getScoreLabel(score) {
+            if (score >= 4.5) return 'Xuất sắc';
+            if (score >= 4.0) return 'Rất tốt';
+            if (score >= 3.0) return 'Đạt yêu cầu';
+            if (score >= 2.0) return 'Cần cân nhắc';
+            return 'Chưa đạt';
+        }
+
+        function updateScoreSlider(slider) {
+            const score = Number(slider.value);
+            const fill = ((score - Number(slider.min)) / (Number(slider.max) - Number(slider.min))) * 100;
+            const label = getScoreLabel(score);
+
+            slider.style.setProperty('--score-fill', `${fill}%`);
+            slider.setAttribute('aria-valuetext', `${score.toFixed(1)} trên 5 - ${label}`);
+            document.getElementById(`${slider.id}Value`).textContent = score.toFixed(1);
+            document.getElementById(`${slider.id}Label`).textContent = label;
+            updateScorecardSummary();
+        }
+
+        function updateScorecardSummary() {
+            const sliders = [...document.querySelectorAll('#scorecardModal .score-range')];
+            const total = sliders.reduce((sum, slider) => sum + Number(slider.value) * Number(slider.dataset.weight), 0);
+            const recommendation = total >= 4.5 ? 'Strong Hire'
+                : total >= 4.0 ? 'Hire'
+                    : total >= 3.0 ? 'Consider'
+                        : 'No Hire';
+
+            document.getElementById('scorecardTotal').textContent = total.toFixed(1);
+            document.getElementById('scorecardRecommendation').textContent = `Khuyến nghị: ${recommendation}`;
+        }
+
         function saveScorecard() {
-            alert('Đã lưu kết quả đánh giá Scorecard thành công! Khuyến nghị: Strong Hire.');
+            const total = document.getElementById('scorecardTotal').textContent;
+            const recommendation = document.getElementById('scorecardRecommendation').textContent;
+            alert(`Đã lưu kết quả đánh giá Scorecard: ${total}/5.0. ${recommendation}.`);
             closeScorecardModal();
         }
 

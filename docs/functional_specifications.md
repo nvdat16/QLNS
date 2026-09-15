@@ -5,7 +5,7 @@
 
 ## 1. Giới Thiệu Tổng Quan
 
-> **Trạng thái triển khai:** tài liệu này là đặc tả yêu cầu mục tiêu. Project có UI/UX prototype, canonical database/OpenAPI contract và source baseline REC-03.2; runtime chưa được build/tích hợp. Các hành vi ngoài slice được ghi rõ trong `requirements_invest.md` vẫn là yêu cầu tương lai, không phải chức năng đang chạy.
+> **Trạng thái triển khai:** tài liệu này là đặc tả yêu cầu mục tiêu. Project có UI/UX prototype, canonical database/OpenAPI contract và source baseline REC-03.2; runtime chưa được build/tích hợp. Các hành vi ngoài slice được ghi rõ trong `user_stories.md` vẫn là yêu cầu tương lai, không phải chức năng đang chạy.
 
 ### 1.1. Mục tiêu Dự án
 Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị nguồn nhân lực (HRMS) và tuyển dụng thông minh (ATS) toàn diện, nhằm:

@@ -12,9 +12,10 @@ Giao diện dùng design system chung trong [`hrm-theme.css`](./hrm-theme.css): 
 
 - [1. Danh Sách Giao Diện Độc Lập](#1-danh-sách-giao-diện-độc-lập)
 - [2. Thư Viện Hình Ảnh Giao Diện (Visual Showcase)](#2-thư-viện-hình-ảnh-giao-diện-visual-showcase)
-  - [2.1. Phân hệ Hồ sơ Nhân sự & Hợp đồng (main.html)](#21-phân-hệ-hồ-sơ-nhân-sự--hợp-đồng-mainhtml)
-  - [2.2. Phân hệ Tuyển dụng & Onboarding ATS (recruitment.html)](#22-phân-hệ-tuyển-dụng--onboarding-ats-recruitmenthtml)
-  - [2.3. Phân hệ Chấm công & Quản lý Nghỉ phép (attendance.html)](#23-phân-hệ-chấm-công--quản-lý-nghỉ-phép-attendancehtml)
+  - [2.1. Dashboard tổng quan (main.html)](#21-dashboard-tổng-quan-mainhtml)
+  - [2.2. Phân hệ Hồ sơ Nhân sự & Hợp đồng (main.html)](#22-phân-hệ-hồ-sơ-nhân-sự--hợp-đồng-mainhtml)
+  - [2.3. Phân hệ Tuyển dụng & Onboarding ATS (recruitment.html)](#23-phân-hệ-tuyển-dụng--onboarding-ats-recruitmenthtml)
+  - [2.4. Phân hệ Chấm công & Quản lý Nghỉ phép (attendance.html)](#24-phân-hệ-chấm-công--quản-lý-nghỉ-phép-attendancehtml)
 - [3. Chi Tiết Tương Tác Đã Mô Phỏng Trong Prototype](#3-chi-tiết-tương-tác-đã-mô-phỏng-trong-prototype)
   - [3.1. Quản lý Hồ sơ & Hợp đồng lao động](#31-quản-lý-hồ-sơ--hợp-đồng-lao-động-mainhtml)
   - [3.2. Quản lý Tuyển dụng & Quy trình Onboarding](#32-quản-lý-tuyển-dụng--quy-trình-onboarding-recruitmenthtml)
@@ -40,11 +41,15 @@ Hệ thống cung cấp 4 file HTML độc lập hoàn chỉnh, chạy trực ti
 
 ## 2. Thư Viện Hình Ảnh Giao Diện (Visual Showcase)
 
-### Dashboard tổng quan (`main.html?view=dashboard`)
+### 2.1. Dashboard tổng quan (`main.html?view=dashboard`)
 
 Trang mặc định cung cấp KPI nhân sự, biểu đồ biến động, đơn nghỉ gần đây, cơ cấu trạng thái và danh sách nhân sự mới. Các view nghiệp vụ cũ tiếp tục truy cập qua sidebar.
 
-### 2.1. Phân hệ Hồ sơ Nhân sự & Hợp đồng (`main.html`)
+![Dashboard tổng quan](dashboard/dashboard.png)
+
+---
+
+### 2.2. Phân hệ Hồ sơ Nhân sự & Hợp đồng (`main.html`)
 
 #### 📷 Danh sách Hồ sơ Nhân sự (Employee Directory)
 Giao diện quản lý danh sách nhân viên chuẩn doanh nghiệp, loại bỏ hình ảnh đại diện cá nhân theo quy chuẩn bảo mật/tối giản, tối ưu bảng dữ liệu với thanh công cụ tìm kiếm, bộ lọc phòng ban, trạng thái và nút xem chi tiết Drawer.
@@ -60,7 +65,7 @@ Trực quan hóa cây phả hệ doanh nghiệp: Hội đồng Quản trị -> B
 
 ---
 
-### 2.2. Phân hệ Tuyển dụng & Onboarding ATS (`recruitment.html`)
+### 2.3. Phân hệ Tuyển dụng & Onboarding ATS (`recruitment.html`)
 
 #### 📷 Quy trình Tuyển dụng Ứng viên (Candidate Pipeline ATS)
 Giao diện ATS chuyên nghiệp với 2 chế độ hiển thị (Kanban Board theo các phễu: Mới ứng tuyển, Sơ loại, Phỏng vấn vòng 1, Phỏng vấn vòng 2, Đề xuất Offer, Đã trúng tuyển; và Chế độ Bảng danh sách). Nút thao tác tiếp nhận hiển thị dạng icon trực quan, gọn gàng.
@@ -80,7 +85,7 @@ Bảng quản lý kết quả Offer và tiếp nhận nhân sự mới. Bảng 7
 
 ---
 
-### 2.3. Phân hệ Chấm công & Quản lý Nghỉ phép (`attendance.html`)
+### 2.4. Phân hệ Chấm công & Quản lý Nghỉ phép (`attendance.html`)
 
 #### 📷 Bảng công & Điểm danh Thời gian thực (Check-in / Check-out & Timesheet)
 Giám sát chi tiết lịch sử điểm danh hàng ngày: Giờ Check-in, Check-out, phân loại đúng giờ/đi muộn/về sớm, phương thức xác thực (Vân tay Cổng chính, GPS Mobile, FaceID, Wifi), số giờ công thực tế và Drawer xem chi tiết nhật ký sự kiện. Nút hành động chấm công nhanh và xuất báo cáo Excel tiện lợi.

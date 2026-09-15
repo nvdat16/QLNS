@@ -1,4 +1,4 @@
-# 05 — Architecture (arc42 + C4)
+# Architecture (arc42 + C4)
 
 ## 1. Introduction and Goals
 

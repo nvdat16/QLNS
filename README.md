@@ -2,7 +2,7 @@
 
 > **Status:** Design/Prototype. Repository hiện chỉ có UI/UX prototype và database design; frontend application, Backend API và deployment runtime chưa được triển khai.
 
-**Primary architecture:** [05 — Architecture (arc42 + C4)](docs/05_architecture.md) · **Requirements:** [Functional specifications](docs/functional_specifications.md) · **Database:** [Database design](database/database_design.md)
+**Primary architecture:** [05 — Architecture (arc42 + C4)](docs/architecture.md) · **Requirements:** [Functional specifications](docs/functional_specifications.md) · **Database:** [Database design](database/database_design.md)
 
 ## Table of Contents
 
@@ -10,10 +10,11 @@
 - [2. Functional Architecture (Top-Down Mind Map)](#2-functional-architecture-top-down-mind-map)
 - [3. Roles & Use Case Diagram](#3-roles--use-case-diagram)
 - [4. Visual Showcase](#4-visual-showcase)
-  - [4.1. Employee Records and Employment Contracts (Core HR)](#41-employee-records-and-employment-contracts-core-hr)
-  - [4.2. Smart Recruitment and Onboarding (ATS)](#42-smart-recruitment-and-onboarding-ats)
-  - [4.3. Attendance and Leave Management](#43-attendance-and-leave-management)
-  - [4.4. Database Design Diagram (DBML)](#44-database-design-diagram-dbml)
+  - [4.1. Workforce Dashboard](#41-workforce-dashboard)
+  - [4.2. Employee Records and Employment Contracts (Core HR)](#42-employee-records-and-employment-contracts-core-hr)
+  - [4.3. Smart Recruitment and Onboarding (ATS)](#43-smart-recruitment-and-onboarding-ats)
+  - [4.4. Attendance and Leave Management](#44-attendance-and-leave-management)
+  - [4.5. Database Design Diagram (DBML)](#45-database-design-diagram-dbml)
 
 ---
 
@@ -104,7 +105,17 @@ flowchart LR
 
 Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chưa kết nối frontend/backend hoặc database thực.
 
-### 4.1. Employee Records and Employment Contracts (Core HR)
+### 4.1. Workforce Dashboard
+
+#### 📷 HR Overview (`uiux/main.html?view=dashboard`)
+
+> Cung cấp cái nhìn tổng quan về KPI nhân sự, biến động quân số, đơn nghỉ gần đây, cơ cấu trạng thái và danh sách nhân sự mới.
+
+![Workforce Dashboard](uiux/dashboard/dashboard.png)
+
+---
+
+### 4.2. Employee Records and Employment Contracts (Core HR)
 
 #### 📷 Employee Profile List (`uiux/main.html`)
 
@@ -126,7 +137,7 @@ Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chư
 
 ---
 
-### 4.2. Smart Recruitment and Onboarding (ATS)
+### 4.3. Smart Recruitment and Onboarding (ATS)
 
 #### Candidate Recruitment Pipeline
 
@@ -154,7 +165,7 @@ Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chư
 
 ---
 
-### 4.3. Attendance and Leave Management
+### 4.4. Attendance and Leave Management
 
 #### Timesheet and Real-Time Attendance
 
@@ -182,7 +193,7 @@ Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chư
 
 ---
 
-### 4.4. Database Design Diagram (DBML)
+### 4.5. Database Design Diagram (DBML)
 
 #### 14-Table Entity and Foreign-Key Relationship Diagram
 

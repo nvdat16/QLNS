@@ -1,24 +1,8 @@
 # Human Resource Management System (QLNS / HRMS)
 
-> A comprehensive, modern **Human Resource Management System (HRMS)** and **Applicant Tracking System (ATS)** built on an enterprise top-down architecture. It streamlines the full employee lifecycle: job requisitions, CV parsing, interview evaluation, onboarding handoff, personnel records, employment contracts, organizational charts, attendance, shift scheduling, and leave management.
+> **Status:** Design/Prototype. Repository hiện chỉ có UI/UX prototype và database design; frontend application, Backend API và deployment runtime chưa được triển khai.
 
----
-
-## Documentation Hub
-
-Each system directory includes a dedicated `README.md` with architecture details, visuals, and implementation instructions.
-
-| Module / Directory | Contents | Direct Link |
-| :--- | :--- | :--- |
-| **`uiux/`** | Interactive UI prototypes (`main.html`, `recruitment.html`, `attendance.html`), a gallery of 11 production-style screens, no-avatar design standards, and responsive layouts without horizontal scrolling. | [uiux/README.md](uiux/README.md) |
-| **`docs/`** | Software Requirements Specification (SRS), an RBAC matrix for six roles, and eight Mermaid diagrams: three-tier architecture, use cases, ATS state machine, three sequence diagrams, recruitment flowchart, and Docker deployment. | [docs/README.md](docs/README.md) |
-| **`database/`** | A 14-table relational database schema, a visual DBML diagram, PostgreSQL DDL in `init.sql`, and seed data. | [database/README.md](database/README.md) |
-| **`backend/`** | RESTful API built with FastAPI (Python 3.12), SQLAlchemy 2.0 ORM, Pydantic v2, endpoint documentation, Swagger UI, and ReDoc. | [backend/README.md](backend/README.md) |
-| **`frontend/`** | Single Page Application (SPA) built with React 18 and Vite 5, with real-time API integration and data synchronization. | [frontend/README.md](frontend/README.md) |
-
-> [View the overall use case diagram](docs/system_diagrams.md#2-sơ-đồ-use-case-tổng-quan-overall-use-case-diagram)
-
----
+**Primary architecture:** [05 — Architecture (arc42 + C4)](docs/05_architecture.md) · **Requirements:** [Functional specifications](docs/functional_specifications.md) · **Database:** [Database design](database/database_design.md)
 
 ## Table of Contents
 
@@ -35,13 +19,13 @@ Each system directory includes a dedicated `README.md` with architecture details
 
 ## 1. System Overview
 
-**QLNS** digitizes end-to-end human-resource operations for enterprises:
+Khi được triển khai, **QLNS** hướng tới số hóa các nghiệp vụ nhân sự sau:
 
 - **Automated recurring tasks:** Reduces manual errors in attendance tracking, payroll, employee record management, and employment-contract expiry monitoring.
 - **Optimized recruitment experience (ATS):** Shortens time-to-hire with a visual Kanban pipeline, interview scheduling, and standardized scorecards.
 - **Seamless onboarding handoff:** Converts successful candidates into official employee records with one click, without re-entering data.
 - **End-to-end attendance and leave management:** Supports multiple attendance methods (fingerprint, GPS, Face ID, and Wi-Fi), weekly work schedules, and intelligent leave-approval workflows.
-- **Decision support and reporting:** Provides real-time multidimensional analytics on workforce changes, department structures, and personnel costs.
+- **Decision support and reporting:** Cung cấp dữ liệu phục vụ phân tích biến động nhân sự, cơ cấu phòng ban và chi phí nhân sự.
 - **Legal compliance:** Standardizes employment-contract, social-insurance, and personal-income-tax processes in accordance with Vietnamese labor law.
 
 ---
@@ -118,7 +102,7 @@ flowchart LR
 
 ## 4. Visual Showcase
 
-All modules include completed UI designs with representative enterprise data.
+Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chưa kết nối frontend/backend hoặc database thực.
 
 ### 4.1. Employee Records and Employment Contracts (Core HR)
 

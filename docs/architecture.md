@@ -1,0 +1,591 @@
+# 05 — Architecture (arc42 + C4)
+
+## 1. Introduction and Goals
+
+QLNS là hệ thống quản trị nguồn nhân lực (HRMS) kết hợp quản lý tuyển dụng (ATS), hướng tới một luồng dữ liệu xuyên suốt từ yêu cầu tuyển dụng, ứng viên, phỏng vấn và offer đến hồ sơ nhân viên, hợp đồng, onboarding, chấm công và nghỉ phép.
+
+Mục tiêu kiến trúc là tạo ranh giới rõ giữa giao diện, quy tắc nghiệp vụ và dữ liệu; bảo vệ dữ liệu nhân sự nhạy cảm; đồng thời cho phép phát triển từng phần mà không biến UI prototype thành nguồn business rule.
+
+### 1.1 Stakeholders
+
+| Role | Concern |
+|---|---|
+| Ban lãnh đạo / Nhà tài trợ | số liệu nhân sự đáng tin cậy, hiệu quả đầu tư, giảm rủi ro vận hành |
+| HR Director / HR Manager | quy trình đúng thẩm quyền, truy vết quyết định, báo cáo nhất quán |
+| Recruiter | pipeline ứng viên, lịch phỏng vấn, scorecard và offer trên một luồng thống nhất |
+| Hiring / Line Manager | tác vụ phê duyệt rõ ràng, dữ liệu đúng phạm vi quản lý |
+| HR Officer / C&B | hồ sơ, hợp đồng, onboarding, chấm công và nghỉ phép chính xác |
+| Employee / Candidate | trải nghiệm dễ dùng, trạng thái minh bạch, dữ liệu cá nhân được bảo vệ |
+| Application engineer | contract rõ, module độc lập, môi trường phát triển tái lập được |
+| Architect / Reviewer | ngăn drift giữa yêu cầu, schema, API và implementation |
+| Security / Legal | least privilege, audit, retention và tuân thủ pháp luật Việt Nam |
+| SRE / Operations | triển khai, quan sát, sao lưu và phục hồi có thể kiểm chứng |
+
+### 1.2 Quality goals (measurable — arc42 §1.2)
+
+| # | Quality goal | Scenario | Measure | Priority |
+|---|---|---|---|---|
+| Q1 | **Bảo mật dữ liệu nhân sự** | người dùng yêu cầu hồ sơ, hợp đồng hoặc hành động ngoài phạm vi | 100% API nghiệp vụ yêu cầu authenticated actor; 100% test ngoài quyền trả `401/403`; không trả trường restricted | 1 |
+| Q2 | **Toàn vẹn và truy vết** | lỗi xảy ra giữa một workflow nhiều bước | transaction rollback không để lại trạng thái dở dang; 100% command nhạy cảm có audit actor, time, target, result | 1 |
+| Q3 | **Chính xác workflow** | client gửi transition, phê duyệt hoặc version không hợp lệ | 100% transition ngoài state machine bị từ chối; conflict đồng thời trả `409`; không cập nhật trực tiếp `status` | 1 |
+| Q4 | **Khả dụng sử dụng** | người dùng hoàn thành tìm hồ sơ, chuyển vòng hoặc duyệt phép | các tác vụ ưu tiên đạt success rate ≥ 90% trong usability test; WCAG 2.1 AA cho luồng thiết yếu | 2 |
+| Q5 | **Hiệu năng tương tác** | tải danh sách có filter/pagination trong tải mục tiêu | p95 API đọc ≤ 500 ms và command ≤ 800 ms, không tính provider ngoài; quy mô tải phải được chốt trước production | 2 |
+| Q6 | **Dễ bảo trì** | thêm module hoặc thay provider tích hợp | không sửa domain module không liên quan; dependency fitness tests và contract tests đều pass | 2 |
+| Q7 | **Khả năng phục hồi tích hợp** | email/calendar/e-signature timeout hoặc gửi callback lặp | business transaction vẫn nhất quán; event trùng không tạo side effect trùng; retry hữu hạn có đối soát | 2 |
+| Q8 | **Phục hồi dữ liệu** | mất database node hoặc thao tác khôi phục | đạt RPO/RTO được phê duyệt và restore drill pass; giá trị cụ thể là Open Decision | 3 |
+
+Q1–Q3 là các mục tiêu định hình kiến trúc. Mọi quyết định làm suy giảm chúng phải có ADR riêng.
+
+---
+
+## 2. Constraints
+
+| # | Constraint | Type | Implication |
+|---|---|---|---|
+| C1 | Hiện trạng chỉ gồm UI/UX prototype và database design 14 bảng | Project | không mô tả frontend/backend/runtime là đã triển khai |
+| C2 | Frontend không truy cập database trực tiếp | Security | mọi query/command đi qua Backend API và server-side authorization |
+| C3 | PostgreSQL là database candidate theo thiết kế hiện có | Technical | schema phải được review, version hóa bằng migration và kiểm thử constraint trước khi dùng |
+| C4 | React/Vite và FastAPI/Pydantic/SQLAlchemy mới là candidate stack | Technical | cần ADR Accepted và pin phiên bản trước khi scaffold |
+| C5 | Không dùng distributed transaction/2-phase commit với provider ngoài | Technical | business state commit độc lập; outbox, idempotency và reconciliation cho side effect |
+| C6 | Dữ liệu nhân sự và ứng viên là confidential/restricted | Legal/Security | least privilege, encryption, audit, masking, retention và controlled export |
+| C7 | Quy tắc lao động, hợp đồng, thuế và bảo hiểm cần HR/Legal phê duyệt | Legal | tài liệu kỹ thuật không tự suy diễn quy định pháp lý |
+| C8 | Giao diện chính dùng tiếng Việt, thuật ngữ kỹ thuật có thể kèm tiếng Anh | Product | glossary và trạng thái nghiệp vụ phải nhất quán |
+| C9 | Documentation-first | Organisational | thay đổi feature phải cập nhật SRS, kiến trúc, API/schema và ADR liên quan |
+| C10 | SLA, tải, cloud/on-premises, RPO/RTO chưa được chốt | Organisational | deployment và capacity design giữ vendor-neutral; không cam kết production sớm |
+
+---
+
+## 3. Context and Scope
+
+<a id="c4-level-1-system-context"></a>
+
+### 3.1 Business context (C4 Level 1)
+
+```mermaid
+flowchart LR
+    candidate(["👤 Candidate"])
+    employee(["👤 Employee"])
+    manager(["👤 Hiring / Line Manager"])
+    hr(["👤 Recruiter / HR Officer / HR Manager"])
+    admin(["👤 System Administrator"])
+
+    subgraph boundary["QLNS System Boundary"]
+        qlns["QLNS<br/><i>[Software System — Proposed]</i><br/>Recruitment and HR lifecycle management"]
+    end
+
+    jobboards["Job Boards<br/><i>[External System]</i>"]
+    comms["Email / Calendar<br/><i>[External System]</i>"]
+    esign["E-signature<br/><i>[External System]</i>"]
+    devices["Attendance Devices<br/><i>[External System]</i>"]
+    storage["Document Storage<br/><i>[External System]</i>"]
+    idp["Identity Provider<br/><i>[External System]</i>"]
+
+    candidate -- "submits application; receives status" --> qlns
+    employee -- "profile, attendance, leave" --> qlns
+    manager -- "requisition, scorecard, approvals" --> qlns
+    hr -- "recruitment and HR operations" --> qlns
+    admin -- "accounts, roles, configuration" --> qlns
+    qlns -- "publishes/receives recruitment data" --> jobboards
+    qlns -- "notifications and schedules" --> comms
+    qlns -- "documents and callbacks" --> esign
+    devices -- "attendance events" --> qlns
+    qlns -- "private document objects" --> storage
+    qlns -- "validates identity/tokens" --> idp
+
+    style qlns fill:#1168bd,color:#fff
+    style jobboards fill:#999,color:#fff
+    style comms fill:#999,color:#fff
+    style esign fill:#999,color:#fff
+    style devices fill:#999,color:#fff
+    style storage fill:#999,color:#fff
+    style idp fill:#999,color:#fff
+```
+
+### 3.2 External interfaces
+
+| Interface | Direction | Protocol / contract | Contract owner | Failure mode |
+|---|---|---|---|---|
+| Web API | in/out | HTTPS, REST/JSON, OpenAPI | QLNS Backend | RFC 7807-style error, `Retry-After` khi phù hợp |
+| Identity | in | OIDC/OAuth2 candidate; chưa chọn provider | Security / Platform | fail closed; token invalid → `401` |
+| Job boards | both | Provider API/webhook | Recruitment adapter | timeout/retry; duplicate → idempotent handling |
+| Email/Calendar | out/both | Provider API/webhook | Notification/Calendar adapter | delivery state + bounded retry + reconciliation |
+| E-signature | both | Provider API/webhook | Document/Contract adapter | callback verification; status reconciliation |
+| Attendance devices | in | authenticated API/webhook | Attendance adapter | invalid device rejected; duplicate event ignored |
+| Document storage | both | object API; signed/authorized download | Document adapter | unavailable → no metadata corruption |
+| Database | both | PostgreSQL protocol | Persistence layer | transaction rollback; readiness degraded |
+
+---
+
+## 4. Solution Strategy
+
+| Quality goal | Strategy | Where |
+|---|---|---|
+| Q1 security | backend-enforced authentication, RBAC + data scope, deny-by-default, restricted-field DTOs | §5.3, §8, ADR-003 |
+| Q2 integrity | application-owned transaction, DB constraints, optimistic version/lock, immutable audit | §6, §8, ADR-005 |
+| Q3 workflow | explicit commands and state machines; client cannot patch status directly | §6.2–6.4, ADR-006 |
+| Q4 usability | feature-oriented UI, shared interaction states, accessibility and responsive prototype validation | §5.2, §8 |
+| Q5 performance | server-side filter/sort/page, bounded queries, indexes derived from workloads, measurable budgets | §10 |
+| Q6 maintainability | modular monolith, inward dependencies, ports/adapters, ownership per module | §5, ADR-002/007/008 |
+| Q7 reliability | timeout, bounded retry, idempotency, outbox and reconciliation after commit | §6.5, §8, ADR-007 |
+| Q8 recovery | versioned migration, encrypted backup, restore drill and documented RPO/RTO | §7, §10 |
+
+**The one-sentence strategy:** *phát triển theo vertical slice trên một modular monolith, giữ business rules ở backend, PostgreSQL làm system of record và cô lập mọi hệ thống ngoài qua port/adapter.*
+
+### 4.1 Strategy in one picture
+
+```mermaid
+flowchart TB
+    UX["UI/UX prototypes<br/><i>Design input — existing</i>"]
+    SRS["SRS + workflow + RBAC<br/><i>Specification — existing</i>"]
+    DBDesign["ERD / DBML / DDL<br/><i>Database design — existing</i>"]
+    Web["Feature-based Web Application<br/><i>Proposed</i>"]
+    API["Modular Backend API<br/><i>Proposed</i>"]
+    DB[("PostgreSQL + migrations<br/><i>Proposed runtime</i>")]
+    Ports["Integration ports / adapters<br/><i>Proposed</i>"]
+
+    UX --> Web
+    SRS --> Web
+    SRS --> API
+    DBDesign --> DB
+    Web --> API
+    API --> DB
+    API --> Ports
+```
+
+---
+
+## 5. Building Block View
+
+<a id="c4-level-2-containers"></a>
+
+### 5.1 C4 Level 2 — containers
+
+```mermaid
+flowchart TB
+    user(["👤 QLNS User"])
+
+    subgraph system["QLNS [System Boundary — Proposed]"]
+        web["Web Application<br/><i>[Container]</i><br/>Feature UI, client state, accessibility"]
+        api["Backend API<br/><i>[Container]</i><br/>Use cases, authorization, workflow, transactions"]
+        worker["Background Worker<br/><i>[Container]</i><br/>Outbox delivery, retry, reconciliation"]
+        db[("HRMS Database<br/><i>[Container: PostgreSQL]</i><br/>Transactional system of record")]
+    end
+
+    idp["Identity Provider"]
+    providers["Job board / Email / Calendar / E-signature"]
+    devices["Attendance Devices"]
+    objects[("Private Object Storage")]
+
+    user -->|HTTPS| web
+    web -->|REST/JSON| api
+    api -->|SQL transaction| db
+    api -->|OIDC/OAuth2| idp
+    api -->|metadata / signed access| objects
+    api -->|outbox| db
+    worker -->|claim outbox| db
+    worker -->|HTTPS| providers
+    devices -->|authenticated webhook| api
+
+    style web fill:#1168bd,color:#fff
+    style api fill:#1168bd,color:#fff
+    style worker fill:#1168bd,color:#fff
+```
+
+**Container responsibilities and dependency direction**
+
+```text
+Browser → Web Application → Backend API → Application/Domain
+                                             ↓          ↓
+                                      Persistence   Integration ports
+                                             ↓          ↓
+                                        PostgreSQL   Provider adapters
+```
+
+- Web Application không chứa security boundary hay business invariant.
+- Backend API là entry point duy nhất cho dữ liệu nghiệp vụ.
+- Worker chỉ xử lý side effect/reconciliation đã được ghi bền vững.
+- Database schema hiện có là design input; runtime và migration chưa tồn tại.
+
+<a id="c4-level-3-web"></a>
+
+### 5.2 C4 Level 3 — inside Web Application
+
+```mermaid
+flowchart TB
+    subgraph web["Web Application [Container — Proposed]"]
+        shell["Application Shell<br/><i>[Component]</i><br/>routing, session, navigation"]
+        corehr["Core HR Feature<br/><i>[Component]</i>"]
+        recruitment["Recruitment Feature<br/><i>[Component]</i>"]
+        attendance["Attendance Feature<br/><i>[Component]</i>"]
+        leave["Leave Feature<br/><i>[Component]</i>"]
+        shared["Shared UI<br/><i>[Component]</i><br/>tokens, forms, tables, feedback"]
+        client["API Client<br/><i>[Component]</i><br/>auth header, DTO, errors, correlation"]
+    end
+
+    api["Backend API"]
+    shell --> corehr
+    shell --> recruitment
+    shell --> attendance
+    shell --> leave
+    corehr --> shared
+    recruitment --> shared
+    attendance --> shared
+    leave --> shared
+    corehr --> client
+    recruitment --> client
+    attendance --> client
+    leave --> client
+    client --> api
+```
+
+Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên, không phải frontend implementation.
+
+<a id="c4-level-3-backend"></a>
+
+### 5.3 C4 Level 3 — inside Backend API
+
+```mermaid
+flowchart TB
+    subgraph api["Backend API [Container — Proposed]"]
+        delivery["API Delivery<br/><i>[Component]</i><br/>routes, DTO, error mapping"]
+        auth["Identity & Authorization<br/><i>[Component]</i><br/>actor, RBAC, data scope"]
+        app["Application Services<br/><i>[Component]</i><br/>use cases, transaction boundary"]
+        domain["Domain Model<br/><i>[Component]</i><br/>policy, invariant, state machine"]
+        persistence["Persistence Adapters<br/><i>[Component]</i><br/>repositories, migrations"]
+        integration["Integration Adapters<br/><i>[Component]</i><br/>providers, webhook mapping"]
+        audit["Audit / Outbox<br/><i>[Component]</i>"]
+    end
+
+    db[("PostgreSQL")]
+    ext["External Systems"]
+
+    delivery --> auth --> app
+    app --> domain
+    app --> persistence --> db
+    app --> audit --> db
+    app --> integration --> ext
+```
+
+### 5.4 Business modules and data ownership
+
+| Module | Responsibilities | Designed tables | Current evidence |
+|---|---|---|---|
+| Core HR | employee, department, position, contract, lifecycle | `employees`, `departments`, `positions`, `contracts`, `employee_events`, `employee_documents`, `onboarding_tasks` | UI prototype + DB design |
+| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `interviews`, `evaluations`, `offers` | UI prototype + DB design |
+| Attendance | shift, schedule, check event, timesheet | chưa có | UI prototype only |
+| Leave | leave type, balance, request, decision | chưa có | UI prototype only |
+| Identity/Audit/Notification | actor, permissions, audit, delivery state | chưa có | specification only |
+| Reporting | authorized read models and export | chưa chốt | UI/SRS concept |
+
+### 5.5 Target code structure
+
+```text
+frontend/                         # proposed; does not exist
+├── src/app/                      # composition, routing, session
+├── src/features/
+│   ├── core-hr/
+│   ├── recruitment/
+│   ├── attendance/
+│   └── leave/
+├── src/shared/                   # design system and generic UI
+└── src/api/                      # generated/typed client and error mapping
+
+backend/                          # proposed; does not exist
+├── app/api/                      # delivery/controllers/DTOs
+├── app/modules/
+│   ├── core_hr/                  # domain + application + persistence port
+│   ├── recruitment/
+│   ├── attendance/
+│   └── leave/
+├── app/shared/                   # identity, audit, outbox, errors
+├── app/infrastructure/           # DB and provider adapters
+└── migrations/                   # versioned schema changes
+
+tests/                            # proposed; does not exist
+├── architecture/
+├── unit/
+├── integration/
+├── contract/
+└── end_to_end/
+```
+
+Một use case mới nằm trong module sở hữu nghiệp vụ, cùng command/query, policy và test. Không đặt business rule trong route, component UI hoặc database trigger tổng quát.
+
+---
+
+## 6. Runtime View
+
+### 6.1 Read employee list — happy path
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as HR User
+    participant W as Web Application
+    participant A as Backend API
+    participant Z as Authorization
+    participant D as PostgreSQL
+
+    U->>W: Mở danh sách nhân viên
+    W->>A: GET /api/employees?filter&page
+    A->>Z: authorize(actor, employee.read, scope)
+    Z-->>A: allowed + data scope
+    A->>D: SELECT bounded fields + scope + page
+    D-->>A: rows + total
+    A-->>W: 200 EmployeeList DTO
+    W-->>U: Render success/empty state
+```
+
+### 6.2 Read employee list — authorization failure twin
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant W as Web Application
+    participant A as Backend API
+    participant Z as Authorization
+    participant D as PostgreSQL
+
+    U->>W: Mở hồ sơ ngoài phạm vi
+    W->>A: GET /api/employees/{id}
+    A->>Z: authorize(actor, employee.read, target)
+    Z-->>A: denied
+    A-->>W: 403 Problem Details + correlationId
+    W-->>U: Forbidden state
+    Note over A,D: Database không trả dữ liệu nghiệp vụ cho request bị từ chối
+```
+
+### 6.3 Advance recruitment stage — success and conflict
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor R as Recruiter
+    participant W as Recruitment UI
+    participant A as Backend API
+    participant S as Pipeline Service
+    participant D as PostgreSQL
+    participant O as Outbox
+
+    R->>W: Advance candidate
+    W->>A: POST /applications/{id}/advance {target, version}
+    A->>S: advance(actor, id, target, version)
+    S->>S: authorize + validate transition
+    S->>D: lock/read application
+    alt version/state changed
+        D-->>S: current version differs
+        S-->>A: Conflict
+        A-->>W: 409 + current state reference
+    else valid
+        S->>D: update stage + transition + audit + outbox
+        D-->>S: commit
+        S-->>A: updated application
+        A-->>W: 200 DTO
+        O-->>O: delivered asynchronously after commit
+    end
+```
+
+### 6.4 Candidate-to-employee handoff
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor H as HR Officer
+    participant A as Backend API
+    participant S as Onboarding Service
+    participant D as PostgreSQL
+
+    H->>A: POST /applications/{id}/onboard (Idempotency-Key)
+    A->>S: onboard(actor, applicationId, key)
+    S->>D: lock application + candidate + accepted offer
+    S->>S: validate Hired/Accepted + duplicate policy
+    alt employee already linked
+        S-->>A: existing employee result / 409 by contract
+    else valid
+        S->>D: insert employee + source link + tasks + audit
+        D-->>S: atomic commit
+        S-->>A: Employee DTO
+    end
+```
+
+### 6.5 External notification after transaction
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Application Service
+    participant D as PostgreSQL
+    participant W as Worker
+    participant P as Provider
+
+    S->>D: business change + outbox row (one transaction)
+    D-->>S: commit
+    W->>D: claim pending outbox
+    W->>P: send with idempotency key
+    alt provider unavailable
+        P--xW: timeout/5xx
+        W->>D: bounded retry schedule + last error
+    else accepted
+        P-->>W: provider message id
+        W->>D: mark delivered
+    end
+```
+
+---
+
+## 7. Deployment View
+
+```mermaid
+flowchart TB
+    subgraph edge["Public Edge — Proposed"]
+        ingress["DNS / TLS / WAF / Rate limit"]
+        web["Static Web Hosting / CDN"]
+    end
+
+    subgraph app["Private Application Zone — Proposed"]
+        api["Backend API<br/><i>replica 1..N</i>"]
+        worker["Background Worker<br/><i>replica 1..N</i>"]
+    end
+
+    subgraph data["Private Data Zone — Proposed"]
+        pg[("PostgreSQL<br/>HA + encrypted backup")]
+        objects[("Private Object Storage")]
+    end
+
+    providers["External Providers"]
+    ops["CI/CD + Secrets + Observability"]
+
+    ingress --> web
+    ingress --> api
+    api --> pg
+    api --> objects
+    worker --> pg
+    worker --> providers
+    ops -.-> web
+    ops -.-> api
+    ops -.-> worker
+```
+
+**Deployment rules**
+
+| Rule | Reason |
+|---|---|
+| Browser chỉ truy cập Public Edge; database/object storage không public | giảm attack surface và ngăn client bypass API |
+| Web, API và worker là artifact versioned/immutable | rollback và trace release rõ ràng |
+| Migration chạy như release step riêng, không dùng ORM auto-create production | kiểm soát compatibility và rollback/roll-forward |
+| Business commit và outbox write nằm trong cùng DB transaction | không mất side effect sau commit |
+| Secret đến từ secret manager/reference theo môi trường | không đóng gói credential trong source/image |
+| Readiness kiểm tra dependency thiết yếu; liveness chỉ kiểm tra process | tránh route traffic vào instance chưa sẵn sàng |
+| Backup phải có restore drill; RPO/RTO do ADR phê duyệt | backup không được xem là hữu ích nếu chưa phục hồi thử |
+
+Docker Compose ba service có thể dùng cho local development sau này, nhưng hiện không tồn tại và không phải production topology.
+
+---
+
+## 8. Crosscutting Concepts
+
+| Concept | Rule | Detail |
+|---|---|---|
+| **Identity** | mọi business request có authenticated actor do server xác lập | actor gồm user/employee ID, roles, permissions, data scope, correlation ID |
+| **Authorization** | deny-by-default tại application boundary; UI hiding không phải security | RBAC kết hợp own/direct-report/department/organization scope |
+| **Validation** | DTO validation ở delivery; invariant/state rule ở domain/application | lỗi field dùng `422`; conflict state/version dùng `409` |
+| **Error handling** | error envelope/Problem Details nhất quán; không lộ stack, SQL, secret | lỗi có stable code, safe message, fields và correlation ID |
+| **Workflow** | command tường minh; không patch `status` tùy ý | transition kiểm tra actor, current state, target, guards và version |
+| **Transaction** | application service sở hữu transaction boundary | update aggregate, audit và outbox liên quan phải nguyên tử |
+| **Audit** | mọi thay đổi nhạy cảm ghi actor, action, target, server time, result | audit khác operational log và không chứa toàn payload nhạy cảm |
+| **Persistence** | owner module là writer duy nhất cho bảng của mình | module khác dùng application interface/reference, không dùng bảng như API ngầm |
+| **Time** | instant lưu UTC; business date giữ semantic riêng; UI theo organization timezone | timezone mặc định đề xuất `Asia/Ho_Chi_Minh`, cần xác nhận |
+| **Money** | dùng decimal/numeric và currency; không dùng floating point | calculation/rounding ở backend |
+| **Integration** | timeout, bounded retry, idempotency và reconciliation | lỗi gửi không rollback business state đã commit |
+| **Logging** | structured log, redaction bắt buộc | không log token, CV, hợp đồng, salary hoặc payload restricted |
+| **UI state** | Loading, Empty, Forbidden, Validation, Conflict, Unavailable, Success | không fallback im lặng sang demo data khi API lỗi |
+| **Accessibility** | keyboard, label, focus, contrast và lỗi gắn field | kiểm chứng WCAG 2.1 AA cho luồng thiết yếu |
+
+---
+
+<a id="architecture-decisions"></a>
+
+## 9. Architecture Decisions (ADR index)
+
+| ADR | Decision | Status |
+|---|---|---|
+| ADR-001 | Kiến trúc ba tầng Web Application – Backend API – PostgreSQL | Proposed |
+| ADR-002 | Backend modular monolith trước microservices | Proposed |
+| ADR-003 | Backend thực thi authorization và business rules | Proposed |
+| ADR-004 | REST/JSON, DTO và OpenAPI | Proposed |
+| ADR-005 | PostgreSQL system of record và versioned migration | Proposed |
+| ADR-006 | Explicit commands và state transitions | Proposed |
+| ADR-007 | Ports/adapters, outbox và reliable delivery | Proposed |
+| ADR-008 | Feature-based frontend và shared API client | Proposed |
+
+**Open decisions:** framework/version chính thức; Identity Provider; migration tool; object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency.
+
+Không ADR nào chuyển sang Accepted chỉ vì công nghệ xuất hiện trong prototype, sơ đồ hoặc file DDL. ADR Accepted phải có owner, ngày phê duyệt, alternatives và consequences.
+
+---
+
+## 10. Quality Requirements (stimulus → response → measure)
+
+| # | Source | Stimulus | Environment | Response | Measure |
+|---|---|---|---|---|---|
+| QR1 | Người dùng ngoài quyền | đọc hồ sơ/hợp đồng restricted | production | request bị từ chối trước khi trả dữ liệu | 100% authorization tests trả `401/403`; không rò field restricted |
+| QR2 | Hai recruiter | cùng chuyển một application | concurrent requests | đúng một transition commit | request còn lại trả `409` hoặc idempotent result; không có transition trùng |
+| QR3 | HR Officer | onboard lại cùng application | retry sau timeout | trả cùng employee hoặc conflict xác định | không tạo employee/task trùng |
+| QR4 | Provider | email/calendar timeout | sau business commit | retry hữu hạn, business state giữ nguyên | không rollback trạng thái đã commit; có delivery/reconciliation record |
+| QR5 | HR User | tải danh sách nhân viên | tải mục tiêu, warm service | trả page được scope/filter | p95 ≤ 500 ms; query bounded; không N+1 |
+| QR6 | Auditor | truy vết thay đổi hợp đồng | retention window | nhận actor, time, before/after reference và result | 100% command hợp đồng có audit link |
+| QR7 | Operations | database unavailable | runtime | readiness fail, request không ghi dở dang | rollback hoàn toàn; `5xx` an toàn + correlation ID |
+| QR8 | Operations | restore từ backup | recovery drill | hệ thống phục hồi nhất quán | đạt RPO/RTO sau khi ADR tương ứng được Accepted |
+| QR9 | Keyboard user | hoàn thành một luồng ưu tiên | desktop/tablet | thao tác không cần chuột | 100% control thiết yếu keyboard-accessible, focus visible |
+
+Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **provisional** và phải được benchmark lại trước production.
+
+---
+
+## 11. Risks and Technical Debt
+
+| # | Risk | Impact | Likelihood | Mitigation | Owner |
+|---|---|---|---|---|---|
+| R1 | UI prototype bị hiểu nhầm là frontend đã hoàn thành | High | High | nhãn Design-only, acceptance criteria và không dùng mock data fallback production | Product + Architecture |
+| R2 | Schema 14 bảng chưa đủ identity, audit, attendance và leave | High | High | gap analysis, migration plan, constraint/invariant review trước backend | Data + Backend |
+| R3 | Stack được chọn theo sơ đồ mà không qua decision process | Medium | High | ADR framework/version và proof-of-concept vertical slice | Architecture |
+| R4 | Business rule rò vào UI/router | High | Medium | application/domain boundary, code review và architecture fitness tests | Backend lead |
+| R5 | RBAC chỉ ẩn nút, thiếu data scope server-side | Critical | Medium | deny-by-default policy tests cho từng role/scope | Security |
+| R6 | Candidate-to-employee handoff tạo dữ liệu trùng | High | Medium | source link, unique/business key, lock/version và idempotency test | Core HR + Recruitment |
+| R7 | Provider failure làm sai trạng thái nghiệp vụ | High | Medium | outbox, delivery state, bounded retry và reconciliation | Integration owner |
+| R8 | Dữ liệu nhạy cảm xuất hiện trong log/export/test | Critical | Medium | classification, DTO allowlist, redaction, synthetic test data, export audit | Security + Data |
+| R9 | Mermaid/C4/ADR drift khỏi implementation tương lai | Medium | High | docs-first PR checklist và traceability/fitness gates | Architecture |
+| R10 | SLA/RPO/RTO không có owner | High | Medium | business impact analysis và ADR trước production design | Sponsor + Operations |
+
+**Accepted technical debt:** chưa có. Mọi technical debt chỉ được Accepted khi có owner, impact, expiry/revisit condition và quyết định phê duyệt.
+
+---
+
+## 12. Architecture Fitness Functions
+
+Các gate dưới đây là target bắt buộc cho implementation. Vì chưa có frontend/backend, chúng được ghi trước để tránh tên test tạo cảm giác coverage giả.
+
+| Test / Gate | Rule enforced | Fails when | Status / planned location |
+|---|---|---|---|
+| `FrontendCannotAccessDatabase` | C2, §5.1 | frontend dependency/import chứa DB driver hoặc connection | Planned — `tests/architecture` |
+| `LayersPointInward` | §5.3 | domain phụ thuộc API, ORM hoặc provider SDK | Planned — `tests/architecture` |
+| `NoCrossModuleTableWrites` | §5.4 | module ghi trực tiếp bảng do module khác sở hữu | Planned — architecture/integration tests |
+| `EveryBusinessEndpointRequiresAuthorization` | Q1 | endpoint nghiệp vụ thiếu policy/actor | Planned — security fitness tests |
+| `RestrictedFieldsAreAllowlisted` | Q1, §8 | response DTO vô tình expose salary/document/private field | Planned — contract tests |
+| `EveryStateChangeUsesACommand` | Q3 | API cho phép generic patch trạng thái | Planned — route/contract tests |
+| `EveryCommandWritesAudit` | Q2 | command nhạy cảm commit mà không có audit record | Planned — integration tests |
+| `OutboxIsAtomicWithBusinessChange` | Q2/Q7 | commit business state nhưng thiếu outbox hoặc ngược lại | Planned — DB integration tests |
+| `IdempotentWebhookConformance` | Q7 | cùng external event tạo side effect lần hai | Planned — integration conformance tests |
+| `MigrationsUpgradeFromPreviousRelease` | C3 | migration fail hoặc schema không tương thích | Planned — CI database job |
+| `OpenApiBreakingChangeGate` | ADR-004 | contract breaking change không có version/ADR | Planned — CI contract diff |
+| `NoSensitiveDataInLogs` | §8 | log fixture chứa token, CV, salary hoặc restricted payload | Planned — security tests |
+| `CriticalFlowsMeetAccessibilityGate` | Q4 | axe/keyboard checks fail ở luồng ưu tiên | Planned — frontend CI |
+| `ReadPerformanceBudget` | Q5 | employee/recruitment list vượt provisional p95 budget | Planned — performance job |
+| `MarkdownLinksAndMermaidAreValid` | C9 | tài liệu có link hỏng hoặc Mermaid không parse | Partially available — repository validation |
+
+CI tương lai phải chạy các gate phù hợp trên mọi pull request. Một rule chỉ được đánh dấu **Enforced** khi test/job thực sự tồn tại, có thể fail và được required trong CI.
+
+---
+
+**Requirements:** [Functional specifications](functional_specifications.md) · **Diagrams:** [System diagrams](system_diagrams.md) · **Database:** [Database design](../database/database_design.md)

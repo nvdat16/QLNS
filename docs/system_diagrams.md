@@ -1,6 +1,10 @@
 # 📊 HỆ THỐNG SƠ ĐỒ KIẾN TRÚC & LUỒNG NGHIỆP VỤ (SYSTEM DIAGRAMS)
 ## Hệ Thống Quản Trị Nhân Sự & Tuyển Dụng Tập Trung (QLNS / NexusHR)
 
+> **Trạng thái:** toàn bộ sơ đồ trong tài liệu này là **thiết kế Proposed/Target**. Project hiện chưa có frontend application, Backend API, Docker Compose hoặc runtime deployment. Tên công nghệ, endpoint, container và chuỗi tương tác dưới đây là phương án tham chiếu cần được phê duyệt trước implementation.
+
+> **Nguồn kiến trúc authoritative:** [05 — Architecture (arc42 + C4)](./05_architecture.md). Tài liệu này chỉ bổ sung các sơ đồ nghiệp vụ chi tiết.
+
 ---
 
 ## Danh Mục Sơ Đồ
@@ -12,13 +16,13 @@
 5. [Sơ đồ Tuần tự: Tiếp nhận Onboarding & Chuyển đổi Nhân viên (Onboarding Sequence Diagram)](#5-sơ-đồ-tuần-tự-tiếp-nhận-onboarding--chuyển-đổi-nhân-viên-onboarding-sequence-diagram)
 6. [Sơ đồ Tuần tự: Quản lý Biến động Nhân sự (Internal Mobility Sequence Diagram)](#6-sơ-đồ-tuần-tự-quản-lý-biến-động-nhân-sự-internal-mobility-sequence-diagram)
 7. [Sơ đồ Luồng Hoạt động Tuyển dụng Toàn trình (Recruitment Activity Flowchart)](#7-sơ-đồ-luồng-hoạt-động-tuyển-dụng-toàn-trình-recruitment-activity-flowchart)
-8. [Sơ đồ Triển khai Container Docker (Docker Deployment Diagram)](#8-sơ-đồ-triển-khai-container-docker-docker-deployment-diagram)
+8. [Sơ đồ Triển khai Container Docker Đề xuất (Proposed Docker Deployment Diagram)](#8-sơ-đồ-triển-khai-container-docker-đề-xuất-proposed-docker-deployment-diagram)
 
 ---
 
 ## 1. Sơ đồ Kiến trúc Hệ thống Tổng thể (System Architecture Diagram)
 
-Hệ thống được thiết kế theo kiến trúc **3 tầng phân tán (Three-Tier Micro-Architecture)**, đóng gói hoàn toàn trong môi trường container hóa với Docker Compose:
+Phương án tham chiếu sử dụng kiến trúc nhiều tầng và Docker Compose. Sơ đồ không phản ánh môi trường đang chạy:
 
 ```mermaid
 flowchart TB
@@ -366,7 +370,9 @@ flowchart TD
 
 ---
 
-## 8. Sơ đồ Triển khai Container Docker (Docker Deployment Diagram)
+## 8. Sơ đồ Triển khai Container Docker Đề xuất (Proposed Docker Deployment Diagram)
+
+Topology dưới đây chỉ là ý tưởng development environment; các container, bind mount và cổng mạng này chưa tồn tại trong project.
 
 ```mermaid
 flowchart TB

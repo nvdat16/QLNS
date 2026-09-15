@@ -2,16 +2,16 @@
 
 > Thư mục chứa cấu trúc lược đồ dữ liệu quan hệ (Relational Schema), sơ đồ thực thể liên kết (ERD), ảnh DBML trực quan, file DDL PostgreSQL và dữ liệu khởi tạo mẫu (Seed Data) cho hệ thống **QLNS**.
 
+> **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Chưa có Backend API, migration pipeline hay PostgreSQL runtime được cấu hình trong project. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các luồng nghiệp vụ đã hoạt động.
+
 ---
 
 ## 📌 Mục Lục
 
 - [1. Sơ Đồ Thực Thể Quan Hệ (Visual DBML & ERD)](#1-sơ-đồ-thực-thể-quan-hệ-visual-dbml--erd)
 - [2. Danh Sách 14 Bảng Dữ Liệu](#2-danh-sách-14-bảng-dữ-liệu)
-  - [2.1. Nhóm Quản lý Hồ sơ & Vòng đời Nhân sự (Core HR)](#21-nhóm-quản-lý-hồ-sơ--vòng-đời-nhân-sự-core-hr)
-  - [2.2. Nhóm Quản lý Tuyển dụng & Onboarding (Recruitment ATS)](#22-nhóm-quản-lý-tuyển-dụng--onboarding-recruitment-ats)
 - [3. Danh Mục Tệp Lược Đồ Dữ Liệu](#3-danh-mục-tệp-lược-đồ-dữ-liệu)
-- [4. Hướng Dẫn Khởi Tạo & Kết Nối Database](#4-hướng-dẫn-khởi-tạo--kết-nối-database)
+- [4. Kiểm Tra Thiết Kế Schema](#4-kiểm-tra-thiết-kế-schema-tùy-chọn)
 - [🔗 Quay lại README Tổng Quan](../README.md)
 
 ---
@@ -53,38 +53,25 @@ Hệ thống được chuẩn hóa thành 14 bảng quan hệ, phân thành 2 nh
 | Tệp | Mô Tả Chi Tiết | Liên Kết |
 | :--- | :--- | :--- |
 | **`database_design.md`** | Tài liệu đặc tả kỹ thuật chi tiết từng trường, kiểu dữ liệu, ràng buộc khóa chính/khóa ngoại và Mermaid ERD. | [Xem database_design.md](./database_design.md) |
-| **`init.sql`** | Script DDL hoàn chỉnh bằng PostgreSQL kèm dữ liệu mẫu tự động nạp khi khởi chạy Docker Compose. | [Xem init.sql](./init.sql) |
+| **`init.sql`** | Script PostgreSQL tham chiếu để tạo schema và dữ liệu mẫu khi cần kiểm tra thiết kế. | [Xem init.sql](./init.sql) |
 | **`postgres_db.sql`** | File tham chiếu DDL schema chuẩn. | [Xem postgres_db.sql](./postgres_db.sql) |
 | **`dbml.txt`** | Định nghĩa mã nguồn chuẩn DBML dùng để render sơ đồ trên dbdocs / dbdiagram.io. | [Xem dbml.txt](./dbml.txt) |
 
 ---
 
-## 4. Hướng Dẫn Khởi Tạo & Kết Nối Database
+## 4. Kiểm Tra Thiết Kế Schema (Tùy chọn)
 
-### 4.1. Khởi tạo tự động qua Docker Compose
-Khi chạy lệnh sau ở thư mục gốc, PostgreSQL 16 sẽ tự động chạy script `init.sql`:
+Project chưa cung cấp môi trường database chạy sẵn. Nếu đã có một PostgreSQL test do bạn tự quản lý, có thể nạp DDL tham chiếu bằng `psql`:
+
 ```bash
-docker compose up -d postgres
-```
+psql -v ON_ERROR_STOP=1 -d <test_database> -f database/init.sql
 
-### 4.2. Thông số kết nối mặc định:
-- **Host**: `localhost` (hoặc `postgres` trong mạng Docker)
-- **Port**: `5432`
-- **Database**: `qlns_db`
-- **Username**: `postgres`
-- **Password**: `postgres`
-
-### 4.3. Kiểm tra bằng psql:
-```bash
-# Truy cập container PostgreSQL
-docker exec -it qlns_postgres psql -U postgres -d qlns_db
-
-# Liệt kê các bảng
+# Sau khi kết nối vào database test
 \dt
-
-# Xem danh sách nhân viên mẫu
 SELECT id, employee_code, first_name, last_name, email, status FROM employees;
 ```
+
+Không dùng thông tin xác thực mặc định hoặc dữ liệu mẫu này cho production. Khi bắt đầu backend, cần chọn công cụ migration có version, tách seed theo môi trường và bổ sung kiểm thử constraint/rollback.
 
 ---
 

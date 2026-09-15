@@ -2,6 +2,8 @@
 
 > Thư mục chứa toàn bộ giao diện nguyên mẫu (Interactive Prototypes), thiết kế giao diện người dùng (UI/UX) độc lập và hình ảnh chụp màn hình các phân hệ chức năng của Hệ thống Quản lý Nhân sự (**QLNS**).
 
+> **Phạm vi:** các file HTML/CSS/JavaScript tại đây là **UI/UX prototype**, không phải frontend application. Mọi dữ liệu và thao tác là mô phỏng cục bộ; chưa có xác thực, Backend API, persistence hoặc xử lý nghiệp vụ phía server.
+
 ---
 
 ## 📌 Mục Lục
@@ -11,10 +13,10 @@
   - [2.1. Phân hệ Hồ sơ Nhân sự & Hợp đồng (main.html)](#21-phân-hệ-hồ-sơ-nhân-sự--hợp-đồng-mainhtml)
   - [2.2. Phân hệ Tuyển dụng & Onboarding ATS (recruitment.html)](#22-phân-hệ-tuyển-dụng--onboarding-ats-recruitmenthtml)
   - [2.3. Phân hệ Chấm công & Quản lý Nghỉ phép (attendance.html)](#23-phân-hệ-chấm-công--quản-lý-nghỉ-phép-attendancehtml)
-- [3. Chi Tiết Tính Năng Đã Hoàn Thiện](#3-chi-tiết-tính-năng-đã-hoàn-thiện)
-  - [3.1. Quản lý Hồ sơ & Hợp đồng lao động](#31-quản-lý-hồ-sơ--hợp-đồng-lao-động)
-  - [3.2. Quản lý Tuyển dụng & Quy trình Onboarding](#32-quản-lý-tuyển-dụng--quy-trình-onboarding)
-  - [3.3. Chấm công, Ca làm việc & Quản lý Nghỉ phép](#33-chấm-công-ca-làm-việc--quản-lý-nghỉ-phép)
+- [3. Chi Tiết Tương Tác Đã Mô Phỏng Trong Prototype](#3-chi-tiết-tương-tác-đã-mô-phỏng-trong-prototype)
+  - [3.1. Quản lý Hồ sơ & Hợp đồng lao động](#31-quản-lý-hồ-sơ--hợp-đồng-lao-động-mainhtml)
+  - [3.2. Quản lý Tuyển dụng & Quy trình Onboarding](#32-quản-lý-tuyển-dụng--quy-trình-onboarding-recruitmenthtml)
+  - [3.3. Chấm công, Ca làm việc & Quản lý Nghỉ phép](#33-chấm-công-ca-làm-việc--quản-lý-nghỉ-phép-attendancehtml)
 - [4. Nguyên Tắc Thiết Kế UI/UX](#4-nguyên-tắc-thiết-kế-uiux)
 - [5. Hướng Dẫn Xem & Trải Nghiệm Giao Diện](#5-hướng-dẫn-xem--trải-nghiệm-giao-diện)
 - [🔗 Quay lại README Tổng Quan](../README.md)
@@ -98,7 +100,7 @@ Danh sách các đơn nghỉ phép đang chờ phê duyệt (Pending Requests) v
 
 ---
 
-## 3. Chi Tiết Tính Năng Đã Hoàn Thiện
+## 3. Chi Tiết Tương Tác Đã Mô Phỏng Trong Prototype
 
 ### 3.1. Quản lý Hồ sơ & Hợp đồng lao động (`main.html`)
 - **Dữ liệu mẫu chuẩn hóa doanh nghiệp Việt Nam**: Đầy đủ 5 hồ sơ nhân sự nòng cốt đa phòng ban (Giám đốc Kỹ thuật, Trưởng phòng Nhân sự, Kỹ sư phần mềm Senior, Kế toán trưởng, Quản viên tuyển dụng) với các trường thông tin: Mã NV, Họ tên, Phòng ban, Chức danh, Email công vụ, Số điện thoại, Trạng thái hoạt động.

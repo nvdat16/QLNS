@@ -1,5 +1,7 @@
 # 📑 HRMS Database Design
 
+> **Trạng thái:** tài liệu thiết kế logic/physical schema cho các chức năng chính. Schema và DDL là artifact tham chiếu; chưa có backend, migration pipeline hay database runtime của ứng dụng.
+
 This document provides a unified database design for the **Employee Records** and **Recruitment Management** modules. It defines 14 core tables across the employee lifecycle and hiring workflow.
 
 | Module | Tables |

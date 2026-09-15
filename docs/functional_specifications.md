@@ -5,6 +5,8 @@
 
 ## 1. Giới Thiệu Tổng Quan
 
+> **Trạng thái triển khai:** tài liệu này là đặc tả yêu cầu mục tiêu. Project hiện chỉ có UI/UX prototype và thiết kế database cho các chức năng chính; chưa có frontend/backend. Các câu mô tả hành vi hệ thống bên dưới là yêu cầu để phát triển và nghiệm thu trong tương lai, không phải mô tả chức năng đang chạy.
+
 ### 1.1. Mục tiêu Dự án
 Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị nguồn nhân lực (HRMS) và tuyển dụng thông minh (ATS) toàn diện, nhằm:
 - Số hóa 100% vòng đời của nhân sự: từ khi nộp hồ sơ ứng tuyển, phỏng vấn, tiếp nhận thử việc, ký hợp đồng chính thức, biến động công tác (thăng chức, điều chuyển) đến thôi việc.
@@ -25,7 +27,7 @@ Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị ngu�
 
 ### 1.3. Phạm vi triển khai và nguyên tắc đặc tả
 
-- **Đã có trong mô hình dữ liệu hiện tại**: ATS, hồ sơ nhân sự, onboarding, hợp đồng và báo cáo quân số/tuyển dụng (14 bảng trong `database/init.sql`).
+- **Đã có ở mức thiết kế dữ liệu**: ATS, hồ sơ nhân sự, onboarding và hợp đồng (14 bảng trong `database/init.sql`). DDL chưa được quản lý bởi migration/runtime của backend.
 - **Cần mở rộng mô hình dữ liệu trước khi triển khai**: chấm công, nghỉ phép, lương thưởng, hiệu suất, đào tạo, tài khoản/RBAC, thông báo và audit log. Các tính năng này được đặc tả trong tài liệu để làm baseline cho các giai đoạn tiếp theo; không được giả định là đã có bảng dữ liệu hoặc API sản xuất.
 - Mọi thao tác tạo, cập nhật, phê duyệt, từ chối và xuất dữ liệu phải kiểm tra quyền theo vai trò, lưu người thực hiện và thời điểm thực hiện.
 - Các trạng thái nghiệp vụ phải được kiểm soát bằng tập giá trị hợp lệ; không cho phép cập nhật trực tiếp hoặc bỏ qua bước phê duyệt qua giao diện/API.

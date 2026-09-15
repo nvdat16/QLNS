@@ -1,8 +1,8 @@
 # Human Resource Management System (QLNS / HRMS)
 
-> **Status:** Design/Prototype. Repository hiện chỉ có UI/UX prototype và database design; frontend application, Backend API và deployment runtime chưa được triển khai.
+> **Status:** Design/Prototype with first implementation slice. Repository có UI/UX prototype, canonical database contract, OpenAPI và source baseline cho REC-03.2 bằng React/.NET 10; deployment runtime và integration verification chưa được thiết lập.
 
-**Primary architecture:** [05 — Architecture (arc42 + C4)](docs/architecture.md) · **Requirements:** [Functional specifications](docs/functional_specifications.md) · **Database:** [Database design](database/database_design.md)
+**Primary architecture:** [Architecture (arc42 + C4)](docs/architecture.md) · **Requirements:** [INVEST backlog](docs/requirements_invest.md) · **API:** [OpenAPI 3.0.3](api/openapi.yaml) · **Database:** [Canonical schema](database/schema.sql)
 
 ## Table of Contents
 

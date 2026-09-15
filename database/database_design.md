@@ -1,6 +1,9 @@
 # 📑 HRMS Database Design
 
-> **Trạng thái:** tài liệu thiết kế logic/physical schema cho các chức năng chính. Schema và DDL là artifact tham chiếu; chưa có backend, migration pipeline hay database runtime của ứng dụng.
+> **Trạng thái:** tài liệu lịch sử cho thiết kế 14 bảng nghiệp vụ. Source baseline backend đã có cho REC-03.2 nhưng migration pipeline và database runtime chưa được xác minh.
+
+> [!IMPORTANT]
+> Tài liệu 14 bảng này là mô hình lịch sử để đọc nghiệp vụ. [`schema.sql`](schema.sql) là canonical schema contract v1 và bao gồm thêm identity, workflow history, audit/outbox cùng các constraint cần cho implementation.
 
 This document provides a unified database design for the **Employee Records** and **Recruitment Management** modules. It defines 14 core tables across the employee lifecycle and hiring workflow.
 

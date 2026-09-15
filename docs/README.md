@@ -5,7 +5,7 @@
 Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc của hệ thống Quản lý Nhân sự **QLNS / HRMS**.
 
 > [!IMPORTANT]
-> Repository hiện chỉ có **UI/UX prototype** và **thiết kế cơ sở dữ liệu** cho các chức năng chính. Frontend application, Backend API, migration runtime, tích hợp ngoài và hạ tầng triển khai chưa được xây dựng. Mọi API, container, component và runtime flow trong tài liệu đều là **Proposed/Target**, trừ khi được ghi rõ là artifact hiện có.
+> Repository có **UI/UX prototype**, canonical database/OpenAPI contract và source baseline React/.NET 10 cho vertical slice `REC-03.2`. Migration runtime, tích hợp PostgreSQL/IdP và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là source hiện có; không suy diễn thành production-ready.
 
 ---
 
@@ -13,9 +13,12 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 
 | Document | Purpose | Status |
 |---|---|---|
+| [INVEST Requirements Backlog](requirements_invest.md) | Backlog triển khai được tách nhỏ theo INVEST, có acceptance criteria và traceability | Proposed · Authoritative for delivery |
+| [REC-03.2 Vertical Slice](vertical_slice_rec_03_2.md) | Traceability, 3-tier/3-layer mapping, class and sequence diagrams for the first end-to-end slice | Source implemented · Runtime verification pending |
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules cho các phân hệ chính | Proposed · Authoritative |
 | [System Diagrams](system_diagrams.md) | Use case, ATS state machine, sequence và activity diagrams bổ sung | Proposed · Supporting |
+| [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho Tuyển dụng, Core HR, Hợp đồng, Attendance/Leave và Reporting/Administration | Proposed · Supporting |
 | [Database Design](../database/database_design.md) | ERD và đặc tả 14 bảng cho Core HR, Contracts, Recruitment và Onboarding | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục DBML, PostgreSQL DDL và hướng dẫn kiểm tra schema tham chiếu | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
@@ -28,8 +31,8 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 
 | Area | Existing artifacts | Not implemented |
 |---|---|---|
-| Core HR | UI prototype; thiết kế bảng nhân viên, phòng ban, vị trí, hợp đồng, tài liệu và biến động | frontend, API, authorization, workflow, persistence runtime |
-| Recruitment ATS | UI prototype; thiết kế job, candidate, resume, application, interview, evaluation và offer | frontend, API, state-transition engine, provider integrations |
+| Core HR | UI prototype; canonical schema contract cho nhân viên, phòng ban, vị trí, hợp đồng, tài liệu và biến động | API, authorization, workflow, persistence runtime |
+| Recruitment ATS | UI prototype; canonical schema/OpenAPI; source REC-03.2 React/.NET 10 | runtime verification, IdP, provider integrations và các story còn lại |
 | Onboarding | UI prototype và bảng checklist nền tảng | handoff transaction, account provisioning, notification |
 | Attendance | UI prototype | database schema, work-calendar rules, API, device integration |
 | Leave | UI prototype | database schema, balance policy, approval API và audit |
@@ -108,7 +111,7 @@ Trước khi bắt đầu frontend/backend, tối thiểu cần:
 
 - Chấp thuận stack frontend/backend và phiên bản bằng ADR.
 - Chốt Identity Provider, authentication flow, RBAC và data-scope policy.
-- Review schema 14 bảng và chọn công cụ migration có version.
+- Review canonical schema 20 bảng và sinh EF Core migration đầu tiên có version.
 - Bổ sung schema cho identity, audit và module được chọn làm vertical slice.
 - Chốt API convention, error model, pagination và concurrency strategy.
 - Chọn vertical slice đầu tiên cùng acceptance test end-to-end.

@@ -2,7 +2,7 @@
 
 > Thư mục chứa cấu trúc lược đồ dữ liệu quan hệ (Relational Schema), sơ đồ thực thể liên kết (ERD), ảnh DBML trực quan, file DDL PostgreSQL và dữ liệu khởi tạo mẫu (Seed Data) cho hệ thống **QLNS**.
 
-> **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Chưa có Backend API, migration pipeline hay PostgreSQL runtime được cấu hình trong project. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các luồng nghiệp vụ đã hoạt động.
+> **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Source backend REC-03.2 đã tồn tại; EF Core migration pipeline và PostgreSQL runtime chưa được cấu hình/xác minh. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các luồng nghiệp vụ đã hoạt động.
 
 ---
 
@@ -27,7 +27,7 @@ Dưới đây là sơ đồ chi tiết các bảng, trường thông tin và cá
 
 ## 2. Danh Sách 14 Bảng Dữ Liệu
 
-Hệ thống được chuẩn hóa thành 14 bảng quan hệ, phân thành 2 nhóm nghiệp vụ cốt lõi:
+Mô hình lịch sử gồm 14 bảng thuộc hai nhóm nghiệp vụ cốt lõi. Canonical v1 hiện có 20 bảng, bổ sung identity/data scope, contract addendum, application stage history, audit và outbox:
 
 | STT | Tên Bảng | Phân Nhóm | Chức Năng Chính |
 | :---: | :--- | :--- | :--- |
@@ -49,6 +49,9 @@ Hệ thống được chuẩn hóa thành 14 bảng quan hệ, phân thành 2 nh
 ---
 
 ## 3. Danh Mục Tệp Lược Đồ Dữ Liệu
+
+> [!IMPORTANT]
+> [`schema.sql`](schema.sql) là **canonical schema contract cho baseline v1**. `init.sql`, `postgres_db.sql` và `dbml.txt` là artifact prototype/legacy để đối chiếu và không được dùng làm nguồn tạo migration mới. Khi backend có EF Core migration được phê duyệt, migration trở thành nguồn triển khai và `schema.sql` phải được kiểm tra drift trong CI.
 
 | Tệp | Mô Tả Chi Tiết | Liên Kết |
 | :--- | :--- | :--- |

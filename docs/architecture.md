@@ -42,10 +42,10 @@ Q1–Q3 là các mục tiêu định hình kiến trúc. Mọi quyết định l
 
 | # | Constraint | Type | Implication |
 |---|---|---|---|
-| C1 | Hiện trạng chỉ gồm UI/UX prototype và database design 14 bảng | Project | không mô tả frontend/backend/runtime là đã triển khai |
+| C1 | Hiện trạng gồm UI/UX prototype và source baseline REC-03.2; chưa có runtime đã xác minh | Project | phân biệt source implemented với build-tested, integrated và production-ready |
 | C2 | Frontend không truy cập database trực tiếp | Security | mọi query/command đi qua Backend API và server-side authorization |
-| C3 | PostgreSQL là database candidate theo thiết kế hiện có | Technical | schema phải được review, version hóa bằng migration và kiểm thử constraint trước khi dùng |
-| C4 | React/Vite và FastAPI/Pydantic/SQLAlchemy mới là candidate stack | Technical | cần ADR Accepted và pin phiên bản trước khi scaffold |
+| C3 | PostgreSQL là database chuẩn; `database/schema.sql` là canonical contract tạm thời | Technical | schema phải được review, chuyển thành EF Core migration và kiểm thử constraint trước khi dùng |
+| C4 | React/Vite, ASP.NET Core .NET 10, EF Core và PostgreSQL | Technical | được Project Owner chấp thuận ngày 2026-09-15; package patch phải được pin trước release |
 | C5 | Không dùng distributed transaction/2-phase commit với provider ngoài | Technical | business state commit độc lập; outbox, idempotency và reconciliation cho side effect |
 | C6 | Dữ liệu nhân sự và ứng viên là confidential/restricted | Legal/Security | least privilege, encryption, audit, masking, retention và controlled export |
 | C7 | Quy tắc lao động, hợp đồng, thuế và bảo hiểm cần HR/Legal phê duyệt | Legal | tài liệu kỹ thuật không tự suy diễn quy định pháp lý |
@@ -242,29 +242,28 @@ Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên
 
 <a id="c4-level-3-backend"></a>
 
-### 5.3 C4 Level 3 — inside Backend API
+### 5.3 C4 Level 3 — inside ASP.NET Core Backend API
 
 ```mermaid
 flowchart TB
-    subgraph api["Backend API [Container — Proposed]"]
-        delivery["API Delivery<br/><i>[Component]</i><br/>routes, DTO, error mapping"]
-        auth["Identity & Authorization<br/><i>[Component]</i><br/>actor, RBAC, data scope"]
-        app["Application Services<br/><i>[Component]</i><br/>use cases, transaction boundary"]
-        domain["Domain Model<br/><i>[Component]</i><br/>policy, invariant, state machine"]
-        persistence["Persistence Adapters<br/><i>[Component]</i><br/>repositories, migrations"]
-        integration["Integration Adapters<br/><i>[Component]</i><br/>providers, webhook mapping"]
-        audit["Audit / Outbox<br/><i>[Component]</i>"]
+    subgraph api["ASP.NET Core API [Application Tier]"]
+        presentation["Qlns.Api<br/><i>[Presentation Layer]</i><br/>controllers, DTO, auth, Problem Details"]
+        business["Qlns.BusinessLogic<br/><i>[Business Layer]</i><br/>services, policies, domain workflow"]
+        data["Qlns.DataAccess<br/><i>[Data Layer]</i><br/>EF Core repositories, transactions"]
     end
 
     db[("PostgreSQL")]
     ext["External Systems"]
 
-    delivery --> auth --> app
-    app --> domain
-    app --> persistence --> db
-    app --> audit --> db
-    app --> integration --> ext
+    presentation --> business
+    business -->|repository contract call| data
+    presentation -.->|composition root registration| data
+    data -.->|implements repository contract| business
+    data --> db
+    data --> ext
 ```
+
+Ba **tier runtime** là React Web, ASP.NET Core API và PostgreSQL. Ba **layer source code** bên trong application tier là Presentation, Business Logic và Data Access. Business Logic không phụ thuộc ASP.NET Core hoặc EF Core; Data Access triển khai repository contract do Business Logic sở hữu.
 
 ### 5.4 Business modules and data ownership
 
@@ -272,41 +271,29 @@ flowchart TB
 |---|---|---|---|
 | Core HR | employee, department, position, contract, lifecycle | `employees`, `departments`, `positions`, `contracts`, `employee_events`, `employee_documents`, `onboarding_tasks` | UI prototype + DB design |
 | Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `interviews`, `evaluations`, `offers` | UI prototype + DB design |
-| Attendance | shift, schedule, check event, timesheet | chưa có | UI prototype only |
-| Leave | leave type, balance, request, decision | chưa có | UI prototype only |
-| Identity/Audit/Notification | actor, permissions, audit, delivery state | chưa có | specification only |
+| Attendance | shift, schedule, check event, timesheet | deferred from canonical v1 | UI prototype only |
+| Leave | leave type, balance, request, decision | deferred from canonical v1 | UI prototype only |
+| Identity/Audit/Notification | actor, roles/data scope, audit, delivery state | `users`, `user_roles`, `audit_logs`, `outbox_messages` | canonical v1 design |
 | Reporting | authorized read models and export | chưa chốt | UI/SRS concept |
 
 ### 5.5 Target code structure
 
 ```text
-frontend/                         # proposed; does not exist
+frontend/
 ├── src/app/                      # composition, routing, session
 ├── src/features/
-│   ├── core-hr/
-│   ├── recruitment/
-│   ├── attendance/
-│   └── leave/
+│   └── recruitment/              # api, components, hooks, pages
 ├── src/shared/                   # design system and generic UI
-└── src/api/                      # generated/typed client and error mapping
+└── src/api/                      # shared client and Problem Details mapping
 
-backend/                          # proposed; does not exist
-├── app/api/                      # delivery/controllers/DTOs
-├── app/modules/
-│   ├── core_hr/                  # domain + application + persistence port
-│   ├── recruitment/
-│   ├── attendance/
-│   └── leave/
-├── app/shared/                   # identity, audit, outbox, errors
-├── app/infrastructure/           # DB and provider adapters
-└── migrations/                   # versioned schema changes
+backend/
+├── src/Qlns.Api/                 # Presentation layer
+├── src/Qlns.BusinessLogic/       # Business layer + repository contracts
+├── src/Qlns.DataAccess/          # Data layer + EF Core/PostgreSQL
+└── tests/Qlns.BusinessLogic.UnitTests/
 
-tests/                            # proposed; does not exist
-├── architecture/
-├── unit/
-├── integration/
-├── contract/
-└── end_to_end/
+api/openapi.yaml                  # contract-first OpenAPI 3.0.3
+database/schema.sql               # canonical schema contract before EF migrations
 ```
 
 Một use case mới nằm trong module sở hữu nghiệp vụ, cùng command/query, policy và test. Không đặt business rule trong route, component UI hoặc database trigger tổng quát.
@@ -510,16 +497,17 @@ Docker Compose ba service có thể dùng cho local development sau này, nhưng
 
 | ADR | Decision | Status |
 |---|---|---|
-| ADR-001 | Kiến trúc ba tầng Web Application – Backend API – PostgreSQL | Proposed |
+| ADR-001 | Kiến trúc 3-tier React – ASP.NET Core API – PostgreSQL và backend 3-layer | Accepted 2026-09-15 |
 | ADR-002 | Backend modular monolith trước microservices | Proposed |
 | ADR-003 | Backend thực thi authorization và business rules | Proposed |
-| ADR-004 | REST/JSON, DTO và OpenAPI | Proposed |
+| ADR-004 | REST/JSON, DTO và contract-first OpenAPI 3.0.3 | Accepted 2026-09-15 |
 | ADR-005 | PostgreSQL system of record và versioned migration | Proposed |
 | ADR-006 | Explicit commands và state transitions | Proposed |
 | ADR-007 | Ports/adapters, outbox và reliable delivery | Proposed |
-| ADR-008 | Feature-based frontend và shared API client | Proposed |
+| ADR-008 | Feature-based React frontend và shared API client | Accepted 2026-09-15 |
+| ADR-009 | .NET 10, ASP.NET Core, EF Core và PostgreSQL | Accepted 2026-09-15 |
 
-**Open decisions:** framework/version chính thức; Identity Provider; migration tool; object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency.
+**Open decisions:** Identity Provider; object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency. EF Core migration là công cụ migration mục tiêu nhưng migration đầu tiên chỉ được sinh sau khi cài .NET 10 SDK và review model/schema drift.
 
 Không ADR nào chuyển sang Accepted chỉ vì công nghệ xuất hiện trong prototype, sơ đồ hoặc file DDL. ADR Accepted phải có owner, ngày phê duyệt, alternatives và consequences.
 
@@ -548,7 +536,7 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 | # | Risk | Impact | Likelihood | Mitigation | Owner |
 |---|---|---|---|---|---|
 | R1 | UI prototype bị hiểu nhầm là frontend đã hoàn thành | High | High | nhãn Design-only, acceptance criteria và không dùng mock data fallback production | Product + Architecture |
-| R2 | Schema 14 bảng chưa đủ identity, audit, attendance và leave | High | High | gap analysis, migration plan, constraint/invariant review trước backend | Data + Backend |
+| R2 | Canonical schema chưa có Attendance/Leave và chưa được chuyển thành EF migration | High | High | discovery business rule, migration plan và constraint/invariant integration tests | Data + Backend |
 | R3 | Stack được chọn theo sơ đồ mà không qua decision process | Medium | High | ADR framework/version và proof-of-concept vertical slice | Architecture |
 | R4 | Business rule rò vào UI/router | High | Medium | application/domain boundary, code review và architecture fitness tests | Backend lead |
 | R5 | RBAC chỉ ẩn nút, thiếu data scope server-side | Critical | Medium | deny-by-default policy tests cho từng role/scope | Security |
@@ -564,7 +552,7 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 
 ## 12. Architecture Fitness Functions
 
-Các gate dưới đây là target bắt buộc cho implementation. Vì chưa có frontend/backend, chúng được ghi trước để tránh tên test tạo cảm giác coverage giả.
+Các gate dưới đây là target bắt buộc. Source baseline chỉ mới có unit tests cho REC-03.2; những gate chưa có executable job vẫn phải giữ trạng thái Planned.
 
 | Test / Gate | Rule enforced | Fails when | Status / planned location |
 |---|---|---|---|

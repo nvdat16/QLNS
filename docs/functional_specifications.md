@@ -5,7 +5,7 @@
 
 ## 1. Giới Thiệu Tổng Quan
 
-> **Trạng thái triển khai:** tài liệu này là đặc tả yêu cầu mục tiêu. Project hiện chỉ có UI/UX prototype và thiết kế database cho các chức năng chính; chưa có frontend/backend. Các câu mô tả hành vi hệ thống bên dưới là yêu cầu để phát triển và nghiệm thu trong tương lai, không phải mô tả chức năng đang chạy.
+> **Trạng thái triển khai:** tài liệu này là đặc tả yêu cầu mục tiêu. Project có UI/UX prototype, canonical database/OpenAPI contract và source baseline REC-03.2; runtime chưa được build/tích hợp. Các hành vi ngoài slice được ghi rõ trong `requirements_invest.md` vẫn là yêu cầu tương lai, không phải chức năng đang chạy.
 
 ### 1.1. Mục tiêu Dự án
 Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị nguồn nhân lực (HRMS) và tuyển dụng thông minh (ATS) toàn diện, nhằm:
@@ -27,7 +27,7 @@ Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị ngu�
 
 ### 1.3. Phạm vi triển khai và nguyên tắc đặc tả
 
-- **Đã có ở mức thiết kế dữ liệu**: ATS, hồ sơ nhân sự, onboarding và hợp đồng (14 bảng trong `database/init.sql`). DDL chưa được quản lý bởi migration/runtime của backend.
+- **Đã có ở mức thiết kế dữ liệu**: ATS, hồ sơ nhân sự, onboarding và hợp đồng. `database/schema.sql` là canonical schema contract v1; DDL cũ chỉ là artifact tham chiếu và schema chưa được quản lý bởi EF Core migration/runtime.
 - **Cần mở rộng mô hình dữ liệu trước khi triển khai**: chấm công, nghỉ phép, lương thưởng, hiệu suất, đào tạo, tài khoản/RBAC, thông báo và audit log. Các tính năng này được đặc tả trong tài liệu để làm baseline cho các giai đoạn tiếp theo; không được giả định là đã có bảng dữ liệu hoặc API sản xuất.
 - Mọi thao tác tạo, cập nhật, phê duyệt, từ chối và xuất dữ liệu phải kiểm tra quyền theo vai trò, lưu người thực hiện và thời điểm thực hiện.
 - Các trạng thái nghiệp vụ phải được kiểm soát bằng tập giá trị hợp lệ; không cho phép cập nhật trực tiếp hoặc bỏ qua bước phê duyệt qua giao diện/API.
@@ -308,7 +308,7 @@ QLNS / NexusHR
   3. Sau khi `Approved` và được ký theo policy, phụ lục chuyển `Effective`; hệ thống tạo `employee_event` tương ứng và cập nhật dữ liệu chủ nếu đến ngày hiệu lực.
 - **Quy tắc**:
   - Phụ lục không được sửa hợp đồng gốc; thay đổi sau khi hiệu lực phải tạo phiên bản phụ lục mới hoặc phụ lục thay thế.
-  - Mỗi phụ lục cần số tham chiếu, người lập, người phê duyệt, file đã ký và audit trail. Schema hiện tại chưa có bảng `contract_addenda`; cần bổ sung bảng trước khi triển khai.
+  - Mỗi phụ lục cần số tham chiếu, người lập, người phê duyệt, file đã ký và audit trail trong bảng canonical `contract_addenda`; migration runtime vẫn phải được tạo và review trước khi triển khai.
 
 ---
 

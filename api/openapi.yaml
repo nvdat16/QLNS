@@ -1,0 +1,1134 @@
+openapi: 3.0.3
+info:
+  title: QLNS API
+  version: 1.0.0
+  description: >-
+    Contract-first API for Recruitment, Core HR and Contract Management.
+    Workflow changes use explicit commands, ETag/If-Match concurrency control,
+    server-side authorization, audit logging and transactional outbox delivery.
+servers:
+  - url: http://localhost:5000
+    description: Local ASP.NET Core development server
+security:
+  - bearerAuth: []
+tags:
+  - { name: Recruitment Requisitions }
+  - { name: Recruitment Intake }
+  - { name: Recruitment Pipeline }
+  - { name: Recruitment Interviews }
+  - { name: Recruitment Evaluations }
+  - { name: Recruitment Offers }
+  - { name: Employees }
+  - { name: Organization }
+  - { name: Onboarding }
+  - { name: Employee Events }
+  - { name: Employee Documents }
+  - { name: Contracts }
+  - { name: Contract Addenda }
+
+paths:
+  /api/v1/recruitment/requisitions:
+    get:
+      tags: [Recruitment Requisitions]
+      operationId: listRecruitmentRequisitions
+      summary: Search requisitions in the actor's data scope
+      x-requirement: REC-01.1, REC-01.2
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/RequisitionStatus' } }
+        - name: sort
+          in: query
+          description: Allowlist is createdAt, -createdAt, closingDate, -closingDate.
+          schema: { type: string, default: -createdAt }
+      responses:
+        '200': { description: Paged requisitions, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Recruitment Requisitions]
+      operationId: createRecruitmentRequisition
+      summary: Create a draft requisition
+      x-requirement: REC-01.1
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionWrite' } } } }
+      responses:
+        '201':
+          description: Draft created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Requisition' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/requisitions/{requisitionId}:
+    parameters: [{ $ref: '#/components/parameters/RequisitionId' }]
+    get:
+      tags: [Recruitment Requisitions]
+      operationId: getRecruitmentRequisition
+      summary: Get one requisition
+      x-requirement: REC-01.1, REC-01.2
+      responses:
+        '200':
+          description: Requisition
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Requisition' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Recruitment Requisitions]
+      operationId: replaceRecruitmentRequisitionDraft
+      summary: Replace editable fields of a draft or returned requisition
+      x-requirement: REC-01.1
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionWrite' } } } }
+      responses:
+        '200':
+          description: Draft updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Requisition' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/requisitions/{requisitionId}/{action}:
+    post:
+      tags: [Recruitment Requisitions]
+      operationId: transitionRecruitmentRequisition
+      summary: Submit, approve, reject, publish, close or cancel a requisition
+      description: Reject requires a reason; publish requires at least one channel.
+      x-requirement: REC-01.2
+      parameters:
+        - $ref: '#/components/parameters/RequisitionId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [submit, approve, reject, publish, close, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionAction' } } } }
+      responses:
+        '200':
+          description: Transition completed
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Requisition' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/resumes:
+    post:
+      tags: [Recruitment Intake]
+      operationId: startRecruitmentIntake
+      summary: Scan and parse a PDF, DOC or DOCX resume up to 10 MiB
+      x-requirement: REC-02.1
+      requestBody: { required: true, content: { multipart/form-data: { schema: { $ref: '#/components/schemas/ResumeUpload' } } } }
+      responses:
+        '202':
+          description: Intake accepted
+          headers: { Location: { $ref: '#/components/headers/Location' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/CandidateIntake' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/intakes/{intakeId}:
+    get:
+      tags: [Recruitment Intake]
+      operationId: getRecruitmentIntake
+      summary: Get scan, parse and duplicate-detection state
+      x-requirement: REC-02.1, REC-02.2
+      parameters: [{ $ref: '#/components/parameters/IntakeId' }]
+      responses:
+        '200': { description: Intake, content: { application/json: { schema: { $ref: '#/components/schemas/CandidateIntake' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/recruitment/intakes/{intakeId}/confirm:
+    post:
+      tags: [Recruitment Intake]
+      operationId: confirmRecruitmentIntake
+      summary: Confirm parsed data, resolve duplicates and create an application
+      x-requirement: REC-02.2
+      parameters:
+        - $ref: '#/components/parameters/IntakeId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ConfirmIntake' } } } }
+      responses:
+        '201':
+          description: Application created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/RecruitmentApplicationDetail' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/pipeline:
+    get:
+      tags: [Recruitment Pipeline]
+      operationId: getRecruitmentPipeline
+      summary: Get a filtered, paged Kanban pipeline
+      x-requirement: REC-03.1
+      parameters:
+        - { name: requisitionId, in: query, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: '#/components/parameters/Search'
+        - { name: stage, in: query, schema: { $ref: '#/components/schemas/RecruitmentStage' } }
+        - { name: minimumAiScore, in: query, schema: { type: number, minimum: 0, maximum: 100 } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Pipeline, content: { application/json: { schema: { $ref: '#/components/schemas/RecruitmentPipeline' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/recruitment/applications/{applicationId}:
+    get:
+      tags: [Recruitment Pipeline]
+      operationId: getRecruitmentApplication
+      summary: Get one authorized recruitment application
+      x-requirement: REC-03.1, REC-03.2
+      parameters: [{ $ref: '#/components/parameters/ApplicationId' }]
+      responses:
+        '200':
+          description: Application
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/RecruitmentApplication' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/recruitment/applications/{applicationId}/advance:
+    post:
+      tags: [Recruitment Pipeline]
+      operationId: advanceRecruitmentApplication
+      summary: Advance an application exactly one active stage
+      x-requirement: REC-03.2
+      parameters: [{ $ref: '#/components/parameters/ApplicationId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AdvanceApplicationRequest' } } } }
+      responses:
+        '200':
+          description: Application advanced
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/RecruitmentApplication' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/applications/{applicationId}/{terminalAction}:
+    post:
+      tags: [Recruitment Pipeline]
+      operationId: terminateRecruitmentApplication
+      summary: Reject or withdraw an application with a reason
+      x-requirement: REC-03.2
+      parameters:
+        - $ref: '#/components/parameters/ApplicationId'
+        - { name: terminalAction, in: path, required: true, schema: { type: string, enum: [reject, withdraw] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses:
+        '200':
+          description: Application terminated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/RecruitmentApplication' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/interviews:
+    get:
+      tags: [Recruitment Interviews]
+      operationId: listRecruitmentInterviews
+      summary: Search interviews visible to the actor
+      x-requirement: REC-04.1
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: applicationId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: interviewerUserId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/InterviewStatus' } }
+      responses:
+        '200': { description: Paged interviews, content: { application/json: { schema: { $ref: '#/components/schemas/InterviewPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Recruitment Interviews]
+      operationId: scheduleRecruitmentInterview
+      summary: Schedule an interview and enqueue invitations
+      x-requirement: REC-04.1
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/InterviewWrite' } } } }
+      responses:
+        '201':
+          description: Interview scheduled
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Interview' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/interviews/{interviewId}/{action}:
+    post:
+      tags: [Recruitment Interviews]
+      operationId: transitionRecruitmentInterview
+      summary: Reschedule, complete or cancel an interview
+      x-requirement: REC-04.1
+      parameters:
+        - $ref: '#/components/parameters/InterviewId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [reschedule, complete, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/InterviewAction' } } } }
+      responses:
+        '200':
+          description: Interview updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Interview' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/interviews/{interviewId}/evaluations:
+    get:
+      tags: [Recruitment Evaluations]
+      operationId: listInterviewEvaluations
+      summary: List evaluations subject to blind-evaluation policy
+      x-requirement: REC-05.1
+      parameters: [{ $ref: '#/components/parameters/InterviewId' }]
+      responses:
+        '200': { description: Evaluations, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Evaluation' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Recruitment Evaluations]
+      operationId: submitInterviewEvaluation
+      summary: Submit an immutable scorecard
+      x-requirement: REC-05.1
+      parameters: [{ $ref: '#/components/parameters/InterviewId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EvaluationWrite' } } } }
+      responses:
+        '201':
+          description: Evaluation submitted
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Evaluation' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/evaluations/{evaluationId}/unlock:
+    post:
+      tags: [Recruitment Evaluations]
+      operationId: unlockInterviewEvaluation
+      summary: Unlock by creating a new auditable evaluation version
+      x-requirement: REC-05.1
+      parameters: [{ $ref: '#/components/parameters/EvaluationId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses:
+        '200':
+          description: New evaluation version
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Evaluation' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/recruitment/offers:
+    get:
+      tags: [Recruitment Offers]
+      operationId: listRecruitmentOffers
+      summary: Search offers in the actor's scope
+      x-requirement: REC-06.1
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: applicationId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/OfferStatus' } }
+      responses:
+        '200': { description: Paged offers, content: { application/json: { schema: { $ref: '#/components/schemas/OfferPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Recruitment Offers]
+      operationId: createRecruitmentOffer
+      summary: Create a draft offer
+      x-requirement: REC-06.1
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OfferWrite' } } } }
+      responses:
+        '201':
+          description: Draft offer created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Offer' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/offers/{offerId}:
+    get:
+      tags: [Recruitment Offers]
+      operationId: getRecruitmentOffer
+      summary: Get one offer
+      x-requirement: REC-06.1
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200':
+          description: Offer
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Offer' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/recruitment/offers/{offerId}/{action}:
+    post:
+      tags: [Recruitment Offers]
+      operationId: transitionRecruitmentOffer
+      summary: Approve, send, extend or cancel an offer
+      x-requirement: REC-06.1
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, send, extend, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/OfferAction' } } } }
+      responses:
+        '200':
+          description: Offer updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Offer' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/recruitment/offers/{offerId}/response:
+    post:
+      tags: [Recruitment Offers]
+      operationId: respondToRecruitmentOffer
+      summary: Accept or decline as the candidate
+      description: Acceptance idempotently creates an employee, initial contract and onboarding checklist.
+      x-requirement: REC-06.2
+      security: [{ offerToken: [] }]
+      parameters: [{ $ref: '#/components/parameters/OfferId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OfferResponse' } } } }
+      responses:
+        '200': { description: Response recorded or replayed, content: { application/json: { schema: { $ref: '#/components/schemas/OfferResponseResult' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/employees:
+    get:
+      tags: [Employees]
+      operationId: listEmployees
+      summary: Search the scope-filtered employee directory
+      x-requirement: EMP-01.1
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: positionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/EmployeeStatus' } }
+        - { name: sort, in: query, description: Allowlist is name, -name, employeeCode, hireDate., schema: { type: string, default: name } }
+      responses:
+        '200': { description: Paged employees, content: { application/json: { schema: { $ref: '#/components/schemas/EmployeePage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/employees/{employeeId}:
+    get:
+      tags: [Employees]
+      operationId: getEmployee
+      summary: Get an employee with sensitive fields masked by policy
+      x-requirement: EMP-01.1
+      parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
+      responses:
+        '200':
+          description: Employee
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/EmployeeDetail' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/employees/{employeeId}/profile:
+    patch:
+      tags: [Employees]
+      operationId: updateEmployeePersonalProfile
+      summary: Update only personal fields allowed by field policy
+      description: Work email, department, position, manager, status and salary cannot be changed here.
+      x-requirement: EMP-01.2
+      parameters: [{ $ref: '#/components/parameters/EmployeeId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/merge-patch+json: { schema: { $ref: '#/components/schemas/PersonalProfilePatch' } } } }
+      responses:
+        '200':
+          description: Profile updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/EmployeeDetail' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/organization/chart:
+    get:
+      tags: [Organization]
+      operationId: getOrganizationChart
+      summary: Get hierarchical departments with managers and headcount
+      x-requirement: EMP-02.1
+      parameters:
+        - { name: rootDepartmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: depth, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 10 } }
+      responses:
+        '200': { description: Organization tree, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/OrganizationNode' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/organization/departments:
+    get:
+      tags: [Organization]
+      operationId: listDepartments
+      summary: List departments
+      x-requirement: EMP-02.1
+      responses:
+        '200': { description: Departments, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Department' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Organization]
+      operationId: createDepartment
+      summary: Create a department
+      x-requirement: EMP-02.1
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DepartmentWrite' } } } }
+      responses:
+        '201':
+          description: Department created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Department' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/organization/departments/{departmentId}:
+    parameters: [{ $ref: '#/components/parameters/DepartmentId' }]
+    put:
+      tags: [Organization]
+      operationId: replaceDepartment
+      summary: Replace department metadata
+      x-requirement: EMP-02.1
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DepartmentWrite' } } } }
+      responses:
+        '200':
+          description: Department updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Department' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [Organization]
+      operationId: deleteDepartment
+      summary: Delete a department only when it has no child, employee or open requisition
+      x-requirement: EMP-02.1
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      responses:
+        '204': { description: Department deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/organization/positions:
+    get:
+      tags: [Organization]
+      operationId: listPositions
+      summary: List position definitions
+      x-requirement: EMP-02.1
+      responses:
+        '200': { description: Positions, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Position' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Organization]
+      operationId: createPosition
+      summary: Create a position definition
+      x-requirement: EMP-02.1
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PositionWrite' } } } }
+      responses:
+        '201':
+          description: Position created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Position' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/organization/positions/{positionId}:
+    put:
+      tags: [Organization]
+      operationId: replacePosition
+      summary: Replace position metadata
+      x-requirement: EMP-02.1
+      parameters: [{ $ref: '#/components/parameters/PositionId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PositionWrite' } } } }
+      responses:
+        '200':
+          description: Position updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Position' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /api/v1/onboarding/tasks:
+    get:
+      tags: [Onboarding]
+      operationId: listOnboardingTasks
+      summary: Search onboarding tasks and overdue work
+      x-requirement: EMP-03.1
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: assignedToUserId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/OnboardingTaskStatus' } }
+        - { name: overdue, in: query, schema: { type: boolean } }
+      responses:
+        '200': { description: Paged tasks, content: { application/json: { schema: { $ref: '#/components/schemas/OnboardingTaskPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/onboarding/tasks/{taskId}/{action}:
+    post:
+      tags: [Onboarding]
+      operationId: transitionOnboardingTask
+      summary: Start, complete or reopen an onboarding task
+      x-requirement: EMP-03.1
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [start, complete, reopen] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses:
+        '200':
+          description: Task updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OnboardingTask' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/onboarding/tasks/{taskId}:
+    put:
+      tags: [Onboarding]
+      operationId: updateOnboardingTaskAssignment
+      summary: Update task ownership, description and due date
+      x-requirement: EMP-03.1
+      parameters: [{ $ref: '#/components/parameters/TaskId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OnboardingTaskWrite' } } } }
+      responses:
+        '200':
+          description: Task updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OnboardingTask' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/employees/{employeeId}/events:
+    get:
+      tags: [Employee Events]
+      operationId: listEmployeeEvents
+      summary: List immutable movement history
+      x-requirement: EMP-04.1
+      parameters: [{ $ref: '#/components/parameters/EmployeeId' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
+      responses:
+        '200': { description: Paged events, content: { application/json: { schema: { $ref: '#/components/schemas/EmployeeEventPage' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Employee Events]
+      operationId: createEmployeeEvent
+      summary: Create a draft employee movement proposal
+      x-requirement: EMP-04.1
+      parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EmployeeEventWrite' } } } }
+      responses:
+        '201':
+          description: Draft event created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/EmployeeEvent' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/employee-events/{eventId}/{action}:
+    post:
+      tags: [Employee Events]
+      operationId: transitionEmployeeEvent
+      summary: Submit, approve or cancel an event; applied events are immutable
+      x-requirement: EMP-04.1
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [submit, approve, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses:
+        '200':
+          description: Event updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/EmployeeEvent' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/employees/{employeeId}/documents:
+    get:
+      tags: [Employee Documents]
+      operationId: listEmployeeDocuments
+      summary: List authorized private-document metadata
+      x-requirement: EMP-05.1
+      parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
+      responses:
+        '200': { description: Documents, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/EmployeeDocument' } } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Employee Documents]
+      operationId: uploadEmployeeDocument
+      summary: Scan and store a new private document version
+      x-requirement: EMP-05.1
+      parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
+      requestBody: { required: true, content: { multipart/form-data: { schema: { $ref: '#/components/schemas/EmployeeDocumentUpload' } } } }
+      responses:
+        '201':
+          description: Document stored
+          headers: { Location: { $ref: '#/components/headers/Location' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/EmployeeDocument' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/employee-documents/{documentId}/download-url:
+    post:
+      tags: [Employee Documents]
+      operationId: createEmployeeDocumentDownloadUrl
+      summary: Create an authorized download URL valid for at most 15 minutes
+      x-requirement: EMP-05.1
+      parameters: [{ $ref: '#/components/parameters/DocumentId' }]
+      responses:
+        '200': { description: Signed URL, content: { application/json: { schema: { $ref: '#/components/schemas/SignedDownload' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/contracts:
+    get:
+      tags: [Contracts]
+      operationId: listContracts
+      summary: Search contracts; employees can only access their own
+      x-requirement: CON-01.1, CON-01.2
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: type, in: query, schema: { $ref: '#/components/schemas/ContractType' } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ContractStatus' } }
+      responses:
+        '200': { description: Paged contracts, content: { application/json: { schema: { $ref: '#/components/schemas/ContractPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Contracts]
+      operationId: createContract
+      summary: Create a draft employment contract
+      x-requirement: CON-01.1
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContractWrite' } } } }
+      responses:
+        '201':
+          description: Draft created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Contract' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/contracts/expiring:
+    get:
+      tags: [Contracts]
+      operationId: listExpiringContracts
+      summary: List contracts at configured expiry-alert thresholds
+      x-requirement: CON-02.1
+      parameters:
+        - { name: asOf, in: query, schema: { type: string, format: date } }
+        - { name: withinDays, in: query, schema: { type: integer, minimum: 1, maximum: 365, default: 45 } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Expiring contracts, content: { application/json: { schema: { $ref: '#/components/schemas/ExpiringContractPage' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/contracts/{contractId}:
+    parameters: [{ $ref: '#/components/parameters/ContractId' }]
+    get:
+      tags: [Contracts]
+      operationId: getContract
+      summary: Get one authorized contract
+      x-requirement: CON-01.1, CON-01.2
+      responses:
+        '200':
+          description: Contract
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Contract' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Contracts]
+      operationId: replaceContractDraft
+      summary: Replace editable fields of a draft contract
+      x-requirement: CON-01.1
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContractWrite' } } } }
+      responses:
+        '200':
+          description: Draft updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Contract' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/contracts/{contractId}/{action}:
+    post:
+      tags: [Contracts]
+      operationId: transitionContract
+      summary: Approve, activate, terminate or cancel a contract
+      x-requirement: CON-01.1, CON-01.2
+      parameters:
+        - $ref: '#/components/parameters/ContractId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, activate, terminate, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/ContractAction' } } } }
+      responses:
+        '200':
+          description: Contract updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Contract' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/contracts/{contractId}/signed-document:
+    post:
+      tags: [Contracts]
+      operationId: uploadSignedContractDocument
+      summary: Upload a signed PDF before activation
+      x-requirement: CON-01.2
+      parameters: [{ $ref: '#/components/parameters/ContractId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody:
+        required: true
+        content: { multipart/form-data: { schema: { type: object, additionalProperties: false, required: [file], properties: { file: { type: string, format: binary } } } } }
+      responses:
+        '200':
+          description: Document stored
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Contract' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+
+  /api/v1/contracts/{contractId}/download-url:
+    post:
+      tags: [Contracts]
+      operationId: createContractDownloadUrl
+      summary: Create a short-lived URL for an authorized signed-contract download
+      x-requirement: CON-01.2
+      parameters: [{ $ref: '#/components/parameters/ContractId' }]
+      responses:
+        '200': { description: Signed URL, content: { application/json: { schema: { $ref: '#/components/schemas/SignedDownload' } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/contracts/{contractId}/addenda:
+    get:
+      tags: [Contract Addenda]
+      operationId: listContractAddenda
+      summary: List addenda without mutating the original contract
+      x-requirement: CON-03.1
+      parameters: [{ $ref: '#/components/parameters/ContractId' }]
+      responses:
+        '200': { description: Addenda, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/ContractAddendum' } } } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Contract Addenda]
+      operationId: createContractAddendum
+      summary: Create a draft addendum with before and after terms
+      x-requirement: CON-03.1
+      parameters: [{ $ref: '#/components/parameters/ContractId' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContractAddendumWrite' } } } }
+      responses:
+        '201':
+          description: Draft addendum created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ContractAddendum' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/contract-addenda/{addendumId}/{action}:
+    post:
+      tags: [Contract Addenda]
+      operationId: transitionContractAddendum
+      summary: Submit, approve, mark signed, make effective or cancel an addendum
+      description: Making an addendum effective creates an employee event when master data changes.
+      x-requirement: CON-03.1
+      parameters:
+        - $ref: '#/components/parameters/AddendumId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [submit, approve, mark-signed, make-effective, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses:
+        '200':
+          description: Addendum updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ContractAddendum' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/contract-addenda/{addendumId}/signed-document:
+    post:
+      tags: [Contract Addenda]
+      operationId: uploadSignedContractAddendum
+      summary: Upload the signed PDF before making an addendum effective
+      x-requirement: CON-03.1
+      parameters: [{ $ref: '#/components/parameters/AddendumId' }, { $ref: '#/components/parameters/IfMatch' }]
+      requestBody:
+        required: true
+        content: { multipart/form-data: { schema: { type: object, additionalProperties: false, required: [file], properties: { file: { type: string, format: binary } } } } }
+      responses:
+        '200':
+          description: Signed document stored
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ContractAddendum' } } }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: OIDC access token for workforce users. }
+    offerToken: { type: apiKey, in: header, name: X-Offer-Token, description: Short-lived single-offer candidate token. }
+  parameters:
+    Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+    PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+    Search: { name: search, in: query, schema: { type: string, minLength: 1, maxLength: 200 } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: string, pattern: '^"[1-9][0-9]*"$' }, example: '"4"' }
+    IdempotencyKey: { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 16, maxLength: 128 } }
+    RequisitionId: { name: requisitionId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    IntakeId: { name: intakeId, in: path, required: true, schema: { type: string, format: uuid } }
+    ApplicationId: { name: applicationId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    InterviewId: { name: interviewId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    EvaluationId: { name: evaluationId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    OfferId: { name: offerId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    EmployeeId: { name: employeeId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    DepartmentId: { name: departmentId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    PositionId: { name: positionId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    TaskId: { name: taskId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    EventId: { name: eventId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    DocumentId: { name: documentId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    ContractId: { name: contractId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    AddendumId: { name: addendumId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+  headers:
+    ETag: { description: Quoted numeric resource version., schema: { type: string, example: '"5"' } }
+    Location: { description: Created resource URI., schema: { type: string, format: uri-reference } }
+  responses:
+    BadRequest: { description: Malformed request or If-Match header, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
+    Unauthorized: { description: Authentication is required or invalid, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
+    Forbidden: { description: Insufficient permission, field access or data scope, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
+    NotFound: { description: Resource is not visible or does not exist, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
+    Conflict: { description: Workflow, prerequisite, uniqueness or concurrency conflict, content: { application/problem+json: { schema: { $ref: '#/components/schemas/BusinessProblemDetails' } } } }
+    UnprocessableEntity: { description: Semantically invalid fields, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ValidationProblemDetails' } } } }
+    PayloadTooLarge: { description: File exceeds its documented limit, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
+    UnsupportedMediaType: { description: File type is not allowed, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
+  schemas:
+    PageMetadata:
+      type: object
+      required: [page, pageSize, totalItems, totalPages]
+      properties: { page: { type: integer, minimum: 1 }, pageSize: { type: integer, minimum: 1 }, totalItems: { type: integer, format: int64, minimum: 0 }, totalPages: { type: integer, minimum: 0 } }
+    ReasonRequest: { type: object, additionalProperties: false, required: [reason], properties: { reason: { type: string, minLength: 1, maxLength: 1000 } } }
+    ProblemDetails:
+      type: object
+      additionalProperties: true
+      required: [type, title, status, correlationId]
+      properties: { type: { type: string, format: uri }, title: { type: string }, status: { type: integer, minimum: 400, maximum: 599 }, detail: { type: string }, instance: { type: string }, correlationId: { type: string }, code: { type: string } }
+    BusinessProblemDetails:
+      allOf: [{ $ref: '#/components/schemas/ProblemDetails' }, { type: object, required: [code], properties: { code: { type: string } } }]
+    ValidationProblemDetails:
+      allOf: [{ $ref: '#/components/schemas/ProblemDetails' }, { type: object, required: [errors], properties: { errors: { type: object, additionalProperties: { type: array, items: { type: string } } } } }]
+
+    RequisitionStatus: { type: string, enum: [draft, pending_approval, approved, active_recruiting, closed, cancelled] }
+    EmploymentType: { type: string, enum: [full_time, part_time, hybrid, remote, internship, service_contract] }
+    RequisitionWrite:
+      type: object
+      required: [title, departmentId, employmentType, targetHeadcount]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 255 }
+        departmentId: { type: integer, format: int64, minimum: 1 }
+        positionId: { type: integer, format: int64, minimum: 1, nullable: true }
+        description: { type: string, maxLength: 20000, nullable: true }
+        requirements: { type: string, maxLength: 20000, nullable: true }
+        location: { type: string, maxLength: 255, nullable: true }
+        employmentType: { $ref: '#/components/schemas/EmploymentType' }
+        salaryMin: { type: number, minimum: 0, nullable: true }
+        salaryMax: { type: number, minimum: 0, nullable: true }
+        targetHeadcount: { type: integer, minimum: 1 }
+        closingDate: { type: string, format: date, nullable: true }
+    Requisition:
+      allOf:
+        - $ref: '#/components/schemas/RequisitionWrite'
+        - type: object
+          required: [id, jobCode, status, version, createdAt, updatedAt]
+          properties: { id: { type: integer, format: int64 }, jobCode: { type: string }, status: { $ref: '#/components/schemas/RequisitionStatus' }, publishedAt: { type: string, format: date-time, nullable: true }, createdBy: { type: integer, format: int64 }, version: { type: integer, format: int64, minimum: 1 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } }
+    RequisitionAction:
+      type: object
+      additionalProperties: false
+      properties: { reason: { type: string, minLength: 1, maxLength: 1000, nullable: true }, channels: { type: array, minItems: 1, uniqueItems: true, items: { type: string, enum: [careers_portal, linkedin, topcv] } } }
+    RequisitionPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Requisition' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+
+    CandidateInput:
+      type: object
+      required: [firstName, lastName, email]
+      properties: { firstName: { type: string, maxLength: 100 }, lastName: { type: string, maxLength: 100 }, email: { type: string, format: email, maxLength: 320 }, phone: { type: string, maxLength: 30, nullable: true }, linkedinUrl: { type: string, format: uri, nullable: true }, portfolioUrl: { type: string, format: uri, nullable: true } }
+    CandidateSummary:
+      allOf: [{ $ref: '#/components/schemas/CandidateInput' }, { type: object, required: [id], properties: { id: { type: integer, format: int64 } } }]
+    ResumeUpload:
+      type: object
+      additionalProperties: false
+      required: [file, requisitionId, privacyNoticeVersion, consented]
+      properties: { file: { type: string, format: binary }, requisitionId: { type: integer, format: int64, minimum: 1 }, privacyNoticeVersion: { type: string, maxLength: 50 }, consented: { type: boolean, enum: [true] } }
+    CandidateIntake:
+      type: object
+      required: [id, requisitionId, status, uploadedAt]
+      properties: { id: { type: string, format: uuid }, requisitionId: { type: integer, format: int64 }, status: { type: string, enum: [scanning, parsing, awaiting_confirmation, duplicate_review, completed, rejected, failed] }, parsedCandidate: { $ref: '#/components/schemas/CandidateInput' }, confidence: { type: object, additionalProperties: { type: number, minimum: 0, maximum: 1 } }, duplicateCandidates: { type: array, items: { $ref: '#/components/schemas/CandidateSummary' } }, uploadedAt: { type: string, format: date-time } }
+    ConfirmIntake:
+      type: object
+      additionalProperties: false
+      required: [candidate]
+      properties: { candidate: { $ref: '#/components/schemas/CandidateInput' }, existingCandidateId: { type: integer, format: int64, minimum: 1, nullable: true }, source: { type: string, maxLength: 80, default: direct } }
+
+    RecruitmentStage: { type: string, enum: [sourced_applied, ai_screening, tech_interview, executive_round, offer_letter, hired_ready, rejected, withdrawn] }
+    ActiveRecruitmentStage: { type: string, enum: [sourced_applied, ai_screening, tech_interview, executive_round, offer_letter, hired_ready] }
+    RecruitmentApplication:
+      type: object
+      required: [id, candidateId, jobPostingId, stage, source, appliedAt, version, updatedAt]
+      properties: { id: { type: integer, format: int64 }, candidateId: { type: integer, format: int64 }, jobPostingId: { type: integer, format: int64 }, resumeId: { type: integer, format: int64, nullable: true }, stage: { $ref: '#/components/schemas/RecruitmentStage' }, aiScore: { type: number, minimum: 0, maximum: 100, nullable: true }, source: { type: string }, appliedAt: { type: string, format: date-time }, version: { type: integer, format: int64, minimum: 1 }, updatedAt: { type: string, format: date-time } }
+    RecruitmentApplicationDetail:
+      allOf: [{ $ref: '#/components/schemas/RecruitmentApplication' }, { type: object, required: [candidate], properties: { candidate: { $ref: '#/components/schemas/CandidateSummary' }, requisition: { $ref: '#/components/schemas/Requisition' } } }]
+    AdvanceApplicationRequest: { type: object, additionalProperties: false, required: [targetStage], properties: { targetStage: { $ref: '#/components/schemas/ActiveRecruitmentStage' }, reason: { type: string, maxLength: 1000, nullable: true } } }
+    PipelineCard: { type: object, required: [application, candidate], properties: { application: { $ref: '#/components/schemas/RecruitmentApplication' }, candidate: { $ref: '#/components/schemas/CandidateSummary' } } }
+    PipelineColumn: { type: object, required: [stage, totalItems, items], properties: { stage: { $ref: '#/components/schemas/RecruitmentStage' }, totalItems: { type: integer, minimum: 0 }, averageAiScore: { type: number, nullable: true }, items: { type: array, items: { $ref: '#/components/schemas/PipelineCard' } } } }
+    RecruitmentPipeline: { type: object, required: [requisitionId, columns], properties: { requisitionId: { type: integer, format: int64 }, columns: { type: array, items: { $ref: '#/components/schemas/PipelineColumn' } } } }
+
+    InterviewStatus: { type: string, enum: [scheduled, completed, cancelled, no_show] }
+    InterviewWrite:
+      type: object
+      required: [applicationId, interviewType, startsAt, endsAt, timezone, interviewerUserIds]
+      properties: { applicationId: { type: integer, format: int64, minimum: 1 }, interviewType: { type: string, maxLength: 50 }, startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string, example: Asia/Ho_Chi_Minh }, interviewerUserIds: { type: array, minItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }, location: { type: string, nullable: true }, meetingUrl: { type: string, format: uri, nullable: true } }
+    Interview:
+      allOf: [{ $ref: '#/components/schemas/InterviewWrite' }, { type: object, required: [id, status, version], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/InterviewStatus' }, cancellationReason: { type: string, nullable: true }, version: { type: integer, format: int64, minimum: 1 } } }]
+    InterviewAction: { type: object, additionalProperties: false, properties: { startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string }, location: { type: string }, meetingUrl: { type: string, format: uri }, reason: { type: string, maxLength: 1000 } } }
+    InterviewPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Interview' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    Score: { type: number, format: float, minimum: 0, maximum: 5, multipleOf: 0.5 }
+    EvaluationWrite:
+      type: object
+      required: [technicalScore, communicationScore, problemSolvingScore, teamworkScore, recommendation, feedback]
+      properties: { technicalScore: { $ref: '#/components/schemas/Score' }, communicationScore: { $ref: '#/components/schemas/Score' }, problemSolvingScore: { $ref: '#/components/schemas/Score' }, teamworkScore: { $ref: '#/components/schemas/Score' }, recommendation: { type: string, enum: [strong_hire, hire, hold, no_hire, strong_no_hire] }, feedback: { type: string, minLength: 1, maxLength: 10000 } }
+    Evaluation:
+      allOf: [{ $ref: '#/components/schemas/EvaluationWrite' }, { type: object, required: [id, interviewId, evaluatorUserId, overallScore, submittedAt, version], properties: { id: { type: integer, format: int64 }, interviewId: { type: integer, format: int64 }, evaluatorUserId: { type: integer, format: int64 }, overallScore: { type: number, minimum: 0, maximum: 5 }, submittedAt: { type: string, format: date-time }, unlockedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, minimum: 1 } } }]
+
+    OfferStatus: { type: string, enum: [draft, approved, sent, accepted, declined, expired, cancelled] }
+    OfferWrite:
+      type: object
+      required: [applicationId, baseSalary, employmentType, startDate, expirationDate, templateVersion]
+      properties: { applicationId: { type: integer, format: int64, minimum: 1 }, baseSalary: { type: number, minimum: 0 }, bonusAmount: { type: number, minimum: 0, nullable: true }, allowanceAmount: { type: number, minimum: 0, nullable: true }, currency: { type: string, pattern: '^[A-Z]{3}$', default: VND }, employmentType: { $ref: '#/components/schemas/EmploymentType' }, startDate: { type: string, format: date }, expirationDate: { type: string, format: date }, templateVersion: { type: string, maxLength: 50 } }
+    Offer:
+      allOf: [{ $ref: '#/components/schemas/OfferWrite' }, { type: object, required: [id, status, version, createdAt, updatedAt], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/OfferStatus' }, documentAvailable: { type: boolean }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, sentAt: { type: string, format: date-time, nullable: true }, respondedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } } }]
+    OfferAction: { type: object, additionalProperties: false, properties: { reason: { type: string, maxLength: 1000 }, expirationDate: { type: string, format: date } } }
+    OfferResponse: { type: object, additionalProperties: false, required: [decision], properties: { decision: { type: string, enum: [accept, decline] }, reason: { type: string, maxLength: 1000, nullable: true } } }
+    OfferResponseResult: { type: object, required: [offerId, status, replayed], properties: { offerId: { type: integer, format: int64 }, status: { type: string, enum: [accepted, declined] }, employeeId: { type: integer, format: int64, nullable: true }, initialContractId: { type: integer, format: int64, nullable: true }, onboardingTaskIds: { type: array, items: { type: integer, format: int64 } }, replayed: { type: boolean } } }
+    OfferPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Offer' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+
+    EmployeeStatus: { type: string, enum: [probation, active, suspended, terminated] }
+    EmployeeSummary:
+      type: object
+      required: [id, employeeCode, firstName, lastName, workEmail, departmentId, positionId, status]
+      properties: { id: { type: integer, format: int64 }, employeeCode: { type: string }, firstName: { type: string }, lastName: { type: string }, workEmail: { type: string, format: email }, departmentId: { type: integer, format: int64 }, positionId: { type: integer, format: int64 }, managerId: { type: integer, format: int64, nullable: true }, officeLocation: { type: string, nullable: true }, status: { $ref: '#/components/schemas/EmployeeStatus' } }
+    EmployeeDetail:
+      allOf: [{ $ref: '#/components/schemas/EmployeeSummary' }, { type: object, required: [hireDate, version, createdAt, updatedAt], properties: { personalEmail: { type: string, format: email, nullable: true }, phone: { type: string, nullable: true }, dateOfBirth: { type: string, format: date, nullable: true }, gender: { type: string, nullable: true }, permanentAddress: { type: string, nullable: true }, temporaryAddress: { type: string, nullable: true }, emergencyContact: { type: object, nullable: true, additionalProperties: { type: string } }, hireDate: { type: string, format: date }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } } }]
+    PersonalProfilePatch: { type: object, additionalProperties: false, minProperties: 1, properties: { personalEmail: { type: string, format: email, nullable: true }, phone: { type: string, maxLength: 30, nullable: true }, temporaryAddress: { type: string, maxLength: 1000, nullable: true }, emergencyContact: { type: object, nullable: true, additionalProperties: { type: string } } } }
+    EmployeePage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/EmployeeSummary' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    DepartmentWrite: { type: object, required: [code, name], properties: { code: { type: string, maxLength: 50 }, name: { type: string, maxLength: 255 }, parentDepartmentId: { type: integer, format: int64, nullable: true }, costCenter: { type: string, maxLength: 100, nullable: true }, description: { type: string, maxLength: 5000, nullable: true } } }
+    Department:
+      allOf: [{ $ref: '#/components/schemas/DepartmentWrite' }, { type: object, required: [id, headcount, version], properties: { id: { type: integer, format: int64 }, manager: { $ref: '#/components/schemas/EmployeeSummary' }, headcount: { type: integer, minimum: 0 }, version: { type: integer, format: int64 } } }]
+    PositionWrite: { type: object, required: [code, name], properties: { code: { type: string, maxLength: 50 }, name: { type: string, maxLength: 255 }, level: { type: string, maxLength: 50, nullable: true }, description: { type: string, maxLength: 5000, nullable: true } } }
+    Position:
+      allOf: [{ $ref: '#/components/schemas/PositionWrite' }, { type: object, required: [id, version], properties: { id: { type: integer, format: int64 }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } } }]
+    OrganizationNode:
+      allOf: [{ $ref: '#/components/schemas/Department' }, { type: object, required: [children], properties: { children: { type: array, items: { $ref: '#/components/schemas/OrganizationNode' } } } }]
+
+    OnboardingTaskStatus: { type: string, enum: [pending, in_progress, completed] }
+    OnboardingTaskWrite: { type: object, additionalProperties: false, required: [taskName], properties: { taskName: { type: string, maxLength: 255 }, description: { type: string, maxLength: 5000, nullable: true }, assignedToUserId: { type: integer, format: int64, minimum: 1, nullable: true }, dueAt: { type: string, format: date-time, nullable: true } } }
+    OnboardingTask: { type: object, required: [id, employeeId, templateKey, taskName, status, overdue, version], properties: { id: { type: integer, format: int64 }, employeeId: { type: integer, format: int64 }, templateKey: { type: string }, taskName: { type: string }, description: { type: string, nullable: true }, assignedToUserId: { type: integer, format: int64, nullable: true }, dueAt: { type: string, format: date-time, nullable: true }, status: { $ref: '#/components/schemas/OnboardingTaskStatus' }, completedAt: { type: string, format: date-time, nullable: true }, overdue: { type: boolean }, version: { type: integer, format: int64 } } }
+    OnboardingTaskPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/OnboardingTask' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    EmployeeEventWrite: { type: object, required: [eventType, effectiveDate, beforeData, afterData, reason], properties: { eventType: { type: string, enum: [promotion, transfer, demotion, salary_adjustment, termination, correction] }, effectiveDate: { type: string, format: date }, beforeData: { type: object, additionalProperties: true }, afterData: { type: object, additionalProperties: true }, reason: { type: string, maxLength: 5000 }, compensatesEventId: { type: integer, format: int64, nullable: true } } }
+    EmployeeEvent:
+      allOf: [{ $ref: '#/components/schemas/EmployeeEventWrite' }, { type: object, required: [id, employeeId, status, createdBy, version], properties: { id: { type: integer, format: int64 }, employeeId: { type: integer, format: int64 }, status: { type: string, enum: [draft, pending_approval, approved, applied, cancelled] }, createdBy: { type: integer, format: int64 }, approvedBy: { type: integer, format: int64, nullable: true }, appliedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 } } }]
+    EmployeeEventPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/EmployeeEvent' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    EmployeeDocument: { type: object, required: [id, employeeId, documentType, version, originalFileName, contentType, sizeBytes, uploadedAt], properties: { id: { type: integer, format: int64 }, employeeId: { type: integer, format: int64 }, documentType: { type: string }, version: { type: integer, minimum: 1 }, originalFileName: { type: string }, contentType: { type: string }, sizeBytes: { type: integer, format: int64 }, retentionUntil: { type: string, format: date, nullable: true }, uploadedAt: { type: string, format: date-time } } }
+    EmployeeDocumentUpload: { type: object, additionalProperties: false, required: [file, documentType], properties: { file: { type: string, format: binary }, documentType: { type: string, maxLength: 80 }, retentionUntil: { type: string, format: date, nullable: true } } }
+    SignedDownload: { type: object, required: [url, expiresAt], properties: { url: { type: string, format: uri }, expiresAt: { type: string, format: date-time } } }
+
+    ContractType: { type: string, enum: [probation, fixed_term, indefinite, internship, service_contract] }
+    ContractStatus: { type: string, enum: [draft, approved, executed, active, expired, terminated, cancelled] }
+    ContractWrite:
+      type: object
+      required: [employeeId, contractNumber, contractType, startDate, salary, isPrimary]
+      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, contractNumber: { type: string, maxLength: 100 }, contractType: { $ref: '#/components/schemas/ContractType' }, startDate: { type: string, format: date }, endDate: { type: string, format: date, nullable: true }, salary: { type: number, minimum: 0 }, currency: { type: string, pattern: '^[A-Z]{3}$', default: VND }, noticePeriodDays: { type: integer, minimum: 0, nullable: true }, isPrimary: { type: boolean, default: true } }
+    Contract:
+      allOf: [{ $ref: '#/components/schemas/ContractWrite' }, { type: object, required: [id, status, signedDocumentAvailable, version], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/ContractStatus' }, signedDocumentAvailable: { type: boolean }, signedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } } }]
+    ContractAction: { type: object, additionalProperties: false, properties: { reason: { type: string, maxLength: 1000 }, signedAt: { type: string, format: date-time }, allowPrimaryOverlap: { type: boolean, default: false } } }
+    ContractPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Contract' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    ExpiringContract:
+      allOf: [{ $ref: '#/components/schemas/Contract' }, { type: object, required: [daysRemaining, alertLevel], properties: { daysRemaining: { type: integer }, alertLevel: { type: string, enum: [amber, red] } } }]
+    ExpiringContractPage: { type: object, required: [items, page, asOf], properties: { items: { type: array, items: { $ref: '#/components/schemas/ExpiringContract' } }, page: { $ref: '#/components/schemas/PageMetadata' }, asOf: { type: string, format: date } } }
+    ContractAddendumWrite: { type: object, required: [addendumNumber, effectiveDate, beforeTerms, afterTerms, reason], properties: { addendumNumber: { type: string, maxLength: 100 }, effectiveDate: { type: string, format: date }, beforeTerms: { type: object, additionalProperties: true }, afterTerms: { type: object, additionalProperties: true }, reason: { type: string, maxLength: 5000 } } }
+    ContractAddendum:
+      allOf: [{ $ref: '#/components/schemas/ContractAddendumWrite' }, { type: object, required: [id, contractId, status, version, createdBy], properties: { id: { type: integer, format: int64 }, contractId: { type: integer, format: int64 }, status: { type: string, enum: [draft, pending_approval, approved, effective, superseded, cancelled] }, version: { type: integer, minimum: 1 }, createdBy: { type: integer, format: int64 }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, signedAt: { type: string, format: date-time, nullable: true }, signedDocumentAvailable: { type: boolean } } }]

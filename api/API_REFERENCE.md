@@ -1,0 +1,464 @@
+# QLNS API Reference
+
+Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yaml) cho ba phân hệ **Recruitment**, **Core HR** và **Contracts**.
+
+> OpenAPI là nguồn contract chính thức. Khi nội dung mô tả ở đây khác OpenAPI, ưu tiên `openapi.yaml`.
+
+## 1. Quy ước chung
+
+- Base URL local: `http://localhost:5000`.
+- Base path: `/api/v1`.
+- API nội bộ yêu cầu `Authorization: Bearer <JWT>` và luôn kiểm tra permission, data scope và field scope ở backend.
+- API ứng viên phản hồi Offer dùng `X-Offer-Token` thay cho JWT.
+- Resource có thể thay đổi trả `ETag`, ví dụ `"4"`. Lệnh cập nhật phải gửi lại `If-Match: "4"`.
+- Command có khả năng retry tạo dữ liệu yêu cầu `Idempotency-Key`, dài từ 16 đến 128 ký tự.
+- Danh sách dùng `page`, `pageSize`; `pageSize` tối đa 100.
+- Lỗi trả `application/problem+json`, gồm `type`, `title`, `status`, `correlationId` và có thể có `code`, `detail`, `errors`.
+
+### Mã lỗi HTTP chung
+
+| Mã | Ý nghĩa |
+|---|---|
+| `400` | Request sai cú pháp, action không hỗ trợ hoặc `If-Match` sai định dạng. |
+| `401` | Thiếu hoặc sai thông tin xác thực. |
+| `403` | Không có permission, data scope hoặc field access cần thiết. |
+| `404` | Resource không tồn tại hoặc nằm ngoài phạm vi được phép xem. |
+| `409` | Xung đột version, workflow, dữ liệu trùng hoặc thiếu điều kiện nghiệp vụ. |
+| `413` | File vượt giới hạn dung lượng. |
+| `415` | Định dạng file không được hỗ trợ. |
+| `422` | Dữ liệu đúng cú pháp nhưng không hợp lệ về ngữ nghĩa. |
+
+## 2. Recruitment
+
+### 2.1. Requisitions
+
+#### `GET /api/v1/recruitment/requisitions`
+
+- **Mục đích:** Tìm kiếm requisition trong data scope của người dùng.
+- **Query:** `page`, `pageSize`, `search`, `departmentId`, `status`, `sort`.
+- **Sort hợp lệ:** `createdAt`, `-createdAt`, `closingDate`, `-closingDate`.
+- **Kết quả:** `RequisitionPage` gồm danh sách và metadata phân trang.
+- **Yêu cầu:** `REC-01.1`, `REC-01.2`.
+
+#### `POST /api/v1/recruitment/requisitions`
+
+- **Mục đích:** Tạo requisition ở trạng thái `draft`.
+- **Body:** `RequisitionWrite`; bắt buộc `title`, `departmentId`, `employmentType`, `targetHeadcount`.
+- **Kiểm tra:** headcount lớn hơn 0, salary min không lớn hơn salary max, phòng ban/vị trí phải hợp lệ.
+- **Kết quả:** `201`, `Location`, `ETag` và `Requisition` vừa tạo.
+- **Yêu cầu:** `REC-01.1`.
+
+#### `GET /api/v1/recruitment/requisitions/{requisitionId}`
+
+- **Mục đích:** Lấy chi tiết một requisition.
+- **Kết quả:** `Requisition` và `ETag` hiện tại.
+- **Bảo mật:** Resource ngoài data scope được xử lý như không tìm thấy.
+- **Yêu cầu:** `REC-01.1`, `REC-01.2`.
+
+#### `PUT /api/v1/recruitment/requisitions/{requisitionId}`
+
+- **Mục đích:** Thay thế dữ liệu có thể sửa của requisition `draft` hoặc requisition đã bị trả lại.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** `RequisitionWrite` đầy đủ.
+- **Kết quả:** Requisition mới và `ETag` mới.
+- **Xung đột:** Trạng thái không cho sửa hoặc version đã thay đổi trả `409`.
+
+#### `POST /api/v1/recruitment/requisitions/{requisitionId}/{action}`
+
+- **Mục đích:** Thực hiện command workflow cho requisition.
+- **Action:** `submit`, `approve`, `reject`, `publish`, `close`, `cancel`.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** `RequisitionAction`; `reject` bắt buộc `reason`, `publish` bắt buộc ít nhất một `channel`.
+- **Workflow:** `draft → pending_approval → approved → active_recruiting → closed/cancelled`; reject trả requisition về trạng thái có thể chỉnh sửa.
+- **Side effect:** Publish ghi outbox để gửi sang job board sau khi transaction thành công.
+
+### 2.2. Candidate intake và CV
+
+#### `POST /api/v1/recruitment/resumes`
+
+- **Mục đích:** Tiếp nhận CV, quét mã độc và bắt đầu bóc tách bất đồng bộ.
+- **Content-Type:** `multipart/form-data`.
+- **Body:** `file`, `requisitionId`, `privacyNoticeVersion`, `consented=true`.
+- **Giới hạn:** PDF, DOC hoặc DOCX; tối đa 10 MiB.
+- **Kết quả:** `202 Accepted`, `Location` và `CandidateIntake`.
+- **An toàn:** File không được lưu chính thức nếu chưa qua kiểm tra an toàn.
+
+#### `GET /api/v1/recruitment/intakes/{intakeId}`
+
+- **Mục đích:** Theo dõi trạng thái scan, parse và phát hiện trùng.
+- **Trạng thái:** `scanning`, `parsing`, `awaiting_confirmation`, `duplicate_review`, `completed`, `rejected`, `failed`.
+- **Kết quả:** Dữ liệu candidate gợi ý, confidence theo trường và danh sách candidate có khả năng trùng.
+
+#### `POST /api/v1/recruitment/intakes/{intakeId}/confirm`
+
+- **Mục đích:** Xác nhận dữ liệu bóc tách và tạo application.
+- **Header:** Bắt buộc `Idempotency-Key`.
+- **Body:** `candidate`, `source`; gửi `existingCandidateId` khi chọn liên kết với candidate đã tồn tại.
+- **Kết quả:** `201`, application mới, `Location` và `ETag`.
+- **Xung đột:** Nếu có candidate nghi trùng nhưng chưa được xử lý, API trả `409`.
+- **Tính nguyên tử:** Candidate/resume/application phải được tạo hoặc liên kết trong cùng một transaction.
+
+### 2.3. Recruitment pipeline
+
+#### `GET /api/v1/recruitment/pipeline`
+
+- **Mục đích:** Lấy dữ liệu Kanban theo requisition.
+- **Query:** Bắt buộc `requisitionId`; tùy chọn `search`, `stage`, `minimumAiScore`, `page`, `pageSize`.
+- **Kết quả:** Các `PipelineColumn`, tổng số card và AI score trung bình theo stage.
+- **Yêu cầu:** `REC-03.1`.
+
+#### `GET /api/v1/recruitment/applications/{applicationId}`
+
+- **Mục đích:** Lấy trạng thái hiện tại của application.
+- **Kết quả:** `RecruitmentApplication` và `ETag`.
+- **Ghi chú:** Đây là query được backend hiện tại triển khai.
+
+#### `POST /api/v1/recruitment/applications/{applicationId}/advance`
+
+- **Mục đích:** Chuyển application đúng một stage tiến về phía trước.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** `targetStage`, tùy chọn `reason`.
+- **Điều kiện:** Không nhảy/lùi stage; vào `tech_interview` cần lịch hợp lệ; vào `offer_letter` cần evaluation đạt policy.
+- **Kết quả:** Application và `ETag` mới.
+- **Tính nguyên tử:** Update application, stage event và audit log trong cùng transaction.
+- **Ghi chú:** Đây là command được backend hiện tại triển khai.
+
+#### `POST /api/v1/recruitment/applications/{applicationId}/{terminalAction}`
+
+- **Mục đích:** Kết thúc application ngoài luồng advance.
+- **Action:** `reject` hoặc `withdraw`.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** Bắt buộc `reason`.
+- **Kết quả:** Application ở stage `rejected` hoặc `withdrawn` cùng `ETag` mới.
+- **Side effect:** Có thể tạo outbox gửi email cảm ơn; lỗi provider không rollback trạng thái đã commit.
+
+### 2.4. Interviews
+
+#### `GET /api/v1/recruitment/interviews`
+
+- **Mục đích:** Tra cứu lịch phỏng vấn theo phạm vi người dùng.
+- **Query:** `page`, `pageSize`, `applicationId`, `interviewerUserId`, `from`, `to`, `status`.
+- **Kết quả:** `InterviewPage`.
+
+#### `POST /api/v1/recruitment/interviews`
+
+- **Mục đích:** Xếp lịch phỏng vấn và tạo thông báo/lịch mời.
+- **Body:** `applicationId`, `interviewType`, `startsAt`, `endsAt`, `timezone`, `interviewerUserIds`, `location` hoặc `meetingUrl`.
+- **Kiểm tra:** `endsAt > startsAt`; không trùng interviewer hoặc phòng họp.
+- **Kết quả:** `201`, `Interview`, `Location`, `ETag`.
+- **Side effect:** Email/calendar invitation được xử lý qua outbox.
+
+#### `POST /api/v1/recruitment/interviews/{interviewId}/{action}`
+
+- **Mục đích:** Thay đổi trạng thái/lịch phỏng vấn.
+- **Action:** `reschedule`, `complete`, `cancel`.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** Reschedule dùng thời gian/timezone/location mới; cancel yêu cầu `reason` theo policy.
+- **Kết quả:** Interview và `ETag` mới.
+- **Side effect:** Gửi cập nhật hoặc hủy lịch sau khi commit.
+
+### 2.5. Evaluations
+
+#### `GET /api/v1/recruitment/interviews/{interviewId}/evaluations`
+
+- **Mục đích:** Lấy các scorecard được phép xem.
+- **Bảo mật:** Áp dụng blind-evaluation; evaluator chưa nộp không được thấy đánh giá của người khác.
+- **Kết quả:** Mảng `Evaluation`.
+
+#### `POST /api/v1/recruitment/interviews/{interviewId}/evaluations`
+
+- **Mục đích:** Nộp scorecard bất biến cho một buổi phỏng vấn.
+- **Header:** Bắt buộc `Idempotency-Key`.
+- **Body:** Điểm technical, communication, problem solving, teamwork; recommendation và feedback.
+- **Điểm:** Từ 0 đến 5, bước 0.5. `overallScore` do server tính.
+- **Kết quả:** `201`, `Evaluation`, `Location`, `ETag`.
+- **Phân quyền:** Chỉ interviewer được gán vào buổi phỏng vấn mới được nộp.
+
+#### `POST /api/v1/recruitment/evaluations/{evaluationId}/unlock`
+
+- **Mục đích:** Mở khóa bằng cách tạo version đánh giá mới có audit, không sửa lịch sử cũ.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** Bắt buộc `reason`.
+- **Phân quyền:** Chỉ HR Manager hoặc quyền tương đương.
+- **Kết quả:** Evaluation version mới và `ETag` mới.
+
+### 2.6. Offers
+
+#### `GET /api/v1/recruitment/offers`
+
+- **Mục đích:** Tra cứu Offer trong data scope.
+- **Query:** `page`, `pageSize`, `applicationId`, `status`.
+- **Kết quả:** `OfferPage`.
+
+#### `POST /api/v1/recruitment/offers`
+
+- **Mục đích:** Tạo Offer `draft`.
+- **Body:** Application, lương cơ bản, bonus, allowance, currency, loại việc làm, ngày bắt đầu, hạn phản hồi và template version.
+- **Điều kiện:** Application đã qua vòng phỏng vấn; chỉ một Offer mở cho mỗi application.
+- **Kết quả:** `201`, `Offer`, `Location`, `ETag`.
+
+#### `GET /api/v1/recruitment/offers/{offerId}`
+
+- **Mục đích:** Lấy một Offer được phép xem.
+- **Kết quả:** `Offer` và `ETag`.
+
+#### `POST /api/v1/recruitment/offers/{offerId}/{action}`
+
+- **Mục đích:** Điều khiển workflow Offer nội bộ.
+- **Action:** `approve`, `send`, `extend`, `cancel`.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** `extend` dùng `expirationDate`; cancel yêu cầu `reason`.
+- **Workflow:** `draft → approved → sent`; sau đó candidate phản hồi hoặc hệ thống chuyển `expired`.
+- **Side effect:** Send tạo token phản hồi và outbox gửi email.
+
+#### `POST /api/v1/recruitment/offers/{offerId}/response`
+
+- **Mục đích:** Candidate chấp nhận hoặc từ chối Offer.
+- **Xác thực:** `X-Offer-Token`.
+- **Header:** Bắt buộc `Idempotency-Key`.
+- **Body:** `decision=accept|decline`; decline nên có `reason`.
+- **Kết quả:** `OfferResponseResult`, gồm Offer status và các ID employee/contract/onboarding khi accept.
+- **Tính nguyên tử:** Accept tạo tối đa một employee, một hợp đồng ban đầu và một bộ onboarding task.
+- **Retry:** Cùng idempotency key trả lại kết quả trước với `replayed=true`.
+
+## 3. Core HR
+
+### 3.1. Employees
+
+#### `GET /api/v1/employees`
+
+- **Mục đích:** Tìm kiếm danh bạ nhân viên theo data scope.
+- **Query:** `page`, `pageSize`, `search`, `departmentId`, `positionId`, `status`, `sort`.
+- **Sort hợp lệ:** `name`, `-name`, `employeeCode`, `hireDate`.
+- **Kết quả:** `EmployeePage`; không trả trường nhạy cảm trong danh sách.
+
+#### `GET /api/v1/employees/{employeeId}`
+
+- **Mục đích:** Xem hồ sơ nhân viên.
+- **Kết quả:** `EmployeeDetail` và `ETag`.
+- **Field policy:** Đồng nghiệp chỉ thấy thông tin công việc công khai; trường cá nhân/nhạy cảm được ẩn hoặc mask theo quyền.
+
+#### `PATCH /api/v1/employees/{employeeId}/profile`
+
+- **Mục đích:** Cập nhật các trường hồ sơ cá nhân được phép.
+- **Content-Type:** `application/merge-patch+json`.
+- **Header:** Bắt buộc `If-Match`.
+- **Trường cho phép:** personal email, phone, temporary address, emergency contact.
+- **Trường bị cấm:** work email, department, position, manager, status, salary và employee code.
+- **Kết quả:** `EmployeeDetail` và `ETag` mới.
+
+### 3.2. Organization
+
+#### `GET /api/v1/organization/chart`
+
+- **Mục đích:** Lấy cây tổ chức gồm phòng ban, quản lý và headcount.
+- **Query:** `rootDepartmentId`, `depth` từ 1 đến 10.
+- **Kết quả:** Mảng `OrganizationNode` phân cấp.
+
+#### `GET /api/v1/organization/departments`
+
+- **Mục đích:** Lấy danh mục phòng ban.
+- **Kết quả:** Mảng `Department`.
+
+#### `POST /api/v1/organization/departments`
+
+- **Mục đích:** Tạo phòng ban.
+- **Body:** `code`, `name`, tùy chọn parent, cost center, description.
+- **Kiểm tra:** Code duy nhất; parent hợp lệ; không tạo vòng lặp phân cấp.
+- **Kết quả:** `201`, Department, `Location`, `ETag`.
+
+#### `PUT /api/v1/organization/departments/{departmentId}`
+
+- **Mục đích:** Thay thế metadata phòng ban.
+- **Header:** Bắt buộc `If-Match`.
+- **Kết quả:** Department và `ETag` mới.
+
+#### `DELETE /api/v1/organization/departments/{departmentId}`
+
+- **Mục đích:** Xóa phòng ban rỗng.
+- **Header:** Bắt buộc `If-Match`.
+- **Điều kiện:** Không còn phòng ban con, nhân viên hoặc requisition đang mở.
+- **Kết quả:** `204 No Content`; vi phạm điều kiện trả `409`.
+
+#### `GET /api/v1/organization/positions`
+
+- **Mục đích:** Lấy danh mục chức danh/vị trí.
+- **Kết quả:** Mảng `Position`.
+
+#### `POST /api/v1/organization/positions`
+
+- **Mục đích:** Tạo position definition.
+- **Body:** `code`, `name`, tùy chọn `level`, `description`.
+- **Kết quả:** `201`, Position, `Location`, `ETag`.
+
+#### `PUT /api/v1/organization/positions/{positionId}`
+
+- **Mục đích:** Thay thế metadata position.
+- **Header:** Bắt buộc `If-Match`.
+- **Kết quả:** Position và `ETag` mới.
+
+### 3.3. Onboarding
+
+#### `GET /api/v1/onboarding/tasks`
+
+- **Mục đích:** Tra cứu task onboarding, gồm task quá hạn.
+- **Query:** `page`, `pageSize`, `employeeId`, `assignedToUserId`, `status`, `overdue`.
+- **Kết quả:** `OnboardingTaskPage`.
+
+#### `PUT /api/v1/onboarding/tasks/{taskId}`
+
+- **Mục đích:** Cập nhật tên, mô tả, người phụ trách và hạn task.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** `OnboardingTaskWrite`.
+- **Kết quả:** Task và `ETag` mới.
+
+#### `POST /api/v1/onboarding/tasks/{taskId}/{action}`
+
+- **Mục đích:** Chuyển trạng thái task.
+- **Action:** `start`, `complete`, `reopen`.
+- **Header:** Bắt buộc `If-Match`.
+- **Workflow:** `pending → in_progress → completed`.
+- **Quyền:** Reopen chỉ dành cho HR Officer/HR Manager và phải có lý do.
+
+### 3.4. Employee events
+
+#### `GET /api/v1/employees/{employeeId}/events`
+
+- **Mục đích:** Lấy lịch sử biến động bất biến của nhân viên.
+- **Query:** `page`, `pageSize`.
+- **Kết quả:** `EmployeeEventPage`.
+
+#### `POST /api/v1/employees/{employeeId}/events`
+
+- **Mục đích:** Tạo đề xuất biến động ở trạng thái `draft`.
+- **Body:** `eventType`, `effectiveDate`, `beforeData`, `afterData`, `reason`; có thể chỉ ra event được bù bằng `compensatesEventId`.
+- **Loại:** promotion, transfer, demotion, salary adjustment, termination, correction.
+- **Kiểm tra:** Không có hai event cùng ngày hiệu lực thay đổi cùng một trường.
+- **Kết quả:** `201`, EmployeeEvent, `Location`, `ETag`.
+
+#### `POST /api/v1/employee-events/{eventId}/{action}`
+
+- **Mục đích:** Điều khiển workflow biến động.
+- **Action:** `submit`, `approve`, `cancel`.
+- **Header:** Bắt buộc `If-Match`.
+- **Workflow:** `draft → pending_approval → approved → applied`.
+- **Bất biến:** Event đã applied không được sửa/xóa; phải tạo compensating event.
+
+### 3.5. Employee documents
+
+#### `GET /api/v1/employees/{employeeId}/documents`
+
+- **Mục đích:** Lấy metadata tài liệu được phép xem.
+- **Kết quả:** Mảng `EmployeeDocument`; không trả object key hoặc URL storage công khai.
+- **Bảo mật:** Quyền xem phụ thuộc document type và quan hệ với nhân viên.
+
+#### `POST /api/v1/employees/{employeeId}/documents`
+
+- **Mục đích:** Upload và tạo version mới của tài liệu nhân sự.
+- **Content-Type:** `multipart/form-data`.
+- **Body:** `file`, `documentType`, tùy chọn `retentionUntil`.
+- **An toàn:** File phải được kiểm tra type, size, nội dung và malware trước khi lưu private.
+- **Kết quả:** `201`, metadata tài liệu và `Location`.
+
+#### `POST /api/v1/employee-documents/{documentId}/download-url`
+
+- **Mục đích:** Tạo signed URL tải tài liệu sau khi kiểm tra quyền.
+- **Kết quả:** `SignedDownload` gồm `url` và `expiresAt`, tối đa khoảng 15 phút.
+- **Audit:** Truy cập tài liệu nhạy cảm phải được ghi log.
+
+## 4. Contracts
+
+### 4.1. Employment contracts
+
+#### `GET /api/v1/contracts`
+
+- **Mục đích:** Tra cứu hợp đồng theo data scope.
+- **Query:** `page`, `pageSize`, `employeeId`, `type`, `status`.
+- **Bảo mật:** Employee chỉ được xem hợp đồng của chính mình.
+- **Kết quả:** `ContractPage`.
+
+#### `POST /api/v1/contracts`
+
+- **Mục đích:** Tạo hợp đồng `draft`.
+- **Body:** Employee, số hợp đồng, loại, ngày bắt đầu/kết thúc, salary, currency, notice period và `isPrimary`.
+- **Kiểm tra:** Số hợp đồng duy nhất; hợp đồng có thời hạn phải có `endDate > startDate`; không overlap hợp đồng chính đang hiệu lực.
+- **Kết quả:** `201`, Contract, `Location`, `ETag`.
+
+#### `GET /api/v1/contracts/expiring`
+
+- **Mục đích:** Lấy các hợp đồng chạm ngưỡng cảnh báo hết hạn.
+- **Query:** `asOf`, `withinDays` từ 1 đến 365, `page`, `pageSize`.
+- **Kết quả:** `ExpiringContractPage` với `daysRemaining` và `alertLevel`.
+- **Ngưỡng mặc định:** Probation 15/7 ngày; fixed-term 45/30 ngày.
+
+#### `GET /api/v1/contracts/{contractId}`
+
+- **Mục đích:** Lấy chi tiết một hợp đồng được phép xem.
+- **Kết quả:** `Contract` và `ETag`.
+
+#### `PUT /api/v1/contracts/{contractId}`
+
+- **Mục đích:** Thay thế trường có thể chỉnh sửa của hợp đồng `draft`.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** `ContractWrite` đầy đủ.
+- **Kết quả:** Contract và `ETag` mới.
+
+#### `POST /api/v1/contracts/{contractId}/{action}`
+
+- **Mục đích:** Điều khiển vòng đời hợp đồng.
+- **Action:** `approve`, `activate`, `terminate`, `cancel`.
+- **Header:** Bắt buộc `If-Match`.
+- **Body:** Terminate/cancel yêu cầu `reason`; activate có thể nhận `signedAt`; ngoại lệ overlap dùng `allowPrimaryOverlap` và cần quyền HR Manager.
+- **Điều kiện activate:** Hợp đồng đã approved và có bằng chứng ký hợp lệ.
+- **Kết quả:** Contract và `ETag` mới.
+
+#### `POST /api/v1/contracts/{contractId}/signed-document`
+
+- **Mục đích:** Upload bản PDF đã ký trước khi activate.
+- **Content-Type:** `multipart/form-data`.
+- **Header:** Bắt buộc `If-Match`.
+- **Kết quả:** Contract cập nhật trạng thái tài liệu và `ETag` mới.
+
+#### `POST /api/v1/contracts/{contractId}/download-url`
+
+- **Mục đích:** Tạo signed URL tải hợp đồng đã ký.
+- **Bảo mật:** Employee chỉ tải hợp đồng của chính mình; HR vẫn chịu data scope.
+- **Kết quả:** `SignedDownload` với thời hạn ngắn.
+
+### 4.2. Contract addenda
+
+#### `GET /api/v1/contracts/{contractId}/addenda`
+
+- **Mục đích:** Lấy các phụ lục của hợp đồng mà không thay đổi nội dung hợp đồng gốc.
+- **Kết quả:** Mảng `ContractAddendum`.
+
+#### `POST /api/v1/contracts/{contractId}/addenda`
+
+- **Mục đích:** Tạo phụ lục `draft`.
+- **Body:** Số phụ lục, ngày hiệu lực, `beforeTerms`, `afterTerms`, lý do.
+- **Kiểm tra:** Hợp đồng gốc tồn tại/còn phù hợp; số phụ lục duy nhất; before/after phải phản ánh thay đổi được phép.
+- **Kết quả:** `201`, ContractAddendum, `Location`, `ETag`.
+
+#### `POST /api/v1/contract-addenda/{addendumId}/{action}`
+
+- **Mục đích:** Điều khiển workflow phụ lục.
+- **Action:** `submit`, `approve`, `mark-signed`, `make-effective`, `cancel`.
+- **Header:** Bắt buộc `If-Match`.
+- **Workflow:** `draft → pending_approval → approved → effective`; bản cũ có thể chuyển `superseded`.
+- **Side effect:** Khi effective, thay đổi chức danh/lương/phòng ban tạo employee event tương ứng thay vì sửa lịch sử trực tiếp.
+
+#### `POST /api/v1/contract-addenda/{addendumId}/signed-document`
+
+- **Mục đích:** Upload PDF phụ lục đã ký trước khi chuyển `effective`.
+- **Content-Type:** `multipart/form-data`.
+- **Header:** Bắt buộc `If-Match`.
+- **Kết quả:** ContractAddendum và `ETag` mới.
+
+## 5. Trạng thái triển khai
+
+Contract trên mô tả API mục tiêu cho ba phân hệ. Source backend hiện mới triển khai đầy đủ hai operation:
+
+- `GET /api/v1/recruitment/applications/{applicationId}`.
+- `POST /api/v1/recruitment/applications/{applicationId}/advance`.
+
+Các operation còn lại cần được triển khai theo từng vertical slice, gồm đồng thời controller, authorization policy, business workflow, persistence transaction, audit/outbox và contract/integration tests.

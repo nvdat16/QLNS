@@ -1,3 +1,10 @@
+// =============================================================================
+// DEPRECATED — rendering source for dbml.png only (legacy 14-table model).
+// The canonical schema contract is database/schema.sql (36 tables) and does not
+// match this file. Regenerate this DBML from schema.sql before reusing the
+// diagram, and do not treat dbml.png as the current data model.
+// =============================================================================
+
 // Use DBML to define your database structure
 // Docs: https://dbml.dbdiagram.io/docs
 

@@ -496,14 +496,22 @@ Worker chưa có implementation đã xác minh. Mọi handler phải idempotent,
 
 ### 5.5 Business modules and data ownership
 
-| Module | Responsibilities | Designed tables | Current evidence |
+Ba module nghiệp vụ được chọn triển khai trước — **Core HR** (gồm Contracts), **Recruitment** và **Attendance & Leave** — đều đã có bảng trong canonical schema v1 (36 bảng).
+
+| Module | Responsibilities | Canonical tables | Current evidence |
 |---|---|---|---|
-| Core HR | employee, department, position, contract, lifecycle | `employees`, `departments`, `positions`, `contracts`, `employee_events`, `employee_documents`, `onboarding_tasks` | UI prototype + DB design |
-| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `interviews`, `evaluations`, `offers` | UI prototype + DB design + REC-03.2 source baseline |
-| Attendance | shift, schedule, check event, timesheet | deferred from canonical v1 | UI prototype only |
-| Leave | leave type, balance, request, decision | deferred from canonical v1 | UI prototype only |
+| Core HR — Profile & Organization | employee, department, position | `employees`, `departments`, `positions` | UI prototype + canonical schema + OpenAPI + story có AC |
+| Core HR — Lifecycle | onboarding, events, documents, probation, offboarding | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | UI prototype (onboarding) + canonical schema + OpenAPI + story có AC |
+| Core HR — Contracts | contract lifecycle, expiry alert, addendum | `contracts`, `contract_addenda` | UI prototype + canonical schema + OpenAPI + story có AC |
+| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + **REC-03.2 source baseline** |
+| Attendance | policy version, holiday, shift, schedule, check event, correction, overtime, daily record, period lock | `attendance_policies`, `holidays`, `work_shifts`, `work_schedule_assignments`, `attendance_events`, `attendance_corrections`, `overtime_requests`, `attendance_daily_records`, `timesheet_periods` | UI prototype + canonical schema + OpenAPI + story có AC · **policy pending** |
+| Leave | leave type policy, balance, request, multi-level decision | `leave_types`, `leave_balances`, `leave_requests`, `leave_request_decisions` | UI prototype + canonical schema + OpenAPI + story có AC · **policy pending** |
 | Identity/Audit/Notification | actor, roles/data scope, audit, delivery state | `users`, `user_roles`, `audit_logs`, `outbox_messages` | canonical v1 design |
-| Reporting | authorized read models and export | chưa chốt | UI/SRS concept |
+| Reporting | authorized read models and export | read model trên bảng của các module trên; chưa có bảng riêng | UI/SRS concept |
+
+**Ownership rule:** Attendance sở hữu dữ liệu chấm công và bảng công; Leave sở hữu quỹ phép và đơn nghỉ. Leave **không** ghi trực tiếp vào `attendance_daily_records` — Attendance đọc đơn nghỉ đã duyệt và tự tính lại ngày công. Chiều phụ thuộc là Attendance → Leave, một chiều.
+
+**Policy gate ở tầng dữ liệu:** `attendance_daily_records.policy_version` là `NOT NULL` với khóa ngoại tới `attendance_policies`, và `attendance_policies` chỉ ra khỏi trạng thái `draft` khi có người phê duyệt. Điều này biến một quyết định nghiệp vụ thành một invariant kỹ thuật: không thể tính công theo chính sách chưa được phê duyệt.
 
 Database không có C4 Component diagram riêng vì đây là data-store container, không phải executable container. Thành phần bên trong được mô hình hóa bằng ownership ở bảng trên và ERD/DDL trong `database/`.
 
@@ -513,11 +521,11 @@ Database không có C4 Component diagram riêng vì đây là data-store contain
 frontend/
 ├── src/app/                      # composition, routing, session
 ├── src/features/
-│   ├── recruitment/              # api, components, hooks, pages
+│   ├── recruitment/              # api, components, hooks, pages — REC-03.2 implemented
 │   ├── core-hr/                  # proposed
 │   ├── contracts/                # proposed
-│   ├── attendance/               # proposed
-│   ├── leave/                    # proposed
+│   ├── attendance/               # proposed — policy pending
+│   ├── leave/                    # proposed — next slice (ATT-03)
 │   ├── reporting/                # proposed
 │   └── administration/           # proposed
 ├── src/shared/                   # design system and generic UI
@@ -528,11 +536,14 @@ backend/
 ├── src/Qlns.BusinessLogic/       # module services/domain + repository contracts
 ├── src/Qlns.DataAccess/          # module repositories + EF Core/adapters
 ├── src/Qlns.Worker/              # proposed background processing container
-└── tests/Qlns.BusinessLogic.UnitTests/
+├── tests/Qlns.BusinessLogic.UnitTests/
+└── tests/Qlns.IntegrationTests/  # proposed — required before the ATT-03 slice
 
-api/openapi.yaml                  # contract-first OpenAPI 3.0.3
-database/schema.sql               # canonical schema contract before EF migrations
+api/openapi.yaml                  # contract-first OpenAPI 3.0.3 (121 operations)
+database/schema.sql               # canonical schema contract before EF migrations (36 tables)
 ```
+
+`tests/Qlns.IntegrationTests/` chưa tồn tại nhưng là điều kiện bắt buộc cho slice tiếp theo: phần lớn invariant của Attendance & Leave là `UNIQUE`/`EXCLUDE` constraint và conditional update ở database, và không thể verify bằng repository giả lập. Xem [Vertical Slice ATT-03](vertical_slice_leave_01.md).
 
 Một use case mới nằm trong module sở hữu nghiệp vụ, cùng command/query, policy và test. Không đặt business rule trong route, component UI hoặc database trigger tổng quát.
 
@@ -776,11 +787,17 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 | # | Risk | Impact | Likelihood | Mitigation | Owner |
 |---|---|---|---|---|---|
 | R1 | UI prototype bị hiểu nhầm là frontend đã hoàn thành | High | High | nhãn Design-only, acceptance criteria và không dùng mock data fallback production | Product + Architecture |
-| R2 | Canonical schema chưa có Attendance/Leave và chưa được chuyển thành EF migration | High | High | discovery business rule, migration plan và constraint/invariant integration tests | Data + Backend |
+| R1b | Có OpenAPI contract đầy đủ bị hiểu nhầm là API đã hoạt động | High | High | `x-implementation-status` trên từng operation; chỉ hai operation ở trạng thái implemented, xem [Vertical Slice REC-03.2](vertical_slice_rec_03_2.md) | Architecture |
+| R2 | Canonical schema chưa được chuyển thành EF migration có version | High | High | migration plan, bật extension `btree_gist`, và constraint/invariant integration tests trên PostgreSQL thật | Data + Backend |
+| R2b | Attendance/Leave có schema và API contract nhưng **policy tính công và quỹ phép chưa được HR/Legal phê duyệt** | Critical | High | policy gate ở tầng dữ liệu (`attendance_policies.status`, `leave_types.policy_status`); [Open Decisions](open_decisions_attendance_leave.md) là điều kiện chặn trước implementation | Product + HR/Legal |
+| R2c | Giới hạn giờ tăng ca theo luật chưa được hệ thống chặn (chưa có bảng hạn mức) | High | Medium | chốt `[OD-5.4]` với Legal rồi bổ sung bảng hạn mức và kiểm tra ở service trước go-live | Product + HR/Legal |
+| R2d | Mở lại kỳ công đã bàn giao Payroll chưa có cơ chế điều chỉnh | High | Medium | chốt `[OD-8.5]` trước khi nối Payroll; tới lúc đó không cho reopen kỳ đã handoff | Product + Backend |
 | R3 | Stack được chọn theo sơ đồ mà không qua decision process | Medium | High | ADR framework/version và proof-of-concept vertical slice | Architecture |
 | R4 | Business rule rò vào UI/router | High | Medium | application/domain boundary, code review và architecture fitness tests | Backend lead |
 | R5 | RBAC chỉ ẩn nút, thiếu data scope server-side | Critical | Medium | deny-by-default policy tests cho từng role/scope | Security |
 | R6 | Candidate-to-employee handoff tạo dữ liệu trùng | High | Medium | source link, unique/business key, lock/version và idempotency test | Core HR + Recruitment |
+| R6b | Bội chi quỹ phép do read-modify-write khi hai đơn gửi đồng thời | High | Medium | conditional update kèm điều kiện số dư (không `SELECT` rồi `UPDATE`); test tranh chấp đồng thời trên PostgreSQL thật là bắt buộc | Backend + Data |
+| R6c | Thiết bị chấm công offline gửi bù gây nhân đôi hoặc mất dữ liệu | High | Medium | `ux_attendance_events_device` trên `device_id` + `external_event_id`; sự kiện trùng trả `202 duplicate=true` chứ không trả lỗi | Integration owner |
 | R7 | Provider failure làm sai trạng thái nghiệp vụ | High | Medium | outbox, delivery state, bounded retry và reconciliation | Integration owner |
 | R8 | Dữ liệu nhạy cảm xuất hiện trong log/export/test | Critical | Medium | classification, DTO allowlist, redaction, synthetic test data, export audit | Security + Data |
 | R9 | Mermaid/C4/ADR drift khỏi implementation tương lai | Medium | High | docs-first PR checklist và traceability/fitness gates | Architecture |

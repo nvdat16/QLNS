@@ -3,7 +3,9 @@ info:
   title: QLNS API
   version: 1.0.0
   description: >-
-    Contract-first API for Recruitment, Core HR and Contract Management.
+    Contract-first API for the three modules selected for first delivery —
+    Core HR (including Contracts), Recruitment and Attendance & Leave —
+    plus Reports and Administration.
     Workflow changes use explicit commands, ETag/If-Match concurrency control,
     server-side authorization, audit logging and transactional outbox delivery.
 servers:
@@ -25,6 +27,25 @@ tags:
   - { name: Employee Documents }
   - { name: Contracts }
   - { name: Contract Addenda }
+  - { name: Reports }
+  - { name: Report Exports }
+  - { name: Attendance Shifts }
+  - { name: Attendance Holidays }
+  - { name: Attendance Events }
+  - { name: Attendance Overtime }
+  - { name: Timesheets }
+  - { name: Timesheet Periods }
+  - { name: Attendance Corrections }
+  - { name: Leave }
+  - { name: Leave Policy }
+  - { name: Probation }
+  - { name: Offboarding }
+  - { name: Administration Users }
+  - { name: Administration Authorization }
+  - { name: Administration Audit }
+  - { name: Administration Deliveries }
+  - { name: Administration Integrations }
+  - { name: Operations }
 
 paths:
   /api/v1/recruitment/requisitions:
@@ -942,10 +963,1205 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '415': { $ref: '#/components/responses/UnsupportedMediaType' }
 
+  /api/v1/reports/headcount:
+    get:
+      tags: [Reports]
+      operationId: getHeadcountReport
+      summary: Get authorized headcount and workforce KPIs
+      description: Every metric includes its formula identifier and the read-model refresh time.
+      x-requirement: REP-01.1
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: positionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: location, in: query, schema: { type: string, maxLength: 255 } }
+      responses:
+        '200': { description: Headcount report, content: { application/json: { schema: { $ref: '#/components/schemas/HeadcountReport' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/reports/recruitment:
+    get:
+      tags: [Reports]
+      operationId: getRecruitmentReport
+      summary: Get recruitment funnel, velocity, source and offer KPIs
+      x-requirement: REP-02.1
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: positionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: location, in: query, schema: { type: string, maxLength: 255 } }
+        - { name: requisitionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        '200': { description: Recruitment report, content: { application/json: { schema: { $ref: '#/components/schemas/RecruitmentReport' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/reports/exports:
+    post:
+      tags: [Report Exports]
+      operationId: createReportExport
+      summary: Create an audited asynchronous report export
+      description: Exports are data-scope filtered, field-allowlisted and watermarked by the server.
+      x-requirement: REP-01.1, REP-02.1, SYS-04
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateReportExportRequest' } } } }
+      responses:
+        '202':
+          description: Export job accepted
+          headers: { Location: { $ref: '#/components/headers/Location' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ReportExport' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/reports/exports/{exportId}:
+    get:
+      tags: [Report Exports]
+      operationId: getReportExport
+      summary: Get report export status
+      x-requirement: SYS-04
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/ExportId' }]
+      responses:
+        '200': { description: Export status, content: { application/json: { schema: { $ref: '#/components/schemas/ReportExport' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/reports/exports/{exportId}/download-url:
+    post:
+      tags: [Report Exports]
+      operationId: createReportExportDownloadUrl
+      summary: Create a short-lived authorized URL for a completed export
+      x-requirement: SYS-04
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/ExportId' }]
+      responses:
+        '200': { description: Signed download, content: { application/json: { schema: { $ref: '#/components/schemas/SignedDownload' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/attendance/shifts:
+    get:
+      tags: [Attendance Shifts]
+      operationId: listWorkShifts
+      summary: List work-shift definitions
+      x-requirement: ATT-01
+      x-implementation-status: discovery-required
+      parameters:
+        - { name: active, in: query, schema: { type: boolean } }
+      responses:
+        '200': { description: Shift definitions, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/WorkShift' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Attendance Shifts]
+      operationId: createWorkShift
+      summary: Create a work-shift definition
+      x-requirement: ATT-01
+      x-implementation-status: discovery-required
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/WorkShiftWrite' } } } }
+      responses:
+        '201':
+          description: Shift created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/WorkShift' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/shifts/{shiftId}:
+    parameters: [{ $ref: '#/components/parameters/ShiftId' }]
+    get:
+      tags: [Attendance Shifts]
+      operationId: getWorkShift
+      summary: Get one work-shift definition
+      x-requirement: ATT-01
+      x-implementation-status: discovery-required
+      responses:
+        '200':
+          description: Shift
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/WorkShift' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Attendance Shifts]
+      operationId: replaceWorkShift
+      summary: Replace a work-shift definition
+      x-requirement: ATT-01
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/WorkShiftWrite' } } } }
+      responses:
+        '200':
+          description: Shift updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/WorkShift' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/schedules:
+    get:
+      tags: [Attendance Shifts]
+      operationId: listWorkSchedules
+      summary: Get employee shift assignments for a week
+      x-requirement: ATT-01
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/WeekStart'
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Paged weekly schedules, content: { application/json: { schema: { $ref: '#/components/schemas/WorkSchedulePage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Attendance Shifts]
+      operationId: replaceWorkScheduleAssignments
+      summary: Replace selected weekly shift assignments atomically
+      x-requirement: ATT-01
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/WeekStart'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReplaceWorkScheduleRequest' } } } }
+      responses:
+        '200': { description: Updated assignments, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/WorkScheduleAssignment' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/events:
+    post:
+      tags: [Attendance Events]
+      operationId: recordAttendanceEvent
+      summary: Record an employee check-in or check-out
+      x-requirement: ATT-02
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceEventWrite' } } } }
+      responses:
+        '201':
+          description: Attendance event recorded or deduplicated
+          headers: { Location: { $ref: '#/components/headers/Location' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceEvent' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/integrations/attendance/events:
+    post:
+      tags: [Attendance Events]
+      operationId: ingestDeviceAttendanceEvent
+      summary: Ingest a signed and idempotent attendance-device event
+      x-requirement: ATT-02, SYS-04
+      x-implementation-status: discovery-required
+      security: [{ deviceAuth: [] }]
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DeviceAttendanceEventWrite' } } } }
+      responses:
+        '202': { description: Device event accepted, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceEvent' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/timesheets:
+    get:
+      tags: [Timesheets]
+      operationId: listTimesheets
+      summary: Get calculated personal or team timesheets
+      description: Calculated values expose the policy version used; clients must not recalculate payroll-grade totals.
+      x-requirement: ATT-02
+      x-implementation-status: discovery-required
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/TimesheetStatus' } }
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Paged timesheet rows, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/attendance/corrections:
+    get:
+      tags: [Attendance Corrections]
+      operationId: listAttendanceCorrections
+      summary: Search attendance correction requests
+      x-requirement: ATT-02
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ApprovalStatus' } }
+      responses:
+        '200': { description: Paged corrections, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrectionPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Attendance Corrections]
+      operationId: createAttendanceCorrection
+      summary: Request a correction to one workday's attendance events
+      x-requirement: ATT-02
+      x-implementation-status: discovery-required
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrectionWrite' } } } }
+      responses:
+        '201':
+          description: Pending correction created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrection' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/corrections/{correctionId}/{action}:
+    post:
+      tags: [Attendance Corrections]
+      operationId: transitionAttendanceCorrection
+      summary: Approve, reject or cancel an attendance correction
+      x-requirement: ATT-02
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/CorrectionId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
+      responses:
+        '200':
+          description: Correction updated and approved values recalculated when applicable
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrection' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/leave/types:
+    get:
+      tags: [Leave]
+      operationId: listLeaveTypes
+      summary: List leave types and their current policy metadata
+      x-requirement: ATT-03
+      x-implementation-status: discovery-required
+      responses:
+        '200': { description: Leave types, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/LeaveType' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Leave Policy]
+      operationId: createLeaveType
+      summary: Create a leave type in draft policy state
+      description: A newly created leave type cannot be used to submit requests until its policy is approved.
+      x-requirement: ATT-03.1
+      x-implementation-status: discovery-required
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveTypeWrite' } } } }
+      responses:
+        '201':
+          description: Draft leave type created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveType' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/leave/balances:
+    get:
+      tags: [Leave]
+      operationId: listLeaveBalances
+      summary: Get authorized leave balances for a calendar year
+      x-requirement: ATT-03
+      x-implementation-status: discovery-required
+      parameters:
+        - { name: year, in: query, required: true, schema: { type: integer, minimum: 2000, maximum: 2100 } }
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        '200': { description: Leave balances, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/LeaveBalance' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/leave/requests:
+    get:
+      tags: [Leave]
+      operationId: listLeaveRequests
+      summary: Search personal, team or approval-queue leave requests
+      x-requirement: ATT-03
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ApprovalStatus' } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: pendingMyDecision, in: query, schema: { type: boolean } }
+      responses:
+        '200': { description: Paged leave requests, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequestPage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Leave]
+      operationId: createLeaveRequest
+      summary: Submit a leave request and reserve balance atomically
+      description: The server calculates requested units from schedule, holidays, timezone and policy version.
+      x-requirement: ATT-03
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequestWrite' } } } }
+      responses:
+        '201':
+          description: Pending request created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequest' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/leave/requests/{leaveRequestId}:
+    get:
+      tags: [Leave]
+      operationId: getLeaveRequest
+      summary: Get a leave request and its decision history
+      x-requirement: ATT-03
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/LeaveRequestId' }]
+      responses:
+        '200':
+          description: Leave request
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequest' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/leave/requests/{leaveRequestId}/{action}:
+    post:
+      tags: [Leave]
+      operationId: transitionLeaveRequest
+      summary: Approve, reject or cancel a leave request
+      x-requirement: ATT-03
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/LeaveRequestId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
+      responses:
+        '200':
+          description: Request and reserved balance updated atomically
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequest' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/leave/requests/batch-decision:
+    post:
+      tags: [Leave]
+      operationId: decideLeaveRequestsBatch
+      summary: Approve or reject multiple leave requests independently
+      description: The response reports a result per item; one conflict does not hide other item results.
+      x-requirement: ATT-03
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/BatchLeaveDecisionRequest' } } } }
+      responses:
+        '200': { description: Per-request decision results, content: { application/json: { schema: { $ref: '#/components/schemas/BatchLeaveDecisionResult' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/holidays:
+    get:
+      tags: [Attendance Holidays]
+      operationId: listHolidays
+      summary: List holidays for a calendar and year
+      x-requirement: ATT-01.3
+      x-implementation-status: discovery-required
+      parameters:
+        - { name: calendarCode, in: query, schema: { type: string, default: VN } }
+        - { name: year, in: query, required: true, schema: { type: integer, minimum: 2000, maximum: 2100 } }
+      responses:
+        '200': { description: Holidays, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Holiday' } } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Attendance Holidays]
+      operationId: createHoliday
+      summary: Add a holiday to a calendar
+      x-requirement: ATT-01.3
+      x-implementation-status: discovery-required
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/HolidayWrite' } } } }
+      responses:
+        '201':
+          description: Holiday created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Holiday' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/holidays/{holidayId}:
+    parameters: [{ $ref: '#/components/parameters/HolidayId' }]
+    put:
+      tags: [Attendance Holidays]
+      operationId: replaceHoliday
+      summary: Replace a holiday entry
+      x-requirement: ATT-01.3
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/HolidayWrite' } } } }
+      responses:
+        '200':
+          description: Holiday updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/Holiday' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+    delete:
+      tags: [Attendance Holidays]
+      operationId: deleteHoliday
+      summary: Remove a holiday entry that is not referenced by a computed timesheet
+      x-requirement: ATT-01.3
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      responses:
+        '204': { description: Holiday removed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/attendance/overtime-requests:
+    get:
+      tags: [Attendance Overtime]
+      operationId: listOvertimeRequests
+      summary: Search overtime requests
+      x-requirement: ATT-02.4
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ApprovalStatus' } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: pendingMyDecision, in: query, schema: { type: boolean } }
+      responses:
+        '200': { description: Paged overtime requests, content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequestPage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Attendance Overtime]
+      operationId: createOvertimeRequest
+      summary: Request overtime for one workday
+      description: >-
+        The server derives overtimeCategory and workCoefficient from the work schedule,
+        holiday calendar and the active attendance policy. Client-supplied values are ignored.
+      x-requirement: ATT-02.4
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequestWrite' } } } }
+      responses:
+        '201':
+          description: Pending overtime request created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequest' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/overtime-requests/{overtimeRequestId}/{action}:
+    post:
+      tags: [Attendance Overtime]
+      operationId: transitionOvertimeRequest
+      summary: Approve, reject or cancel an overtime request
+      description: Approving may grant fewer minutes than requested but never more.
+      x-requirement: ATT-02.4
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/OvertimeRequestId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeDecisionRequest' } } } }
+      responses:
+        '200':
+          description: Overtime request updated and timesheet minutes recalculated when applicable
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequest' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/timesheet-periods:
+    get:
+      tags: [Timesheet Periods]
+      operationId: listTimesheetPeriods
+      summary: List timesheet periods
+      x-requirement: ATT-04.2
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/TimesheetPeriodStatus' } }
+      responses:
+        '200': { description: Paged timesheet periods, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriodPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Timesheet Periods]
+      operationId: createTimesheetPeriod
+      summary: Create a non-overlapping timesheet period
+      x-requirement: ATT-04.2
+      x-implementation-status: discovery-required
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriodWrite' } } } }
+      responses:
+        '201':
+          description: Period created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriod' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/timesheet-periods/{periodId}/exceptions:
+    get:
+      tags: [Timesheet Periods]
+      operationId: listTimesheetPeriodExceptions
+      summary: List unresolved exceptions blocking approval of a period
+      description: >-
+        Exceptions include incomplete workdays, unexplained absences, pending corrections
+        and approved overtime without matching attendance events.
+      x-requirement: ATT-04.2
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/PeriodId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200': { description: Paged exceptions, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetExceptionPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/attendance/timesheet-periods/{periodId}/{action}:
+    post:
+      tags: [Timesheet Periods]
+      operationId: transitionTimesheetPeriod
+      summary: Submit, approve, lock or reopen a timesheet period
+      description: >-
+        Approval is refused while unresolved exceptions remain. Locking makes every record in
+        the period immutable. Reopening requires a reason and is audited.
+      x-requirement: ATT-04.2
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/PeriodId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [submit, approve, lock, reopen] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
+      responses:
+        '200':
+          description: Period state updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriod' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/attendance/timesheet-periods/{periodId}/payroll-handoff:
+    post:
+      tags: [Timesheet Periods]
+      operationId: handOffTimesheetPeriodToPayroll
+      summary: Hand a locked period off to payroll
+      description: Refused unless the period is locked. Records the handoff timestamp and reference.
+      x-requirement: ATT-04.2
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/PeriodId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PayrollHandoffRequest' } } } }
+      responses:
+        '200':
+          description: Handoff recorded
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriod' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/leave/types/{leaveTypeId}:
+    parameters: [{ $ref: '#/components/parameters/LeaveTypeId' }]
+    put:
+      tags: [Leave Policy]
+      operationId: replaceLeaveType
+      summary: Replace a draft leave-type policy
+      description: Only a draft policy can be replaced. An approved policy requires a new policyVersion.
+      x-requirement: ATT-03.1
+      x-implementation-status: discovery-required
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveTypeWrite' } } } }
+      responses:
+        '200':
+          description: Leave type updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveType' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/leave/types/{leaveTypeId}/{action}:
+    post:
+      tags: [Leave Policy]
+      operationId: transitionLeaveType
+      summary: Approve, deactivate or reactivate a leave-type policy
+      description: >-
+        A leave type cannot be used to submit requests until its policy is approved.
+        Approval records the approver and timestamp.
+      x-requirement: ATT-03.1
+      x-implementation-status: discovery-required
+      parameters:
+        - $ref: '#/components/parameters/LeaveTypeId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, deactivate, reactivate] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
+      responses:
+        '200':
+          description: Leave type policy updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveType' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/employees/{employeeId}/probation-review:
+    parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
+    get:
+      tags: [Probation]
+      operationId: getProbationReview
+      summary: Get the probation review for the employee's current probation contract
+      x-requirement: EMP-06.1
+      x-implementation-status: proposed
+      responses:
+        '200':
+          description: Probation review
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProbationReview' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Probation]
+      operationId: submitProbationReview
+      summary: Submit or update the probation assessment
+      description: Only the assigned reviewer may submit. Recommending termination requires improvement notes.
+      x-requirement: EMP-06.1
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ProbationReviewWrite' } } } }
+      responses:
+        '200':
+          description: Assessment saved
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProbationReview' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/probation-reviews:
+    get:
+      tags: [Probation]
+      operationId: listProbationReviews
+      summary: Search probation reviews, including overdue ones
+      x-requirement: EMP-06.1
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ProbationReviewStatus' } }
+        - { name: overdue, in: query, schema: { type: boolean } }
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        '200': { description: Paged probation reviews, content: { application/json: { schema: { $ref: '#/components/schemas/ProbationReviewPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/probation-reviews/{reviewId}/{action}:
+    post:
+      tags: [Probation]
+      operationId: decideProbationReview
+      summary: Decide or cancel a probation review
+      description: >-
+        Deciding requires an outcome and an effective date, and atomically creates the matching
+        employee event. A terminated outcome also opens an offboarding case.
+      x-requirement: EMP-06.2
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/ReviewId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [decide, cancel, unlock] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/ProbationDecisionRequest' } } } }
+      responses:
+        '200':
+          description: Review decided and employee event created
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/ProbationReview' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/offboarding/cases:
+    get:
+      tags: [Offboarding]
+      operationId: listOffboardingCases
+      summary: Search offboarding cases
+      x-requirement: EMP-07.1
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/OffboardingStatus' } }
+        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+      responses:
+        '200': { description: Paged offboarding cases, content: { application/json: { schema: { $ref: '#/components/schemas/OffboardingCasePage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Offboarding]
+      operationId: createOffboardingCase
+      summary: Open an offboarding case
+      description: >-
+        Refused when the employee already has an open case. A shorter-than-required notice period
+        is reported as a warning in the response rather than blocking the case.
+      x-requirement: EMP-07.1
+      x-implementation-status: proposed
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OffboardingCaseWrite' } } } }
+      responses:
+        '201':
+          description: Case created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OffboardingCase' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/offboarding/cases/{caseId}:
+    get:
+      tags: [Offboarding]
+      operationId: getOffboardingCase
+      summary: Get one offboarding case with its blocking-task summary
+      x-requirement: EMP-07.1
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/CaseId' }]
+      responses:
+        '200':
+          description: Offboarding case
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OffboardingCase' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/offboarding/cases/{caseId}/{action}:
+    post:
+      tags: [Offboarding]
+      operationId: transitionOffboardingCase
+      summary: Approve, start, complete or cancel an offboarding case
+      description: >-
+        Completing is refused while any blocking task is unfinished or the final settlement is
+        not paid or waived, and cancels approved leave requests that start after the last working date.
+      x-requirement: EMP-07.2
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, start, complete, cancel] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
+      responses:
+        '200':
+          description: Case state updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OffboardingCase' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/offboarding/cases/{caseId}/tasks:
+    get:
+      tags: [Offboarding]
+      operationId: listOffboardingTasks
+      summary: List the handover and asset-recovery checklist of a case
+      x-requirement: EMP-07.2
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/CaseId'
+        - { name: category, in: query, schema: { $ref: '#/components/schemas/OffboardingTaskCategory' } }
+        - { name: blockingOnly, in: query, schema: { type: boolean } }
+      responses:
+        '200': { description: Checklist tasks, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/OffboardingTask' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/offboarding/tasks/{taskId}/{action}:
+    post:
+      tags: [Offboarding]
+      operationId: transitionOffboardingTask
+      summary: Start, complete or reopen an offboarding checklist task
+      x-requirement: EMP-07.2
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [start, complete, reopen] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
+      responses:
+        '200':
+          description: Task updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/OffboardingTask' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/administration/users:
+    get:
+      tags: [Administration Users]
+      operationId: listAdministrationUsers
+      summary: Search local actor mappings without exposing IdP credentials
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/UserStatus' } }
+      responses:
+        '200': { description: Paged users, content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUserPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Administration Users]
+      operationId: createAdministrationUserMapping
+      summary: Map an existing IdP subject to a local QLNS actor
+      description: Authentication and password lifecycle remain owned by the identity provider.
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUserWrite' } } } }
+      responses:
+        '201':
+          description: User mapping created
+          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUser' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/administration/users/{userId}:
+    get:
+      tags: [Administration Users]
+      operationId: getAdministrationUser
+      summary: Get a local actor mapping and role grants
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '200':
+          description: User mapping
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUser' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/administration/users/{userId}/{action}:
+    post:
+      tags: [Administration Users]
+      operationId: transitionAdministrationUser
+      summary: Enable, disable or synchronize a local actor mapping
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - { name: action, in: path, required: true, schema: { type: string, enum: [enable, disable, synchronize] } }
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses:
+        '200':
+          description: User mapping updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUser' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/administration/roles:
+    get:
+      tags: [Administration Authorization]
+      operationId: listRoles
+      summary: List assignable roles and permission descriptions
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      responses:
+        '200': { description: Role catalog, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/RoleDefinition' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/administration/users/{userId}/role-grants:
+    get:
+      tags: [Administration Authorization]
+      operationId: listUserRoleGrants
+      summary: List role and data-scope grants for one user
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '200': { description: Role grants, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/RoleGrant' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      tags: [Administration Authorization]
+      operationId: grantUserRole
+      summary: Grant a role with an explicit data scope
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RoleGrantWrite' } } } }
+      responses:
+        '201': { description: Role granted, content: { application/json: { schema: { $ref: '#/components/schemas/RoleGrant' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/administration/users/{userId}/role-grants/{roleCode}:
+    delete:
+      tags: [Administration Authorization]
+      operationId: revokeUserRole
+      summary: Revoke one exact role and data-scope grant
+      x-requirement: SYS-01
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - { name: roleCode, in: path, required: true, schema: { type: string, maxLength: 80 } }
+        - { name: dataScopeType, in: query, required: true, schema: { $ref: '#/components/schemas/DataScopeType' } }
+        - { name: dataScopeId, in: query, required: true, schema: { type: integer, format: int64, minimum: 0 } }
+      responses:
+        '204': { description: Role grant revoked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/administration/audit-logs:
+    get:
+      tags: [Administration Audit]
+      operationId: listAuditLogs
+      summary: Search immutable audit records within the auditor's mandate
+      x-requirement: SYS-03
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: actorUserId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
+        - { name: action, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: entityType, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: entityId, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: result, in: query, schema: { $ref: '#/components/schemas/AuditResult' } }
+        - { name: from, in: query, schema: { type: string, format: date-time } }
+        - { name: to, in: query, schema: { type: string, format: date-time } }
+      responses:
+        '200': { description: Paged redacted audit records, content: { application/json: { schema: { $ref: '#/components/schemas/AuditLogPage' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/administration/audit-logs/{auditLogId}:
+    get:
+      tags: [Administration Audit]
+      operationId: getAuditLog
+      summary: Get one redacted audit record
+      x-requirement: SYS-03
+      x-implementation-status: proposed
+      parameters: [{ $ref: '#/components/parameters/AuditLogId' }]
+      responses:
+        '200': { description: Audit record, content: { application/json: { schema: { $ref: '#/components/schemas/AuditLog' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/administration/deliveries:
+    get:
+      tags: [Administration Deliveries]
+      operationId: listDeliveries
+      summary: Search provider delivery and retry state
+      x-requirement: SYS-02
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/DeliveryStatus' } }
+        - { name: messageType, in: query, schema: { type: string, maxLength: 200 } }
+        - { name: aggregateType, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: aggregateId, in: query, schema: { type: string, maxLength: 100 } }
+      responses:
+        '200': { description: Paged delivery records, content: { application/json: { schema: { $ref: '#/components/schemas/DeliveryPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/administration/deliveries/{deliveryId}/retry:
+    post:
+      tags: [Administration Deliveries]
+      operationId: retryDelivery
+      summary: Schedule a failed or dead-letter delivery for bounded retry
+      x-requirement: SYS-02
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/DeliveryId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
+      responses:
+        '202': { description: Retry scheduled, content: { application/json: { schema: { $ref: '#/components/schemas/Delivery' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/administration/integrations:
+    get:
+      tags: [Administration Integrations]
+      operationId: listIntegrations
+      summary: List integration configuration without returning secrets
+      x-requirement: SYS-04
+      x-implementation-status: proposed
+      responses:
+        '200': { description: Integrations, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/IntegrationConfiguration' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/v1/administration/integrations/{integrationKey}:
+    put:
+      tags: [Administration Integrations]
+      operationId: replaceIntegrationConfiguration
+      summary: Replace non-secret settings and optionally rotate a write-only secret
+      x-requirement: SYS-04
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/IntegrationKey'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/IntegrationConfigurationWrite' } } } }
+      responses:
+        '200':
+          description: Integration updated without returning secret material
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/IntegrationConfiguration' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/administration/integrations/{integrationKey}/test:
+    post:
+      tags: [Administration Integrations]
+      operationId: testIntegration
+      summary: Test an integration without persisting business changes
+      x-requirement: SYS-04
+      x-implementation-status: proposed
+      parameters:
+        - $ref: '#/components/parameters/IntegrationKey'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { description: Test accepted, content: { application/json: { schema: { $ref: '#/components/schemas/IntegrationTestResult' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /health/live:
+    get:
+      tags: [Operations]
+      operationId: getLiveness
+      summary: Return process liveness without dependency or secret details
+      x-requirement: SYS-04
+      x-implementation-status: proposed
+      security: []
+      responses:
+        '200': { description: Process is alive, content: { application/json: { schema: { $ref: '#/components/schemas/HealthStatus' } } } }
+
+  /health/ready:
+    get:
+      tags: [Operations]
+      operationId: getReadiness
+      summary: Return aggregate readiness without exposing dependency details
+      x-requirement: SYS-04
+      x-implementation-status: proposed
+      security: []
+      responses:
+        '200': { description: Service is ready, content: { application/json: { schema: { $ref: '#/components/schemas/HealthStatus' } } } }
+        '503': { description: Service is not ready, content: { application/json: { schema: { $ref: '#/components/schemas/HealthStatus' } } } }
+
 components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: OIDC access token for workforce users. }
     offerToken: { type: apiKey, in: header, name: X-Offer-Token, description: Short-lived single-offer candidate token. }
+    deviceAuth: { type: apiKey, in: header, name: X-Device-Signature, description: Rotated device credential plus request signature verified by the attendance adapter. }
   parameters:
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
     PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -966,6 +2182,23 @@ components:
     DocumentId: { name: documentId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     ContractId: { name: contractId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     AddendumId: { name: addendumId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    ExportId: { name: exportId, in: path, required: true, schema: { type: string, format: uuid } }
+    ShiftId: { name: shiftId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    HolidayId: { name: holidayId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    OvertimeRequestId: { name: overtimeRequestId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    PeriodId: { name: periodId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    LeaveTypeId: { name: leaveTypeId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    ReviewId: { name: reviewId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    CaseId: { name: caseId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    CorrectionId: { name: correctionId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    LeaveRequestId: { name: leaveRequestId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    UserId: { name: userId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    AuditLogId: { name: auditLogId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    DeliveryId: { name: deliveryId, in: path, required: true, schema: { type: string, format: uuid } }
+    IntegrationKey: { name: integrationKey, in: path, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9_-]{1,79}$' } }
+    ReportFrom: { name: from, in: query, required: true, schema: { type: string, format: date } }
+    ReportTo: { name: to, in: query, required: true, schema: { type: string, format: date } }
+    WeekStart: { name: weekStart, in: query, required: true, description: Monday starting the requested work week., schema: { type: string, format: date } }
   headers:
     ETag: { description: Quoted numeric resource version., schema: { type: string, example: '"5"' } }
     Location: { description: Created resource URI., schema: { type: string, format: uri-reference } }
@@ -1132,3 +2365,240 @@ components:
     ContractAddendumWrite: { type: object, required: [addendumNumber, effectiveDate, beforeTerms, afterTerms, reason], properties: { addendumNumber: { type: string, maxLength: 100 }, effectiveDate: { type: string, format: date }, beforeTerms: { type: object, additionalProperties: true }, afterTerms: { type: object, additionalProperties: true }, reason: { type: string, maxLength: 5000 } } }
     ContractAddendum:
       allOf: [{ $ref: '#/components/schemas/ContractAddendumWrite' }, { type: object, required: [id, contractId, status, version, createdBy], properties: { id: { type: integer, format: int64 }, contractId: { type: integer, format: int64 }, status: { type: string, enum: [draft, pending_approval, approved, effective, superseded, cancelled] }, version: { type: integer, minimum: 1 }, createdBy: { type: integer, format: int64 }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, signedAt: { type: string, format: date-time, nullable: true }, signedDocumentAvailable: { type: boolean } } }]
+
+    ReportFilter:
+      type: object
+      required: [from, to]
+      properties: { from: { type: string, format: date }, to: { type: string, format: date }, departmentId: { type: integer, format: int64, nullable: true }, positionId: { type: integer, format: int64, nullable: true }, location: { type: string, nullable: true } }
+    ReportMetric:
+      type: object
+      required: [key, label, value, formula]
+      properties: { key: { type: string }, label: { type: string }, value: { type: number }, unit: { type: string, enum: [count, percent, days, currency] }, formula: { type: string, description: Stable formula identifier rather than executable expression. } }
+    DistributionPoint:
+      type: object
+      required: [key, label, value]
+      properties: { key: { type: string }, label: { type: string }, value: { type: number }, percent: { type: number, minimum: 0, maximum: 100, nullable: true } }
+    HeadcountReport:
+      type: object
+      required: [filter, metrics, byDepartment, byContractType, refreshedAt, policyVersion]
+      properties: { filter: { $ref: '#/components/schemas/ReportFilter' }, metrics: { type: array, items: { $ref: '#/components/schemas/ReportMetric' } }, byDepartment: { type: array, items: { $ref: '#/components/schemas/DistributionPoint' } }, byContractType: { type: array, items: { $ref: '#/components/schemas/DistributionPoint' } }, refreshedAt: { type: string, format: date-time }, policyVersion: { type: string } }
+    FunnelPoint:
+      type: object
+      required: [stage, enteredCount, conversionRate]
+      properties: { stage: { $ref: '#/components/schemas/RecruitmentStage' }, enteredCount: { type: integer, minimum: 0 }, conversionRate: { type: number, minimum: 0, maximum: 100 } }
+    RecruitmentReport:
+      type: object
+      required: [filter, funnel, metrics, bySource, refreshedAt, policyVersion]
+      properties: { filter: { $ref: '#/components/schemas/ReportFilter' }, funnel: { type: array, items: { $ref: '#/components/schemas/FunnelPoint' } }, metrics: { type: array, items: { $ref: '#/components/schemas/ReportMetric' } }, bySource: { type: array, items: { $ref: '#/components/schemas/DistributionPoint' } }, refreshedAt: { type: string, format: date-time }, policyVersion: { type: string } }
+    ReportType: { type: string, enum: [headcount, recruitment] }
+    ExportFormat: { type: string, enum: [csv, xlsx, pdf] }
+    CreateReportExportRequest:
+      type: object
+      additionalProperties: false
+      required: [reportType, format, filter]
+      properties: { reportType: { $ref: '#/components/schemas/ReportType' }, format: { $ref: '#/components/schemas/ExportFormat' }, filter: { $ref: '#/components/schemas/ReportFilter' } }
+    ReportExport:
+      type: object
+      required: [id, reportType, format, status, requestedAt, expiresAt]
+      properties: { id: { type: string, format: uuid }, reportType: { $ref: '#/components/schemas/ReportType' }, format: { $ref: '#/components/schemas/ExportFormat' }, status: { type: string, enum: [queued, processing, completed, failed, expired] }, requestedAt: { type: string, format: date-time }, completedAt: { type: string, format: date-time, nullable: true }, expiresAt: { type: string, format: date-time }, failureCode: { type: string, nullable: true } }
+
+    LocalTime: { type: string, pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$', example: '08:30' }
+    WorkShiftWrite:
+      type: object
+      required: [code, name, startsAt, endsAt, timezone, breakMinutes, standardWorkMinutes, workCoefficient, active]
+      properties: { code: { type: string, maxLength: 50 }, name: { type: string, maxLength: 255 }, startsAt: { $ref: '#/components/schemas/LocalTime' }, endsAt: { $ref: '#/components/schemas/LocalTime' }, timezone: { type: string, example: Asia/Ho_Chi_Minh }, breakMinutes: { type: integer, minimum: 0, maximum: 1440 }, standardWorkMinutes: { type: integer, minimum: 1, maximum: 1440 }, workCoefficient: { type: number, minimum: 0, maximum: 5 }, active: { type: boolean } }
+    WorkShift:
+      allOf: [{ $ref: '#/components/schemas/WorkShiftWrite' }, { type: object, required: [id, crossesMidnight, version], properties: { id: { type: integer, format: int64 }, crossesMidnight: { type: boolean }, version: { type: integer, format: int64, minimum: 1 } } }]
+    WorkScheduleAssignment:
+      type: object
+      required: [id, employeeId, workDate, shiftId, timezone, version]
+      properties: { id: { type: integer, format: int64 }, employeeId: { type: integer, format: int64 }, workDate: { type: string, format: date }, shiftId: { type: integer, format: int64 }, timezone: { type: string }, version: { type: integer, format: int64, minimum: 1 } }
+    WorkScheduleAssignmentWrite:
+      type: object
+      additionalProperties: false
+      required: [employeeId, workDate, shiftId]
+      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, workDate: { type: string, format: date }, shiftId: { type: integer, format: int64, minimum: 1 } }
+    ReplaceWorkScheduleRequest:
+      type: object
+      additionalProperties: false
+      required: [assignments]
+      properties: { assignments: { type: array, minItems: 1, maxItems: 1000, items: { $ref: '#/components/schemas/WorkScheduleAssignmentWrite' } } }
+    WorkSchedulePage: { type: object, required: [items, page, weekStart], properties: { items: { type: array, items: { $ref: '#/components/schemas/WorkScheduleAssignment' } }, page: { $ref: '#/components/schemas/PageMetadata' }, weekStart: { type: string, format: date } } }
+    AttendanceEventType: { type: string, enum: [check_in, check_out] }
+    AttendanceMethod: { type: string, enum: [fingerprint, gps, face_id, wifi, web, manual] }
+    AttendanceEventWrite:
+      type: object
+      required: [eventType, occurredAt, timezone, method]
+      properties: { employeeId: { type: integer, format: int64, minimum: 1, nullable: true }, eventType: { $ref: '#/components/schemas/AttendanceEventType' }, occurredAt: { type: string, format: date-time }, timezone: { type: string }, method: { $ref: '#/components/schemas/AttendanceMethod' }, latitude: { type: number, minimum: -90, maximum: 90, nullable: true }, longitude: { type: number, minimum: -180, maximum: 180, nullable: true }, deviceId: { type: string, maxLength: 200, nullable: true } }
+    DeviceAttendanceEventWrite:
+      allOf: [{ $ref: '#/components/schemas/AttendanceEventWrite' }, { type: object, required: [externalEventId, employeeExternalKey, deviceId], properties: { externalEventId: { type: string, maxLength: 200 }, employeeExternalKey: { type: string, maxLength: 200 } } }]
+    AttendanceEvent:
+      allOf: [{ $ref: '#/components/schemas/AttendanceEventWrite' }, { type: object, required: [id, employeeId, recordedAt, duplicate], properties: { id: { type: string, format: uuid }, employeeId: { type: integer, format: int64 }, recordedAt: { type: string, format: date-time }, duplicate: { type: boolean } } }]
+    TimesheetStatus: { type: string, enum: [on_time, late, early_leave, absent, incomplete, corrected, on_leave] }
+    TimesheetRow:
+      type: object
+      required: [employeeId, workDate, status, scheduledMinutes, workedMinutes, policyVersion]
+      properties: { employeeId: { type: integer, format: int64 }, workDate: { type: string, format: date }, shiftId: { type: integer, format: int64, nullable: true }, firstCheckInAt: { type: string, format: date-time, nullable: true }, lastCheckOutAt: { type: string, format: date-time, nullable: true }, status: { $ref: '#/components/schemas/TimesheetStatus' }, scheduledMinutes: { type: integer, minimum: 0 }, workedMinutes: { type: integer, minimum: 0 }, lateMinutes: { type: integer, minimum: 0 }, earlyLeaveMinutes: { type: integer, minimum: 0 }, policyVersion: { type: string } }
+    TimesheetPage: { type: object, required: [items, page, from, to], properties: { items: { type: array, items: { $ref: '#/components/schemas/TimesheetRow' } }, page: { $ref: '#/components/schemas/PageMetadata' }, from: { type: string, format: date }, to: { type: string, format: date } } }
+    ApprovalStatus: { type: string, enum: [pending, approved, rejected, cancelled] }
+    DecisionRequest: { type: object, additionalProperties: false, properties: { reason: { type: string, maxLength: 1000, nullable: true } } }
+    AttendanceCorrectionWrite:
+      type: object
+      required: [employeeId, workDate, proposedCheckInAt, proposedCheckOutAt, reason]
+      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, workDate: { type: string, format: date }, proposedCheckInAt: { type: string, format: date-time }, proposedCheckOutAt: { type: string, format: date-time }, reason: { type: string, minLength: 1, maxLength: 1000 } }
+    AttendanceCorrection:
+      allOf: [{ $ref: '#/components/schemas/AttendanceCorrectionWrite' }, { type: object, required: [id, status, requestedBy, version, createdAt], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/ApprovalStatus' }, requestedBy: { type: integer, format: int64 }, decidedBy: { type: integer, format: int64, nullable: true }, decisionReason: { type: string, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
+    AttendanceCorrectionPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/AttendanceCorrection' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+
+    LeaveUnit: { type: string, enum: [full_day, first_half, second_half, hours] }
+    LeaveType:
+      type: object
+      required: [id, code, name, paid, allowNegativeBalance, policyVersion, active]
+      properties: { id: { type: integer, format: int64 }, code: { type: string }, name: { type: string }, paid: { type: boolean }, allowNegativeBalance: { type: boolean }, policyVersion: { type: string }, active: { type: boolean } }
+    LeaveBalance:
+      type: object
+      required: [employeeId, leaveTypeId, year, entitledUnits, usedUnits, reservedUnits, availableUnits, unit, policyVersion]
+      properties: { employeeId: { type: integer, format: int64 }, leaveTypeId: { type: integer, format: int64 }, year: { type: integer }, entitledUnits: { type: number }, usedUnits: { type: number }, reservedUnits: { type: number }, availableUnits: { type: number }, unit: { type: string, enum: [days, hours] }, policyVersion: { type: string } }
+    LeaveRequestWrite:
+      type: object
+      required: [employeeId, leaveTypeId, startsAt, endsAt, timezone, unit, reason]
+      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, leaveTypeId: { type: integer, format: int64, minimum: 1 }, startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string }, unit: { $ref: '#/components/schemas/LeaveUnit' }, reason: { type: string, minLength: 1, maxLength: 2000 } }
+    LeaveDecision:
+      type: object
+      required: [sequence, approverUserId, decision, decidedAt]
+      properties: { sequence: { type: integer, minimum: 1 }, approverUserId: { type: integer, format: int64 }, decision: { type: string, enum: [approved, rejected] }, reason: { type: string, nullable: true }, decidedAt: { type: string, format: date-time } }
+    LeaveRequest:
+      allOf: [{ $ref: '#/components/schemas/LeaveRequestWrite' }, { type: object, required: [id, requestCode, status, requestedUnits, unitOfBalance, policyVersion, decisions, version, createdAt], properties: { id: { type: integer, format: int64 }, requestCode: { type: string }, status: { $ref: '#/components/schemas/ApprovalStatus' }, requestedUnits: { type: number, minimum: 0 }, unitOfBalance: { type: string, enum: [days, hours] }, policyVersion: { type: string }, decisions: { type: array, items: { $ref: '#/components/schemas/LeaveDecision' } }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
+    LeaveRequestPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/LeaveRequest' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    BatchLeaveDecisionItem: { type: object, additionalProperties: false, required: [leaveRequestId, expectedVersion], properties: { leaveRequestId: { type: integer, format: int64, minimum: 1 }, expectedVersion: { type: integer, format: int64, minimum: 1 } } }
+    BatchLeaveDecisionRequest: { type: object, additionalProperties: false, required: [decision, items], properties: { decision: { type: string, enum: [approve, reject] }, reason: { type: string, maxLength: 1000, nullable: true }, items: { type: array, minItems: 1, maxItems: 100, items: { $ref: '#/components/schemas/BatchLeaveDecisionItem' } } } }
+    BatchItemResult: { type: object, required: [leaveRequestId, status], properties: { leaveRequestId: { type: integer, format: int64 }, status: { type: integer }, code: { type: string, nullable: true }, newVersion: { type: integer, format: int64, nullable: true } } }
+    BatchLeaveDecisionResult: { type: object, required: [results], properties: { results: { type: array, items: { $ref: '#/components/schemas/BatchItemResult' } } } }
+
+    HolidayWrite:
+      type: object
+      additionalProperties: false
+      required: [holidayDate, name, paid, workCoefficient]
+      properties: { calendarCode: { type: string, maxLength: 50, default: VN }, holidayDate: { type: string, format: date }, name: { type: string, maxLength: 255 }, paid: { type: boolean }, workCoefficient: { type: number, minimum: 0, maximum: 5 } }
+    Holiday:
+      allOf: [{ $ref: '#/components/schemas/HolidayWrite' }, { type: object, required: [id, calendarCode, version], properties: { id: { type: integer, format: int64 }, version: { type: integer, format: int64, minimum: 1 } } }]
+    OvertimeCategory: { type: string, enum: [weekday, weekly_rest, holiday, night] }
+    OvertimeRequestWrite:
+      type: object
+      additionalProperties: false
+      required: [employeeId, workDate, startsAt, endsAt, timezone, reason]
+      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, workDate: { type: string, format: date }, startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string }, reason: { type: string, minLength: 1, maxLength: 2000 } }
+    OvertimeRequest:
+      allOf: [{ $ref: '#/components/schemas/OvertimeRequestWrite' }, { type: object, required: [id, requestCode, overtimeCategory, requestedMinutes, workCoefficient, status, policyVersion, version, createdAt], properties: { id: { type: integer, format: int64 }, requestCode: { type: string }, overtimeCategory: { $ref: '#/components/schemas/OvertimeCategory' }, requestedMinutes: { type: integer, minimum: 1 }, approvedMinutes: { type: integer, minimum: 0, nullable: true }, workCoefficient: { type: number, minimum: 1, maximum: 5 }, status: { $ref: '#/components/schemas/ApprovalStatus' }, requestedBy: { type: integer, format: int64 }, decidedBy: { type: integer, format: int64, nullable: true }, decisionReason: { type: string, nullable: true }, policyVersion: { type: string }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
+    OvertimeRequestPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/OvertimeRequest' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    OvertimeDecisionRequest:
+      type: object
+      additionalProperties: false
+      properties: { approvedMinutes: { type: integer, minimum: 0, nullable: true, description: Must not exceed requestedMinutes. Defaults to requestedMinutes when omitted. }, reason: { type: string, maxLength: 1000, nullable: true } }
+    TimesheetPeriodStatus: { type: string, enum: [open, pending_approval, approved, locked, reopened] }
+    TimesheetPeriodWrite:
+      type: object
+      additionalProperties: false
+      required: [periodCode, startsOn, endsOn]
+      properties: { periodCode: { type: string, maxLength: 50, example: '2026-09' }, startsOn: { type: string, format: date }, endsOn: { type: string, format: date } }
+    TimesheetPeriod:
+      allOf: [{ $ref: '#/components/schemas/TimesheetPeriodWrite' }, { type: object, required: [id, status, version], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/TimesheetPeriodStatus' }, reviewedBy: { type: integer, format: int64, nullable: true }, reviewedAt: { type: string, format: date-time, nullable: true }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, lockedBy: { type: integer, format: int64, nullable: true }, lockedAt: { type: string, format: date-time, nullable: true }, reopenReason: { type: string, nullable: true }, payrollHandoffAt: { type: string, format: date-time, nullable: true }, payrollHandoffReference: { type: string, nullable: true }, openExceptionCount: { type: integer, minimum: 0 }, version: { type: integer, format: int64 } } }]
+    TimesheetPeriodPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/TimesheetPeriod' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    TimesheetExceptionKind: { type: string, enum: [incomplete_workday, unexplained_absence, pending_correction, overtime_without_attendance, missing_schedule] }
+    TimesheetException:
+      type: object
+      required: [kind, employeeId, workDate, detail]
+      properties: { kind: { $ref: '#/components/schemas/TimesheetExceptionKind' }, employeeId: { type: integer, format: int64 }, workDate: { type: string, format: date }, detail: { type: string }, relatedId: { type: integer, format: int64, nullable: true } }
+    TimesheetExceptionPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/TimesheetException' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    PayrollHandoffRequest:
+      type: object
+      additionalProperties: false
+      required: [reference]
+      properties: { reference: { type: string, minLength: 1, maxLength: 200 }, note: { type: string, maxLength: 1000, nullable: true } }
+    LeaveTypeWrite:
+      type: object
+      additionalProperties: false
+      required: [code, name, paid, unitOfBalance, allowNegativeBalance, allowHalfDay, countsHolidays, requiresAttachment, minNoticeDays, approvalLevels, policyVersion]
+      properties: { code: { type: string, maxLength: 50 }, name: { type: string, maxLength: 255 }, paid: { type: boolean }, unitOfBalance: { type: string, enum: [days, hours] }, allowNegativeBalance: { type: boolean }, allowHalfDay: { type: boolean }, countsHolidays: { type: boolean }, requiresAttachment: { type: boolean }, minNoticeDays: { type: integer, minimum: 0 }, maxConsecutiveUnits: { type: number, minimum: 0, nullable: true }, approvalLevels: { type: integer, minimum: 1, maximum: 3 }, policyVersion: { type: string, maxLength: 50 } }
+    ProbationReviewStatus: { type: string, enum: [pending, in_review, decided, cancelled] }
+    ProbationOutcome: { type: string, enum: [confirmed, extended, terminated] }
+    ProbationReviewWrite:
+      type: object
+      additionalProperties: false
+      required: [overallScore, strengths, improvements, recommendedOutcome]
+      properties: { overallScore: { type: number, minimum: 0, maximum: 5 }, strengths: { type: string, minLength: 1, maxLength: 4000 }, improvements: { type: string, maxLength: 4000, nullable: true, description: Required when recommendedOutcome is terminated. }, recommendedOutcome: { $ref: '#/components/schemas/ProbationOutcome' } }
+    ProbationReview:
+      type: object
+      required: [id, employeeId, contractId, reviewDueDate, status, version, createdAt]
+      properties: { id: { type: integer, format: int64 }, employeeId: { type: integer, format: int64 }, contractId: { type: integer, format: int64 }, reviewDueDate: { type: string, format: date }, overdue: { type: boolean }, reviewerUserId: { type: integer, format: int64, nullable: true }, status: { $ref: '#/components/schemas/ProbationReviewStatus' }, outcome: { $ref: '#/components/schemas/ProbationOutcome' }, overallScore: { type: number, nullable: true }, strengths: { type: string, nullable: true }, improvements: { type: string, nullable: true }, effectiveDate: { type: string, format: date, nullable: true }, decidedBy: { type: integer, format: int64, nullable: true }, decidedAt: { type: string, format: date-time, nullable: true }, employeeEventId: { type: integer, format: int64, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } }
+    ProbationReviewPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/ProbationReview' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    ProbationDecisionRequest:
+      type: object
+      additionalProperties: false
+      properties: { outcome: { $ref: '#/components/schemas/ProbationOutcome' }, effectiveDate: { type: string, format: date }, reason: { type: string, maxLength: 1000, nullable: true } }
+    SeparationType: { type: string, enum: [resignation, mutual_agreement, dismissal, contract_expiry, retirement] }
+    OffboardingStatus: { type: string, enum: [draft, pending_approval, approved, in_progress, completed, cancelled] }
+    FinalSettlementStatus: { type: string, enum: [pending, calculated, paid, waived] }
+    OffboardingTaskCategory: { type: string, enum: [it, admin, hr, manager, finance] }
+    OffboardingCaseWrite:
+      type: object
+      additionalProperties: false
+      required: [employeeId, separationType, lastWorkingDate, reason]
+      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, separationType: { $ref: '#/components/schemas/SeparationType' }, noticeReceivedOn: { type: string, format: date, nullable: true }, lastWorkingDate: { type: string, format: date }, handoverToEmployeeId: { type: integer, format: int64, minimum: 1, nullable: true }, reason: { type: string, minLength: 1, maxLength: 4000 } }
+    OffboardingCase:
+      allOf: [{ $ref: '#/components/schemas/OffboardingCaseWrite' }, { type: object, required: [id, status, finalSettlementStatus, version, createdAt], properties: { id: { type: integer, format: int64 }, employeeEventId: { type: integer, format: int64, nullable: true }, exitInterviewAt: { type: string, format: date-time, nullable: true }, finalSettlementStatus: { $ref: '#/components/schemas/FinalSettlementStatus' }, status: { $ref: '#/components/schemas/OffboardingStatus' }, blockingTasksOutstanding: { type: integer, minimum: 0 }, noticePeriodShortfallDays: { type: integer, nullable: true, description: Positive when the notice period is shorter than the contract requires. Reported as a warning, not an error. }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, completedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
+    OffboardingCasePage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/OffboardingCase' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    OffboardingTask:
+      type: object
+      required: [id, offboardingCaseId, templateKey, category, taskName, status, blocksLastWorkingDay, version]
+      properties: { id: { type: integer, format: int64 }, offboardingCaseId: { type: integer, format: int64 }, templateKey: { type: string }, category: { $ref: '#/components/schemas/OffboardingTaskCategory' }, taskName: { type: string }, description: { type: string, nullable: true }, assignedToUserId: { type: integer, format: int64, nullable: true }, dueAt: { type: string, format: date-time, nullable: true }, blocksLastWorkingDay: { type: boolean }, status: { type: string, enum: [pending, in_progress, completed] }, completedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 } }
+
+    UserStatus: { type: string, enum: [active, disabled] }
+    DataScopeType: { type: string, enum: [self, department, organization] }
+    AdministrationUserWrite:
+      type: object
+      required: [externalSubject, email, displayName]
+      properties: { externalSubject: { type: string, maxLength: 255 }, email: { type: string, format: email, maxLength: 320 }, displayName: { type: string, maxLength: 255 } }
+    AdministrationUser:
+      allOf: [{ $ref: '#/components/schemas/AdministrationUserWrite' }, { type: object, required: [id, status, roleGrants, version, createdAt, updatedAt], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/UserStatus' }, roleGrants: { type: array, items: { $ref: '#/components/schemas/RoleGrant' } }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } } }]
+    AdministrationUserPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/AdministrationUser' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    RoleDefinition:
+      type: object
+      required: [code, name, permissions, allowedDataScopes]
+      properties: { code: { type: string }, name: { type: string }, description: { type: string, nullable: true }, permissions: { type: array, items: { type: string } }, allowedDataScopes: { type: array, items: { $ref: '#/components/schemas/DataScopeType' } } }
+    RoleGrantWrite:
+      type: object
+      required: [roleCode, dataScopeType, dataScopeId]
+      properties: { roleCode: { type: string, maxLength: 80 }, dataScopeType: { $ref: '#/components/schemas/DataScopeType' }, dataScopeId: { type: integer, format: int64, minimum: 0 } }
+    RoleGrant:
+      allOf: [{ $ref: '#/components/schemas/RoleGrantWrite' }, { type: object, required: [grantedAt], properties: { grantedAt: { type: string, format: date-time }, grantedBy: { type: integer, format: int64, nullable: true } } }]
+    AuditResult: { type: string, enum: [succeeded, rejected, failed] }
+    AuditLog:
+      type: object
+      required: [id, action, entityType, entityId, result, correlationId, occurredAt]
+      properties: { id: { type: integer, format: int64 }, actorUserId: { type: integer, format: int64, nullable: true }, action: { type: string }, entityType: { type: string }, entityId: { type: string }, beforeData: { type: object, additionalProperties: true, nullable: true, description: Redacted and field-allowlisted. }, afterData: { type: object, additionalProperties: true, nullable: true, description: Redacted and field-allowlisted. }, result: { $ref: '#/components/schemas/AuditResult' }, correlationId: { type: string }, occurredAt: { type: string, format: date-time } }
+    AuditLogPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/AuditLog' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    DeliveryStatus: { type: string, enum: [pending, processing, delivered, retry_scheduled, failed, dead_letter] }
+    Delivery:
+      type: object
+      required: [id, messageType, aggregateType, aggregateId, status, occurredAt, availableAt, attempts]
+      properties: { id: { type: string, format: uuid }, messageType: { type: string }, aggregateType: { type: string }, aggregateId: { type: string }, status: { $ref: '#/components/schemas/DeliveryStatus' }, occurredAt: { type: string, format: date-time }, availableAt: { type: string, format: date-time }, processedAt: { type: string, format: date-time, nullable: true }, attempts: { type: integer, minimum: 0 }, lastErrorCode: { type: string, nullable: true } }
+    DeliveryPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Delivery' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
+    IntegrationConfigurationWrite:
+      type: object
+      additionalProperties: false
+      required: [enabled, settings]
+      properties: { enabled: { type: boolean }, settings: { type: object, additionalProperties: true }, rotatedSecret: { type: string, minLength: 16, writeOnly: true, nullable: true } }
+    IntegrationConfiguration:
+      type: object
+      required: [key, provider, enabled, secretConfigured, settings, version, updatedAt]
+      properties: { key: { type: string }, provider: { type: string }, enabled: { type: boolean }, secretConfigured: { type: boolean }, settings: { type: object, additionalProperties: true }, lastSuccessfulAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 }, updatedAt: { type: string, format: date-time } }
+    IntegrationTestResult:
+      type: object
+      required: [id, integrationKey, status, startedAt]
+      properties: { id: { type: string, format: uuid }, integrationKey: { type: string }, status: { type: string, enum: [queued, running, succeeded, failed] }, startedAt: { type: string, format: date-time }, completedAt: { type: string, format: date-time, nullable: true }, resultCode: { type: string, nullable: true } }
+    HealthStatus:
+      type: object
+      additionalProperties: false
+      required: [status, timestamp]
+      properties: { status: { type: string, enum: [healthy, unhealthy] }, timestamp: { type: string, format: date-time } }

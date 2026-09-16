@@ -25,9 +25,27 @@ Modules/
 │   ├── Onboarding/
 │   ├── EmployeeEvents/
 │   └── EmployeeDocuments/
-└── Contracts/
-    ├── Contracts/
-    └── Addenda/
+├── Contracts/
+│   ├── Contracts/
+│   └── Addenda/
+├── Reports/
+│   ├── Headcount/
+│   ├── Recruitment/
+│   └── Exports/
+├── Attendance/
+│   ├── Shifts/
+│   ├── Events/
+│   ├── Timesheets/
+│   └── Corrections/
+├── Leave/
+│   ├── Balances/
+│   └── Requests/
+└── Administration/
+    ├── Users/
+    ├── Authorization/
+    ├── Audit/
+    ├── Deliveries/
+    └── Integrations/
 ```
 
 Do not add empty controllers for target operations. A feature folder is added when its use case, authorization policy, persistence and contract tests are implemented together.
@@ -46,4 +64,4 @@ dotnet build backend/Qlns.sln --no-restore
 dotnet test backend/Qlns.sln --no-build
 ```
 
-Database migrations are intentionally not generated without the selected SDK. [`../database/schema.sql`](../database/schema.sql) is the proposed canonical contract until the first reviewed EF Core migration is created.
+Database migrations are intentionally not generated without the selected SDK. [`database/schema.sql`](../../database/schema.sql) is the proposed canonical contract until the first reviewed EF Core migration is created.

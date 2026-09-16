@@ -37,14 +37,29 @@ The system follows a top-down decomposition approach with **eight functional pil
 
 ![Top-down functional decomposition diagram](topdown-approach.png)
 
-1. **Recruitment Management (Smart ATS Recruitment)**
-2. **Employee Records and Lifecycle**
-3. **Attendance and Leave Management**
+1. **Recruitment Management (Smart ATS Recruitment)** — *selected for first delivery*
+2. **Core HR — Employee Records, Organization, Lifecycle and Contracts** — *selected for first delivery*
+3. **Attendance and Leave Management** — *selected for first delivery*
 4. **Compensation, Benefits, and Payroll**
 5. **Performance Management (KPI / OKR)**
 6. **Training and Development**
-7. **Reports and Analytics**
-8. **System Administration and Access Control (RBAC)**
+7. **Reports and Analytics** — *supporting*
+8. **System Administration and Access Control (RBAC)** — *supporting*
+
+### Delivery scope
+
+Three pillars were selected to build first: **Core HR**, **Recruitment** and **Attendance & Leave**. In the mind map, Contract Management sits under Core HR alongside Employee Profiles, Organization Management and Employee Lifecycle — so contracts are part of the Core HR scope rather than a fourth module.
+
+| Pillar | Requirements | Canonical schema | API contract | Source code |
+|---|---|---|---|---|
+| Core HR (incl. Contracts) | ✅ SRS + 14 stories with AC | ✅ 11 tables | ✅ | ❌ |
+| Recruitment (ATS) | ✅ SRS + 10 stories with AC | ✅ 8 tables | ✅ | ⚠️ `REC-03.2` only |
+| Attendance & Leave | ✅ SRS + 13 stories with AC | ✅ 13 tables | ✅ | ❌ blocked on policy |
+
+> [!IMPORTANT]
+> **Attendance & Leave is blocked, not merely unimplemented.** Its database schema, API contract, specification and acceptance criteria are complete, but every calculation rule — working minutes, rounding, overtime coefficients, leave entitlement and accrual — is governed by labour law and company policy that has not yet been approved. Those decisions are tracked in [Open Decisions — Attendance & Leave](docs/open_decisions_attendance_leave.md). The schema enforces this technically: a timesheet row cannot be written against a policy that is still in `draft`.
+
+Payroll, Performance and Training are named here to keep the functional map whole; they have no schema, contract or specification yet.
 
 ---
 
@@ -201,8 +216,29 @@ Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chư
 
 ### 4.5. Database Design Diagram (DBML)
 
-#### 14-Table Entity and Foreign-Key Relationship Diagram
+> [!WARNING]
+> The diagram below renders the **legacy 14-table model** and no longer matches the canonical schema. The current data model is **36 tables** — see [`database/schema.sql`](database/schema.sql) (canonical) and the Mermaid ERD in [`database/database_design.md`](database/database_design.md). `database/dbml.txt`, `database/init.sql` and `database/postgres_db.sql` are marked deprecated and must not be used to generate migrations.
+
+#### Legacy 14-Table Entity and Foreign-Key Relationship Diagram
 
 > A normalized relational data model connecting recruitment candidates, employment contracts, and official employee profiles end to end.
 
 ![Database Diagram](database/dbml.png)
+
+#### Canonical schema at a glance (36 tables)
+
+| Group | Tables |
+|---|---|
+| Core HR — Profile & Organization | 3 |
+| Core HR — Lifecycle | 6 |
+| Core HR — Contracts | 2 |
+| Recruitment (ATS) | 8 |
+| Attendance | 9 |
+| Leave | 4 |
+| Platform — Identity, Audit, Integration | 4 |
+
+#### Implementation status
+
+Only two API operations have source code: reading one recruitment application and advancing it exactly one pipeline stage. Everything else in this repository is specification, schema, contract or UI prototype. See [Vertical Slice `REC-03.2`](docs/vertical_slice_rec_03_2.md) for what was actually built, and [Vertical Slice `ATT-03`](docs/vertical_slice_leave_01.md) for the proposed next one.
+
+Migration runtime, PostgreSQL integration, identity provider and deployment infrastructure are not yet verified. The HTML files under `uiux/` are prototypes with illustrative data; they are not a frontend application and are not evidence that any business rule works.

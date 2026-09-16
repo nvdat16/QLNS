@@ -8,7 +8,7 @@ Target: .NET 10, ASP.NET Core, Entity Framework Core and PostgreSQL.
 - `Qlns.BusinessLogic` — Business layer: use-case service, workflow policy and repository contracts. It has no EF Core or ASP.NET dependency.
 - `Qlns.DataAccess` — Data layer: EF Core mappings, PostgreSQL queries, transactions, audit/history persistence.
 
-Each layer groups code by `Modules/<Module>/<Feature>`. The current implemented slice is under `Modules/Recruitment/Applications`; future code must use the same module names as the OpenAPI tags:
+Each layer groups code by `Modules/<Module>/<Feature>`. `Modules/Recruitment/Applications` is a **sample module** that shows the intended layout; it is skeleton code, not a finished feature. Future code must use the same module names as the OpenAPI tags:
 
 ```text
 Modules/
@@ -32,12 +32,10 @@ Modules/
 │   ├── Headcount/
 │   ├── Recruitment/
 │   └── Exports/
-├── Attendance/
 │   ├── Shifts/
 │   ├── Events/
 │   ├── Timesheets/
 │   └── Corrections/
-├── Leave/
 │   ├── Balances/
 │   └── Requests/
 └── Administration/
@@ -52,9 +50,9 @@ Do not add empty controllers for target operations. A feature folder is added wh
 
 The deployment tiers are React Web, ASP.NET Core API and PostgreSQL. Layers are source-code boundaries inside the application tier; tiers are independently deployed/runtime boundaries.
 
-## Vertical slice
+## Sample module
 
-REC-03.2 is implemented by `POST /api/v1/recruitment/applications/{applicationId}/advance`. `If-Match` protects against lost updates. A successful Data Access transaction writes the new stage, stage history and audit record atomically.
+`Modules/Recruitment/Applications` demonstrates the pattern every feature must follow: controller → business service → repository, `If-Match` against lost updates, and one Data Access transaction that writes the business change, its history row and its audit row together. It is a structural sample only; the corresponding OpenAPI operations remain `x-implementation-status: proposed` until the module is completed with migration, authorization against a real identity provider, and integration/contract tests.
 
 After the .NET 10 SDK is installed:
 

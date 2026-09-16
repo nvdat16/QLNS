@@ -1,82 +1,121 @@
-# Human Resource Management System (QLNS / HRMS)
+<div align="center">
 
-> **Status:** Design/Prototype with first implementation slice. Repository có UI/UX prototype, canonical database contract, OpenAPI và source baseline cho REC-03.2 bằng React/.NET 10; deployment runtime và integration verification chưa được thiết lập.
+# QLNS
 
-**Primary architecture:** [Architecture (arc42 + C4)](docs/architecture.md) · **Requirements:** [INVEST User Stories](docs/user_stories.md) · **API:** [OpenAPI 3.0.3](api/openapi.yaml) · **Database:** [Canonical schema](database/schema.sql)
+**Human Resource Management System — Core HR and Smart ATS Recruitment**
 
-## Table of Contents
+*Specify the business. Freeze the contract. Then write the code.*
 
-- [1. System Overview](#1-system-overview)
-- [2. Functional Architecture (Top-Down Mind Map)](#2-functional-architecture-top-down-mind-map)
-- [3. Roles & Use Case Diagram](#3-roles--use-case-diagram)
-- [4. Visual Showcase](#4-visual-showcase)
-  - [4.1. Workforce Dashboard](#41-workforce-dashboard)
-  - [4.2. Employee Records and Employment Contracts (Core HR)](#42-employee-records-and-employment-contracts-core-hr)
-  - [4.3. Smart Recruitment and Onboarding (ATS)](#43-smart-recruitment-and-onboarding-ats)
-  - [4.4. Attendance and Leave Management](#44-attendance-and-leave-management)
-  - [4.5. Database Design Diagram (DBML)](#45-database-design-diagram-dbml)
+[![Status](https://img.shields.io/badge/status-design%20%2B%20skeleton-orange)](#11-where-the-project-actually-is)
+[![Spec](https://img.shields.io/badge/spec-arc42%20%2B%20C4%20%2B%20ADR-informational)](docs/architecture.md)
+[![API](https://img.shields.io/badge/OpenAPI-3.0.3%20%C2%B7%2087%20ops%20%2F%2070%20paths-blue)](api/openapi.yaml)
+[![Schema](https://img.shields.io/badge/schema-23%20canonical%20tables-blue)](database/schema.sql)
+[![Stories](https://img.shields.io/badge/INVEST-24%20user%20stories-informational)](docs/user_stories.md)
+[![Implemented](https://img.shields.io/badge/implemented-0%20of%2087%20operations-red)](api/API_REFERENCE.md#7-trạng-thái-triển-khai)
+
+</div>
+
+```mermaid
+flowchart LR
+    S["Specification<br/><small>SRS · 24 stories · use cases</small>"]
+    A["Architecture<br/><small>arc42 + C4 + 9 ADR</small>"]
+    D["Data contract<br/><small>23 canonical tables</small>"]
+    C["API contract<br/><small>87 operations</small>"]
+    K["Skeleton code<br/><small>1 sample module</small>"]
+    R["Runtime<br/><small>migration · IdP · deployment</small>"]
+
+    S --> A --> D --> C --> K --> R
+
+    classDef done fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    classDef partial fill:#fef3c7,stroke:#b45309,color:#78350f
+    classDef todo fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray: 4 4
+    class S,A,D,C done
+    class K partial
+    class R todo
+```
+
+**Blue is written and reviewable. Amber is a structural sample, not a feature. Grey does not exist yet.**
+
+<div align="center">
+
+### [See the prototypes →](#5-visual-showcase)
+
+</div>
+
+[![The QLNS workforce dashboard prototype. Four KPI tiles read 312 employees, 268 present today, 18 requests awaiting approval and 12 open vacancies, above a twelve-month headcount-movement chart, a recent-leave list, an employment-status breakdown and a table of new joiners.](uiux/dashboard/dashboard.png)](#51-workforce-dashboard)
 
 ---
 
-## 1. System Overview
+## Table of contents
 
-Khi được triển khai, **QLNS** hướng tới số hóa các nghiệp vụ nhân sự sau:
+- [1. What QLNS is](#1-what-qlns-is)
+- [2. Functional architecture — eight pillars, two selected](#2-functional-architecture--eight-pillars-two-selected)
+- [3. Roles and use cases](#3-roles-and-use-cases)
+- [4. Architecture, from simple to detailed](#4-architecture-from-simple-to-detailed)
+- [5. Visual showcase](#5-visual-showcase)
+- [6. The data contract — 23 canonical tables](#6-the-data-contract--23-canonical-tables)
+- [7. The API contract — 87 operations across 70 paths](#7-the-api-contract--87-operations-across-70-paths)
+- [8. Documentation](#8-documentation)
+---
 
-- **Automated recurring tasks:** Reduces manual errors in attendance tracking, payroll, employee record management, and employment-contract expiry monitoring.
-- **Optimized recruitment experience (ATS):** Shortens time-to-hire with a visual Kanban pipeline, interview scheduling, and standardized scorecards.
-- **Seamless onboarding handoff:** Converts successful candidates into official employee records with one click, without re-entering data.
-- **End-to-end attendance and leave management:** Supports multiple attendance methods (fingerprint, GPS, Face ID, and Wi-Fi), weekly work schedules, and intelligent leave-approval workflows.
-- **Decision support and reporting:** Cung cấp dữ liệu phục vụ phân tích biến động nhân sự, cơ cấu phòng ban và chi phí nhân sự.
-- **Legal compliance:** Standardizes employment-contract, social-insurance, and personal-income-tax processes in accordance with Vietnamese labor law.
+## 1. What QLNS is
+
+QLNS is a **documentation-first design baseline** for a Vietnamese HR management
+system, built contract-first so that the schema, the API and the acceptance
+criteria are agreed before any feature is coded.
+
+> The requirement is the contract. The schema is the contract. The OpenAPI
+> document is the contract. Code that contradicts them is a bug in the code —
+> or an ADR nobody has written yet.
+
+Once delivered, the system targets these outcomes:
+
+- **Automated recurring tasks** — fewer manual errors in employee records, employment-contract expiry monitoring and onboarding checklists.
+- **Optimised recruitment (ATS)** — a shorter time-to-hire with a Kanban pipeline, interview scheduling and standardised scorecards.
+- **Seamless onboarding handoff** — an accepted offer becomes an employee record, an initial contract and a checklist, without re-entering data and without duplicating on retry.
+- **Decision support** — headcount movement, department structure and recruitment-funnel reporting, computed server-side.
+- **Legal compliance** — employment-contract, social-insurance and personal-income-tax processes aligned with Vietnamese labour law, with HR/Legal as the rule owner.
+
+Full specification: [Functional Specifications (SRS)](docs/functional_specifications.md) ·
+[INVEST user stories](docs/user_stories.md) ·
+[Architecture (arc42 + C4)](docs/architecture.md)
 
 ---
 
-## 2. Functional Architecture (Top-Down Mind Map)
+## 2. Functional architecture — eight pillars, two selected
 
-The system follows a top-down decomposition approach with **eight functional pillars**:
+The system decomposes top-down into **eight functional pillars**:
 
 ![Top-down functional decomposition diagram](topdown-approach.png)
 
-1. **Recruitment Management (Smart ATS Recruitment)** — *selected for first delivery*
-2. **Core HR — Employee Records, Organization, Lifecycle and Contracts** — *selected for first delivery*
-3. **Attendance and Leave Management** — *selected for first delivery*
-4. **Compensation, Benefits, and Payroll**
+1. **Recruitment Management (Smart ATS)** — *selected for first delivery*
+2. **Core HR — employee records, organization, lifecycle and contracts** — *selected for first delivery*
+3. **Attendance and Leave Management** — *fully designed, then parked*
+4. **Compensation, Benefits and Payroll**
 5. **Performance Management (KPI / OKR)**
 6. **Training and Development**
 7. **Reports and Analytics** — *supporting*
 8. **System Administration and Access Control (RBAC)** — *supporting*
 
-### Delivery scope
-
-Three pillars were selected to build first: **Core HR**, **Recruitment** and **Attendance & Leave**. In the mind map, Contract Management sits under Core HR alongside Employee Profiles, Organization Management and Employee Lifecycle — so contracts are part of the Core HR scope rather than a fourth module.
-
-| Pillar | Requirements | Canonical schema | API contract | Source code |
-|---|---|---|---|---|
-| Core HR (incl. Contracts) | ✅ SRS + 14 stories with AC | ✅ 11 tables | ✅ | ❌ |
-| Recruitment (ATS) | ✅ SRS + 10 stories with AC | ✅ 8 tables | ✅ | ⚠️ `REC-03.2` only |
-| Attendance & Leave | ✅ SRS + 13 stories with AC | ✅ 13 tables | ✅ | ❌ blocked on policy |
-
-> [!IMPORTANT]
-> **Attendance & Leave is blocked, not merely unimplemented.** Its database schema, API contract, specification and acceptance criteria are complete, but every calculation rule — working minutes, rounding, overtime coefficients, leave entitlement and accrual — is governed by labour law and company policy that has not yet been approved. Those decisions are tracked in [Open Decisions — Attendance & Leave](docs/open_decisions_attendance_leave.md). The schema enforces this technically: a timesheet row cannot be written against a policy that is still in `draft`.
-
-Payroll, Performance and Training are named here to keep the functional map whole; they have no schema, contract or specification yet.
+In the mind map, Contract Management sits **under Core HR** alongside employee
+profiles, organization management and the employee lifecycle — so contracts are
+part of the Core HR scope, not a ninth pillar.
 
 ---
 
-## 3. Roles & Use Case Diagram
+## 3. Roles and use cases
 
-Detailed documentation: [Use Cases](docs/use_cases.md#1-use-case-tổng-quát)
+Detail: [Use Cases](docs/use_cases.md#1-use-case-tổng-quát) ·
+[Role-to-story permission matrix](docs/user_stories.md#51-bảng-phân-quyền-role-to-story)
 
-### Actors
-
-- **Super Admin:** Manages system accounts, role-based access control, configuration, audit trails, and organization-wide reporting.
-- **HR Director / Manager:** Approves hiring requests and offers, manages employee movements and contracts, and monitors workforce analytics.
-- **Recruiter (Talent Acquisition):** Publishes vacancies, screens CVs, manages the ATS pipeline, schedules interviews, and prepares offers.
-- **Hiring Manager / Interviewer:** Creates hiring requests, participates in interviews, and completes candidate scorecards.
-- **HR Officer (C&B / Records):** Maintains employee records, employment contracts, and onboarding checklists.
-- **Employee / Candidate:** Updates permitted profile information, views organization and contract information, or submits an application.
-
-### Use Case Diagram (Mermaid)
+| Actor | Owns |
+|---|---|
+| **Super Admin** | accounts, RBAC, configuration, audit trail, organization-wide reporting |
+| **HR Director / Manager** | hiring and offer approval, employee movements, contracts, workforce analytics |
+| **Recruiter** | vacancies, CV screening, the ATS pipeline, interview scheduling, offer preparation |
+| **Hiring Manager / Interviewer** | hiring requests, interviews, candidate scorecards |
+| **HR Officer (C&B / Records)** | employee records, employment contracts, onboarding checklists |
+| **Employee / Candidate** | permitted profile fields, own contract and org information, applications |
 
 ```mermaid
 flowchart LR
@@ -93,7 +132,6 @@ flowchart LR
         Interviews[Schedule interviews & submit scorecards]
         Offers[Approve offers & onboarding]
         Records[Manage employee records & contracts]
-        Attendance[Manage attendance & leave]
         Reports[View workforce reports]
         Access[Manage accounts & RBAC]
     end
@@ -107,138 +145,382 @@ flowchart LR
     HRMgr --> Records
     HRMgr --> Reports
     HROfficer --> Records
-    HROfficer --> Attendance
     User --> ATS
     User --> Records
     Admin --> Access
     Admin --> Reports
 ```
 
----
-
-## 4. Visual Showcase
-
-Các module dưới đây có UI/UX prototype với dữ liệu minh họa; chưa kết nối frontend/backend hoặc database thực.
-
-### 4.1. Workforce Dashboard
-
-#### 📷 HR Overview (`uiux/main.html?view=dashboard`)
-
-> Cung cấp cái nhìn tổng quan về KPI nhân sự, biến động quân số, đơn nghỉ gần đây, cơ cấu trạng thái và danh sách nhân sự mới.
-
-![Workforce Dashboard](uiux/dashboard/dashboard.png)
+Authorization is **permission plus data scope**, enforced server-side on every
+request — `self`, `department` or `organization`. Hiding a button in the UI is not
+authorization. See [Q1 quality goal](docs/architecture.md#12-quality-goals-measurable--arc42-12)
+and [risk R5](docs/architecture.md#11-risks-and-technical-debt).
 
 ---
 
-### 4.2. Employee Records and Employment Contracts (Core HR)
+## 4. Architecture, from simple to detailed
 
-#### 📷 Employee Profile List (`uiux/main.html`)
+Four views of the same system. Each adds one layer of detail; the authoritative
+version of all of them is [docs/architecture.md](docs/architecture.md).
 
-> Enterprise-ready design with no-avatar privacy standards, plus an optimized data table with responsive search and filters.
+### View 1 — the three tiers
 
-![Employee Profile List](uiux/profile/employee_profiles.png)
+```mermaid
+flowchart TD
+    A["React 19 + Vite web client<br/><small>presentation tier</small>"]
+    B["ASP.NET Core API · .NET 10<br/><small>application tier</small>"]
+    C["PostgreSQL<br/><small>system of record · 23 tables</small>"]
+    D["Providers<br/><small>IdP · email · calendar · object storage</small>"]
 
-#### 📷 Employment Contract Management (`uiux/main.html`)
+    A -->|HTTPS · /api/v1 · JWT| B
+    B -->|EF Core| C
+    B -.->|transactional outbox| D
 
-> Manage contract duration, contract types (probationary, fixed-term, and indefinite-term), insurance salary, and contract validity.
+    classDef tier fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    class B tier
+```
 
-![Employment Contract Management](uiux/profile/contracts.png)
+The frontend never reaches the database ([constraint C2](docs/architecture.md#2-constraints)).
+Every query and command goes through the API, which owns authorization and the
+business rules. Tiers are deployment boundaries; the three layers below are
+source-code boundaries inside the application tier.
 
-#### 📷 Organizational Structure Tree (`uiux/main.html`)
+### View 2 — one command, end to end
 
-> Visualizes the company's hierarchy, from the board of directors to departments and their employees.
+Advancing a candidate one stage, as specified in
+[sequence 3](docs/sequence_diagrams.md#3-chuyển-application-sang-giai-đoạn-tiếp-theo)
+and sketched by the sample module in
+[RecruitmentPipelineService.cs](src/backend/src/Qlns.BusinessLogic/Modules/Recruitment/Applications/RecruitmentPipelineService.cs).
 
-![Organizational Structure Tree](uiux/profile/organizational.png)
+```mermaid
+sequenceDiagram
+    autonumber
+    actor R as Recruiter
+    participant UI as React pipeline page
+    participant C as Controller<br/>(Qlns.Api)
+    participant S as Service<br/>(Qlns.BusinessLogic)
+    participant Repo as Repository<br/>(Qlns.DataAccess)
+    participant DB as PostgreSQL
+
+    R->>UI: Advance stage
+    UI->>C: POST /applications/{id}/advance · JWT · If-Match "4"
+    C->>C: check permission, build data scope
+    C->>S: AdvanceAsync(command)
+    S->>Repo: load application within scope
+    Repo->>DB: SELECT application JOIN job posting
+    S->>S: AdvanceTo(target, eligibility)
+    S->>Repo: SaveAdvanceAsync(expectedVersion = 4)
+    Repo->>DB: BEGIN · conditional UPDATE WHERE version = 4
+    Repo->>DB: INSERT application_stage_events
+    Repo->>DB: INSERT audit_logs
+    Repo->>DB: COMMIT
+    C-->>UI: 200 · ETag "5"
+```
+
+The business change, its history row and its audit row commit in **one
+transaction**. That is the rule for every command, not a detail of this one.
+
+And its failure twin — the reason `If-Match` is mandatory:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as Controller
+    participant S as Service
+    participant Repo as Repository
+
+    C->>S: AdvanceAsync(If-Match "4")
+    S->>Repo: load application
+    Repo-->>S: version is already 5
+    Note over S: another recruiter advanced it first
+    S-->>C: ConcurrencyConflictException
+    C-->>C: 409 · common.concurrency_conflict
+    Note over C: nothing was written — the client reloads and retries
+```
+
+A stage jump, a backwards move or a missing interview/evaluation fails the same
+way — a stable business error code in `application/problem+json`, never a silent
+partial write. See [quality requirement QR2](docs/architecture.md#10-quality-requirements-stimulus--response--measure).
+
+### View 3 — the backend, layered
+
+```mermaid
+flowchart TB
+    subgraph L1["Qlns.Api — presentation layer"]
+        direction LR
+        CTRL[Controllers]
+        AUTHZ[AuthN / AuthZ policies]
+        PD[DTO + Problem Details]
+    end
+
+    subgraph L2["Qlns.BusinessLogic — business layer"]
+        direction LR
+        UC[Use-case services]
+        WF[Workflow + state machines]
+        PORT[Repository contracts]
+    end
+
+    subgraph L3["Qlns.DataAccess — data layer"]
+        direction LR
+        EF[EF Core mappings]
+        TX[Transactions]
+        AUD[Audit + outbox writes]
+    end
+
+    L1 --> L2
+    L3 --> L2
+
+    classDef core fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    class L2 core
+```
+
+Dependencies point **inward**: the business layer references neither EF Core nor
+ASP.NET Core, so a use case can be unit-tested with `new`. Each layer groups code
+by `Modules/<Module>/<Feature>`, and the module names match the OpenAPI tags, so
+every tag has exactly one owner —
+[target code structure](docs/architecture.md#56-target-code-structure).
+
+### View 4 — the ATS pipeline as a state machine
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> SourcedApplied
+    SourcedApplied --> AiScreening
+    AiScreening --> TechInterview
+    TechInterview --> ExecutiveRound
+    ExecutiveRound --> OfferLetter
+    OfferLetter --> HiredReady
+    HiredReady --> [*]
+
+    SourcedApplied --> Rejected
+    AiScreening --> Rejected
+    TechInterview --> Rejected
+    ExecutiveRound --> Rejected
+    OfferLetter --> Rejected
+    Rejected --> [*]
+    SourcedApplied --> Withdrawn
+    Withdrawn --> [*]
+
+    note right of TechInterview
+        Six stages, two terminal states.
+        No stage jumps, no backwards moves,
+        and no direct write to `status` —
+        every transition is an explicit command.
+    end note
+```
+
+The enumeration is [ApplicationStage.cs](src/backend/src/Qlns.BusinessLogic/Modules/Recruitment/Applications/ApplicationStage.cs);
+the contract names are `sourced_applied` … `withdrawn`, and the server owns the
+next stage no matter what the client sends.
 
 ---
 
-### 4.3. Smart Recruitment and Onboarding (ATS)
+## 5. Visual showcase
 
-#### Candidate Recruitment Pipeline — List View
+These are **UI/UX prototypes** with illustrative data — standalone HTML on one
+shared design system ([hrm-theme.css](uiux/hrm-theme.css)). They are not a
+frontend application, they call no backend, and they are not evidence that any
+business rule works. Full index: [uiux/README.md](uiux/README.md).
 
-> Candidate list for searching, filtering, reviewing recruitment stages, and performing quick actions.
+### 5.1. Workforce dashboard
 
-![ATS Candidate Pipeline List](uiux/recruitment/candidate.png)
+[`uiux/main.html?view=dashboard`](uiux/main.html) — headcount KPIs, movement,
+recent leave requests, employment-status breakdown and new joiners.
 
-#### Candidate Recruitment Pipeline — Kanban View
+![Workforce dashboard](uiux/dashboard/dashboard.png)
 
-> Six-stage visual pipeline from Sourced & Applied to Hired & Ready. Candidate cards use consistent dimensions and keep the primary action aligned across every stage.
+### 5.2. Employee records and employment contracts (Core HR)
 
-![ATS Candidate Pipeline Kanban](uiux/recruitment/candidate_kanban.png)
+[`uiux/main.html`](uiux/main.html)
 
-#### Job Requisition Management
+**Employee directory** — no avatars, by privacy convention; a dense data table with search, department and status filters, and a detail drawer.
 
-> Manage open positions, hiring targets, requesting departments, and application deadlines.
+![Employee profile list](uiux/profile/employee_profiles.png)
 
-![Job Requisition Management](uiux/recruitment/job_requisitions.png)
+**Employment contracts** — duration, contract type (probationary, fixed-term, indefinite-term), insurance salary and validity.
 
-#### Interview Schedule and Scorecards
+![Employment contract management](uiux/profile/contracts.png)
 
-> Coordinate multi-round interview schedules, interview formats, and candidate competency scorecards.
+**Organizational structure** — the hierarchy from the board down to departments and their employees.
 
-![Interview Schedule and Scorecards](uiux/recruitment/interviews.png)
+![Organizational structure tree](uiux/profile/organizational.png)
 
-#### New-Hire Offer and Onboarding
+### 5.3. Smart recruitment and onboarding (ATS)
 
-> A seven-column onboarding table fully visible on desktop **without horizontal scrolling**, with an “Onboard” action that quickly transfers a candidate into QLNS.
+[`uiux/recruitment.html`](uiux/recruitment.html)
 
-![New-Hire Onboarding](uiux/recruitment/onboard_handoff.png)
+**Pipeline — list view.** Search, filter, review stages and take quick actions.
+
+![ATS candidate pipeline list](uiux/recruitment/candidate.png)
+
+**Pipeline — Kanban view.** The six stages of [view 4](#view-4--the-ats-pipeline-as-a-state-machine), with fixed-size cards and the primary action aligned across every column.
+
+![ATS candidate pipeline Kanban](uiux/recruitment/candidate_kanban.png)
+
+**Job requisitions.** Open positions, hiring targets, requesting departments and deadlines.
+
+![Job requisition management](uiux/recruitment/job_requisitions.png)
+
+**Interviews and scorecards.** Multi-round scheduling, interview formats and competency scorecards.
+
+![Interview schedule and scorecards](uiux/recruitment/interviews.png)
+
+**Offer and onboarding handoff.** A seven-column table that fits a desktop without horizontal scrolling, with the "Onboard" action that turns an accepted candidate into an employee record.
+
+![New-hire onboarding handoff](uiux/recruitment/onboard_handoff.png)
+
+### 5.4. Attendance and leave — concept only
+
+> ⏸️ **Out of scope for this delivery.** These four screens are kept as a UI
+> concept; the matching design is parked under `docs/deferred/attendance_leave/`,
+> which is not tracked in git.
+
+**Timesheet and real-time attendance** — check-in/out, on-time/late/early-leave status, authentication method (fingerprint, GPS, Face ID, Wi-Fi), actual hours and an event drawer.
+
+![Timesheet and real-time attendance](uiux/attendance/timesheet_attendance.png)
+
+**Work shifts and weekly scheduling** — shift definitions with coefficients, and a Monday-to-Sunday scheduling matrix.
+
+![Work shifts and weekly scheduling](uiux/attendance/work_shifts.png)
+
+**Leave requests and balances** — request history and per-person balances (annual, social-insurance sick leave, personal, unpaid), with automatic day calculation.
+
+![Leave requests and personal leave balance](uiux/attendance/leave_requests.png)
+
+**Leave approval** — pending requests with individual approval, batch approval and rejection with feedback.
+
+![Leave approval](uiux/attendance/leave_approval.png)
 
 ---
 
-### 4.4. Attendance and Leave Management
+## 6. The data contract — 23 canonical tables
 
-#### Timesheet and Real-Time Attendance
+[`database/schema.sql`](database/schema.sql) is the **single canonical source** for
+types, constraints, indexes and invariants. Where it and
+[`database_design.md`](database/database_design.md) disagree, the DDL wins.
 
-> Monitor detailed attendance logs: check-in/check-out times, on-time/late/early-leave status, authentication methods (fingerprint, GPS, Face ID, and Wi-Fi), actual work hours, and an event-detail drawer.
+```mermaid
+erDiagram
+    departments |o--o{ departments : "parent of"
+    departments ||--o{ employees : "staffs"
+    departments ||--o{ job_postings : "requests"
+    positions ||--o{ employees : "classifies"
+    employees |o--o{ employees : "manages"
 
-![Timesheet and Real-Time Attendance](uiux/attendance/timesheet_attendance.png)
+    job_postings ||--o{ resumes : "receives intake"
+    candidates |o--o{ resumes : "owns after confirmation"
+    candidates ||--o{ applications : "submits"
+    job_postings ||--o{ applications : "receives"
+    resumes ||--o{ applications : "supports"
+    applications ||--o{ application_stage_events : "logs every transition"
+    applications ||--o{ interviews : "schedules"
+    interviews ||--o{ evaluations : "scored by"
+    applications ||--o{ offers : "at most one open"
+    applications |o--o| employees : "handoff creates, once"
 
-#### Work Shifts and Weekly Scheduling
+    employees ||--o{ onboarding_tasks : "checklist"
+    employees ||--o{ employee_events : "movement history"
+    employees ||--o{ employee_documents : "files"
+    employees ||--o{ contracts : "signs"
+    contracts ||--o{ contract_addenda : "amended by"
+    contracts |o--o| probation_reviews : "probation closed by"
+    probation_reviews |o--o| employee_events : "outcome recorded as"
+    employees ||--o{ offboarding_cases : "exits via, one open"
+    offboarding_cases ||--o{ offboarding_tasks : "handover checklist"
+    offboarding_cases |o--o| employee_events : "termination recorded as"
 
-> Manage shift definitions (standard office, morning, and night shifts with coefficients) and a Monday-to-Sunday weekly scheduling matrix.
+    users ||--o{ user_roles : "granted, with data scope"
+    users ||--o{ audit_logs : "acts in"
+    users |o--o| employees : "signs in as"
 
-![Work Shifts and Weekly Scheduling](uiux/attendance/work_shifts.png)
+    outbox_messages {
+        uuid id PK
+        varchar message_type
+        varchar aggregate_type
+        varchar aggregate_id
+        jsonb payload
+        timestamptz occurred_at
+        timestamptz processed_at "NULL until delivered"
+        integer attempts
+    }
+```
 
-#### Leave Requests and Personal Leave Balance
+<sub>The 23 canonical tables and the relationships that carry a business rule. Actor
+columns — `created_by`, `approved_by`, `changed_by`, `assigned_to_user_id` and the
+rest — all reference `users` and are left out so the shape stays readable;
+`outbox_messages` is written inside the same transaction as the business change it
+announces, which is why it has no foreign key to any of them. The field-level ERD,
+with every column and constraint, is
+<a href="database/database_design.md#1-overall-entityrelationship-diagram-mermaid-erd">database_design.md §1</a>.</sub>
 
-> Track leave-request history and personal leave balances (annual leave, social-insurance sick leave, personal leave, and unpaid leave), with a request form that automatically calculates the number of days.
+| Group | Tables | |
+|---|---|---|
+| Core HR — profile & organization | 3 | `departments` · `positions` · `employees` |
+| Core HR — lifecycle | 6 | `onboarding_tasks` · `employee_events` · `employee_documents` · `probation_reviews` · `offboarding_cases` · `offboarding_tasks` |
+| Core HR — contracts | 2 | `contracts` · `contract_addenda` |
+| Recruitment (ATS) | 8 | `job_postings` · `candidates` · `resumes` · `applications` · `application_stage_events` · `interviews` · `evaluations` · `offers` |
+| Platform — identity, audit, integration | 4 | `users` · `user_roles` · `audit_logs` · `outbox_messages` |
 
-![Leave Requests and Personal Leave Balance](uiux/attendance/leave_requests.png)
-
-#### Leave Approval
-
-> Process pending leave requests, with support for individual approval, batch approval, and rejection with feedback.
-
-![Leave Approval](uiux/attendance/leave_approval.png)
-
----
-
-### 4.5. Database Design Diagram (DBML)
+Some invariants are deliberately enforced by the database rather than by code — a
+partial unique index that allows **one open offer per application**, a conditional
+`UPDATE … WHERE version = ?` for lost-update protection, and
+`employees.source_application_id UNIQUE` as the idempotency key of the
+candidate-to-employee handoff. They cannot be verified with mocks, which is why an
+integration-test project against a real PostgreSQL is an entry criterion.
 
 > [!WARNING]
-> The diagram below renders the **legacy 14-table model** and no longer matches the canonical schema. The current data model is **36 tables** — see [`database/schema.sql`](database/schema.sql) (canonical) and the Mermaid ERD in [`database/database_design.md`](database/database_design.md). `database/dbml.txt`, `database/init.sql` and `database/postgres_db.sql` are marked deprecated and must not be used to generate migrations.
+> [`init.sql`](database/init.sql) and [`postgres_db.sql`](database/postgres_db.sql)
+> are **deprecated** legacy DDL that does not match the canonical schema — never
+> generate a migration from them. The old 14-table DBML source and its rendered
+> diagram have been removed — the ERD above and its field-level version in
+> [database_design.md](database/database_design.md#1-overall-entityrelationship-diagram-mermaid-erd)
+> replace them.
 
-#### Legacy 14-Table Entity and Foreign-Key Relationship Diagram
+Per-table field specification: [database/README.md](database/README.md).
 
-> A normalized relational data model connecting recruitment candidates, employment contracts, and official employee profiles end to end.
+---
 
-![Database Diagram](database/dbml.png)
+## 7. The API contract — 87 operations across 70 paths
 
-#### Canonical schema at a glance (36 tables)
+[`api/openapi.yaml`](api/openapi.yaml) is contract-first OpenAPI 3.0.3, with
+`x-requirement` linking every operation back to a user story and
+`x-implementation-status` stating its truth.
 
-| Group | Tables |
-|---|---|
-| Core HR — Profile & Organization | 3 |
-| Core HR — Lifecycle | 6 |
-| Core HR — Contracts | 2 |
-| Recruitment (ATS) | 8 |
-| Attendance | 9 |
-| Leave | 4 |
-| Platform — Identity, Audit, Integration | 4 |
+| Group | Paths | Reference |
+|---|---|---|
+| Recruitment — requisitions, intake, pipeline, interviews, evaluations, offers | 18 | [§2](api/API_REFERENCE.md#2-recruitment) |
+| Core HR — employees and organization | 8 | [§3.1–3.2](api/API_REFERENCE.md#3-core-hr) |
+| Core HR — onboarding, events, documents, probation, offboarding | 15 | [§3.3–3.7](api/API_REFERENCE.md#33-onboarding) |
+| Contracts and addenda | 9 | [§4](api/API_REFERENCE.md#4-contracts) |
+| Reports and exports | 5 | [§5](api/API_REFERENCE.md#5-reports) |
+| Administration — users, RBAC, audit, deliveries, integrations | 13 | [§6](api/API_REFERENCE.md#6-administration-và-operations) |
+| Operations — liveness and readiness | 2 | [§6.3](api/API_REFERENCE.md#63-integration-và-health) |
 
-#### Implementation status
+The conventions that are not negotiable, in full in [api/README.md](api/README.md):
 
-Only two API operations have source code: reading one recruitment application and advancing it exactly one pipeline stage. Everything else in this repository is specification, schema, contract or UI prototype. See [Vertical Slice `REC-03.2`](docs/vertical_slice_rec_03_2.md) for what was actually built, and [Vertical Slice `ATT-03`](docs/vertical_slice_leave_01.md) for the proposed next one.
+- **Commands, not generic patches.** Workflow state is never changed by a `PATCH`; every transition is an explicit action endpoint.
+- **`ETag` + `If-Match`** on every mutable aggregate, so a concurrent edit fails with `409` instead of overwriting.
+- **`Idempotency-Key`** on creates, so a retry returns the original resource. One accepted offer yields at most one employee, one initial contract and one checklist.
+- **Server-owned values.** The next pipeline stage, the weighted `overallScore`, notice-period shortfall and every report KPI are computed server-side and ignored if the client sends them.
+- **`application/problem+json`** with a stable business `code` and a `correlationId`.
+- **Bounded pagination** with documented filter and sort allowlists.
 
-Migration runtime, PostgreSQL integration, identity provider and deployment infrastructure are not yet verified. The HTML files under `uiux/` are prototypes with illustrative data; they are not a frontend application and are not evidence that any business rule works.
+---
+
+## 8. Documentation
+
+Read in this order:
+
+| # | Document | What it answers |
+|---|---|---|
+| 01 | [Docs index](docs/README.md) | The map, the authority order, the reading path for your role |
+| 02 | [Functional Specifications (SRS)](docs/functional_specifications.md) | What the system must do, per module |
+| 03 | [INVEST user stories](docs/user_stories.md) | **24 stories with Gherkin acceptance criteria** and traceability |
+| 04 | [Use cases](docs/use_cases.md) | Actors, boundaries and the actor-to-function matrix |
+| 05 | [Architecture (arc42 + C4)](docs/architecture.md) | **The main design document** — context, containers, components, runtime, deployment |
+| 06 | [Sequence diagrams](docs/sequence_diagrams.md) | Six flows across the three layers, success *and* failure branches |
+| 07 | [Database design](database/database_design.md) · [schema](database/schema.sql) | The ERD, the field specification, the canonical DDL |
+| 08 | [API contract](api/README.md) · [OpenAPI](api/openapi.yaml) · [reference](api/API_REFERENCE.md) | Conventions, 87 operations, per-operation status |
+| 09 | [UI/UX prototypes](uiux/README.md) | Every prototype screen and the interactions it simulates |
+| 10 | [Backend layout](src/backend/README.md) · [frontend layout](src/frontend/README.md) | Where code goes when it is written |

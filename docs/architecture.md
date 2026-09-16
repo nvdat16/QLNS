@@ -2,7 +2,7 @@
 
 ## 1. Introduction and Goals
 
-QLNS là hệ thống quản trị nguồn nhân lực (HRMS) kết hợp quản lý tuyển dụng (ATS), hướng tới một luồng dữ liệu xuyên suốt từ yêu cầu tuyển dụng, ứng viên, phỏng vấn và offer đến hồ sơ nhân viên, hợp đồng, onboarding, chấm công và nghỉ phép.
+QLNS là hệ thống quản trị nguồn nhân lực (HRMS) kết hợp quản lý tuyển dụng (ATS), hướng tới một luồng dữ liệu xuyên suốt từ yêu cầu tuyển dụng, ứng viên, phỏng vấn và offer đến hồ sơ nhân viên, hợp đồng, onboarding, thử việc và thôi việc. Chấm công và nghỉ phép nằm ngoài phạm vi triển khai hiện tại.
 
 Mục tiêu kiến trúc là tạo ranh giới rõ giữa giao diện, quy tắc nghiệp vụ và dữ liệu; bảo vệ dữ liệu nhân sự nhạy cảm; đồng thời cho phép phát triển từng phần mà không biến UI prototype thành nguồn business rule.
 
@@ -14,7 +14,7 @@ Mục tiêu kiến trúc là tạo ranh giới rõ giữa giao diện, quy tắc
 | HR Director / HR Manager | quy trình đúng thẩm quyền, truy vết quyết định, báo cáo nhất quán |
 | Recruiter | pipeline ứng viên, lịch phỏng vấn, scorecard và offer trên một luồng thống nhất |
 | Hiring / Line Manager | tác vụ phê duyệt rõ ràng, dữ liệu đúng phạm vi quản lý |
-| HR Officer / C&B | hồ sơ, hợp đồng, onboarding, chấm công và nghỉ phép chính xác |
+| HR Officer / C&B | hồ sơ, hợp đồng, onboarding, thử việc và thôi việc chính xác |
 | Employee / Candidate | trải nghiệm dễ dùng, trạng thái minh bạch, dữ liệu cá nhân được bảo vệ |
 | Application engineer | contract rõ, module độc lập, môi trường phát triển tái lập được |
 | Architect / Reviewer | ngăn drift giữa yêu cầu, schema, API và implementation |
@@ -42,7 +42,7 @@ Q1–Q3 là các mục tiêu định hình kiến trúc. Mọi quyết định l
 
 | # | Constraint | Type | Implication |
 |---|---|---|---|
-| C1 | Hiện trạng gồm UI/UX prototype và source baseline REC-03.2; chưa có runtime đã xác minh | Project | phân biệt source implemented với build-tested, integrated và production-ready |
+| C1 | Hiện trạng gồm UI/UX prototype và skeleton source (cấu trúc dự án + một module mẫu); chưa có runtime đã xác minh | Project | phân biệt skeleton với implemented, build-tested, integrated và production-ready |
 | C2 | Frontend không truy cập database trực tiếp | Security | mọi query/command đi qua Backend API và server-side authorization |
 | C3 | PostgreSQL là database chuẩn; `database/schema.sql` là canonical contract tạm thời | Technical | schema phải được review, chuyển thành EF Core migration và kiểm thử constraint trước khi dùng |
 | C4 | React/Vite, ASP.NET Core .NET 10, EF Core và PostgreSQL | Technical | được Project Owner chấp thuận ngày 2026-09-15; package patch phải được pin trước release |
@@ -76,19 +76,17 @@ flowchart LR
     jobboards["Job Boards<br/><i>[External System]</i>"]
     comms["Email / Calendar<br/><i>[External System]</i>"]
     esign["E-signature<br/><i>[External System]</i>"]
-    devices["Attendance Devices<br/><i>[External System]</i>"]
     storage["Document Storage<br/><i>[External System]</i>"]
     idp["Identity Provider<br/><i>[External System]</i>"]
 
     candidate -- "submits application; receives status" --> qlns
-    employee -- "profile, attendance, leave" --> qlns
+    employee -- "profile, contracts, handover" --> qlns
     manager -- "requisition, scorecard, approvals" --> qlns
     hr -- "recruitment and HR operations" --> qlns
     admin -- "accounts, roles, configuration" --> qlns
     qlns -- "publishes/receives recruitment data" --> jobboards
     qlns -- "notifications and schedules" --> comms
     qlns -- "documents and callbacks" --> esign
-    devices -- "attendance events" --> qlns
     qlns -- "private document objects" --> storage
     qlns -- "validates identity/tokens" --> idp
 
@@ -96,7 +94,6 @@ flowchart LR
     style jobboards fill:#999,color:#fff
     style comms fill:#999,color:#fff
     style esign fill:#999,color:#fff
-    style devices fill:#999,color:#fff
     style storage fill:#999,color:#fff
     style idp fill:#999,color:#fff
 ```
@@ -110,7 +107,6 @@ flowchart LR
 | Job boards | both | Provider API/webhook | Recruitment adapter | timeout/retry; duplicate → idempotent handling |
 | Email/Calendar | out/both | Provider API/webhook | Notification/Calendar adapter | delivery state + bounded retry + reconciliation |
 | E-signature | both | Provider API/webhook | Document/Contract adapter | callback verification; status reconciliation |
-| Attendance devices | in | authenticated API/webhook | Attendance adapter | invalid device rejected; duplicate event ignored |
 | Document storage | both | object API; signed/authorized download | Document adapter | unavailable → no metadata corruption |
 | Database | both | PostgreSQL protocol | Persistence layer | transaction rollback; readiness degraded |
 
@@ -170,8 +166,8 @@ flowchart LR
 
     subgraph system["QLNS System Boundary"]
         direction TB
-        web["React Web Application<br/><i>[Container · Presentation Tier — Partial baseline]</i><br/>Candidate portal and internal HR workspace"]
-        api["ASP.NET Core Backend API<br/><i>[Container · Application Tier — Partial baseline]</i><br/>Authorization, use cases, workflow and transactions"]
+        web["React Web Application<br/><i>[Container · Presentation Tier — Skeleton]</i><br/>Candidate portal and internal HR workspace"]
+        api["ASP.NET Core Backend API<br/><i>[Container · Application Tier — Skeleton]</i><br/>Authorization, use cases, workflow and transactions"]
         worker[".NET Background Worker<br/><i>[Container · Application Tier — Proposed]</i><br/>Scheduled jobs, outbox delivery and reconciliation"]
         db[("PostgreSQL HRMS Database<br/><i>[Container · Data Tier — Schema contract]</i><br/>Transactional system of record")]
     end
@@ -180,12 +176,11 @@ flowchart LR
     jobboards["Job Boards<br/><i>[External System]</i>"]
     comms["Email / Calendar<br/><i>[External System]</i>"]
     esign["E-signature<br/><i>[External System]</i>"]
-    devices["Attendance Devices<br/><i>[External System]</i>"]
     objects[("Private Object Storage<br/><i>[External System]</i>")]
     observe["Observability Platform<br/><i>[External System]</i>"]
 
     candidate -->|"HTTPS: application and status"| web
-    employee -->|"HTTPS: profile, attendance and leave"| web
+    employee -->|"HTTPS: profile, contracts and handover"| web
     manager -->|"HTTPS: requisition, review and approval"| web
     hr -->|"HTTPS: recruitment and HR operations"| web
     admin -->|"HTTPS: account, role and audit"| web
@@ -196,7 +191,6 @@ flowchart LR
     api -->|"EF Core / Npgsql; ACID transaction"| db
     api -->|"object metadata and signed access"| objects
     api -->|"transactional outbox"| db
-    devices -->|"authenticated, idempotent webhook"| api
     jobboards -->|"signed webhook / polling result"| api
     esign -->|"signed callback"| api
 
@@ -215,7 +209,7 @@ flowchart LR
     class web,api partial
     class worker proposed
     class db contract
-    class idp,jobboards,comms,esign,devices,objects,observe external
+    class idp,jobboards,comms,esign,objects,observe external
 ```
 
 **Container responsibilities and dependency direction**
@@ -233,7 +227,7 @@ React Web Application → ASP.NET Core API ─┬→ Business/Data Layer → Pos
 - **.NET Background Worker:** xử lý tác vụ bất đồng bộ hoặc theo lịch sau khi business state đã được commit; không nhận request trực tiếp từ người dùng.
 - **PostgreSQL:** system of record. `database/schema.sql` hiện là canonical contract; migration/runtime database chưa được xác minh.
 - **Private Object Storage:** giữ nội dung file; PostgreSQL chỉ giữ metadata và quyền tham chiếu.
-- Màu xanh dương là source baseline một phần, tím là thiết kế đề xuất, xanh lá là contract dữ liệu, xám là hệ thống ngoài.
+- Màu xanh dương là skeleton source (cấu trúc, chưa implement), tím là thiết kế đề xuất, xanh lá là contract dữ liệu, xám là hệ thống ngoài.
 
 <a id="c4-level-3-web"></a>
 
@@ -255,8 +249,6 @@ flowchart TB
             direction LR
             recruitment["Recruitment<br/><i>[Partial]</i><br/>jobs, candidates, interviews, offers"]
             corehr["Core HR<br/><i>[Proposed]</i><br/>employees, organization, contracts, onboarding"]
-            attendance["Attendance<br/><i>[Proposed]</i><br/>shifts, events and timesheets"]
-            leave["Leave<br/><i>[Proposed]</i><br/>balance, request and approval"]
             reporting["Dashboard & Reporting<br/><i>[Proposed]</i><br/>authorized KPIs and export"]
             administration["Administration<br/><i>[Proposed]</i><br/>users, roles, configuration and audit"]
         end
@@ -268,22 +260,16 @@ flowchart TB
         shell --> auth
         shell --> recruitment
         shell --> corehr
-        shell --> attendance
-        shell --> leave
         shell --> reporting
         shell --> administration
 
         recruitment --> shared
         corehr --> shared
-        attendance --> shared
-        leave --> shared
         reporting --> shared
         administration --> shared
 
         recruitment --> client
         corehr --> client
-        attendance --> client
-        leave --> client
         reporting --> client
         administration --> client
         shell --> telemetry
@@ -298,7 +284,7 @@ flowchart TB
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
     class shell,recruitment,shared,client partial
-    class auth,corehr,attendance,leave,reporting,administration,telemetry proposed
+    class auth,corehr,reporting,administration,telemetry proposed
     class api,idp,observe external
 ```
 
@@ -325,8 +311,6 @@ flowchart TB
             recApi["Recruitment API<br/><i>[Partial]</i>"]
             hrApi["Core HR API<br/><i>[Proposed]</i>"]
             contractApi["Contract & Onboarding API<br/><i>[Proposed]</i>"]
-            attendanceApi["Attendance API<br/><i>[Proposed]</i>"]
-            leaveApi["Leave API<br/><i>[Proposed]</i>"]
             reportApi["Reporting API<br/><i>[Proposed]</i>"]
             adminApi["Administration API<br/><i>[Proposed]</i>"]
             webhookApi["Integration Webhook API<br/><i>[Proposed]</i>"]
@@ -338,8 +322,6 @@ flowchart TB
             recLogic["Recruitment Services & Domain<br/><i>[Partial]</i>"]
             hrLogic["Core HR Services & Domain<br/><i>[Proposed]</i>"]
             contractLogic["Contract & Onboarding Services<br/><i>[Proposed]</i>"]
-            attendanceLogic["Attendance Services & Domain<br/><i>[Proposed]</i>"]
-            leaveLogic["Leave Services & Domain<br/><i>[Proposed]</i>"]
             reportLogic["Reporting Query Services<br/><i>[Proposed]</i>"]
             adminLogic["Identity Administration Services<br/><i>[Proposed]</i>"]
             integrationLogic["Webhook Verification & Mapping<br/><i>[Proposed]</i>"]
@@ -351,8 +333,6 @@ flowchart TB
             recRepo["Recruitment Repositories<br/><i>[Partial]</i>"]
             hrRepo["Core HR Repositories<br/><i>[Proposed]</i>"]
             contractRepo["Contract Repositories<br/><i>[Proposed]</i>"]
-            attendanceRepo["Attendance Repositories<br/><i>[Proposed]</i>"]
-            leaveRepo["Leave Repositories<br/><i>[Proposed]</i>"]
             reportRepo["Reporting Read Repositories<br/><i>[Proposed]</i>"]
             identityRepo["Identity Repositories<br/><i>[Proposed]</i>"]
             integrationRepo["Integration & Idempotency Store<br/><i>[Proposed]</i>"]
@@ -368,8 +348,6 @@ flowchart TB
     pipeline --> recApi
     pipeline --> hrApi
     pipeline --> contractApi
-    pipeline --> attendanceApi
-    pipeline --> leaveApi
     pipeline --> reportApi
     pipeline --> adminApi
     pipeline --> webhookApi
@@ -378,8 +356,6 @@ flowchart TB
     recApi --> recLogic
     hrApi --> hrLogic
     contractApi --> contractLogic
-    attendanceApi --> attendanceLogic
-    leaveApi --> leaveLogic
     reportApi --> reportLogic
     adminApi --> adminLogic
     webhookApi --> integrationLogic
@@ -387,8 +363,6 @@ flowchart TB
     recLogic --> recRepo
     hrLogic --> hrRepo
     contractLogic --> contractRepo
-    attendanceLogic --> attendanceRepo
-    leaveLogic --> leaveRepo
     reportLogic --> reportRepo
     adminLogic --> identityRepo
     integrationLogic --> integrationRepo
@@ -396,8 +370,6 @@ flowchart TB
     recLogic --> auditOutbox
     hrLogic --> auditOutbox
     contractLogic --> auditOutbox
-    attendanceLogic --> auditOutbox
-    leaveLogic --> auditOutbox
     adminLogic --> auditOutbox
     integrationLogic --> auditOutbox
     auditOutbox --> auditRepo
@@ -405,8 +377,6 @@ flowchart TB
     recRepo --> uow
     hrRepo --> uow
     contractRepo --> uow
-    attendanceRepo --> uow
-    leaveRepo --> uow
     reportRepo --> uow
     identityRepo --> uow
     integrationRepo --> uow
@@ -420,7 +390,7 @@ flowchart TB
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
     class pipeline,recApi,recLogic,recRepo,uow partial
-    class authorization,hrApi,contractApi,attendanceApi,leaveApi,reportApi,adminApi,webhookApi,hrLogic,contractLogic,attendanceLogic,leaveLogic,reportLogic,adminLogic,integrationLogic,auditOutbox,hrRepo,contractRepo,attendanceRepo,leaveRepo,reportRepo,identityRepo,integrationRepo,auditRepo,objectAdapter proposed
+    class authorization,hrApi,contractApi,reportApi,adminApi,webhookApi,hrLogic,contractLogic,reportLogic,adminLogic,integrationLogic,auditOutbox,hrRepo,contractRepo,reportRepo,identityRepo,integrationRepo,auditRepo,objectAdapter proposed
     class web,callbacks,idp,db,objects external
 ```
 
@@ -496,22 +466,20 @@ Worker chưa có implementation đã xác minh. Mọi handler phải idempotent,
 
 ### 5.5 Business modules and data ownership
 
-Ba module nghiệp vụ được chọn triển khai trước — **Core HR** (gồm Contracts), **Recruitment** và **Attendance & Leave** — đều đã có bảng trong canonical schema v1 (36 bảng).
+Hai module nghiệp vụ được chọn triển khai trước — **Core HR** (gồm Contracts) và **Recruitment** — đều đã có bảng trong canonical schema v1 (23 bảng). Attendance & Leave nằm ngoài phạm vi; thiết kế của nó được giữ tại [deferred/attendance_leave/](deferred/attendance_leave/README.md).
 
 | Module | Responsibilities | Canonical tables | Current evidence |
 |---|---|---|---|
 | Core HR — Profile & Organization | employee, department, position | `employees`, `departments`, `positions` | UI prototype + canonical schema + OpenAPI + story có AC |
 | Core HR — Lifecycle | onboarding, events, documents, probation, offboarding | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | UI prototype (onboarding) + canonical schema + OpenAPI + story có AC |
 | Core HR — Contracts | contract lifecycle, expiry alert, addendum | `contracts`, `contract_addenda` | UI prototype + canonical schema + OpenAPI + story có AC |
-| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + **REC-03.2 source baseline** |
-| Attendance | policy version, holiday, shift, schedule, check event, correction, overtime, daily record, period lock | `attendance_policies`, `holidays`, `work_shifts`, `work_schedule_assignments`, `attendance_events`, `attendance_corrections`, `overtime_requests`, `attendance_daily_records`, `timesheet_periods` | UI prototype + canonical schema + OpenAPI + story có AC · **policy pending** |
-| Leave | leave type policy, balance, request, multi-level decision | `leave_types`, `leave_balances`, `leave_requests`, `leave_request_decisions` | UI prototype + canonical schema + OpenAPI + story có AC · **policy pending** |
+| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + module mẫu trong skeleton |
 | Identity/Audit/Notification | actor, roles/data scope, audit, delivery state | `users`, `user_roles`, `audit_logs`, `outbox_messages` | canonical v1 design |
 | Reporting | authorized read models and export | read model trên bảng của các module trên; chưa có bảng riêng | UI/SRS concept |
 
-**Ownership rule:** Attendance sở hữu dữ liệu chấm công và bảng công; Leave sở hữu quỹ phép và đơn nghỉ. Leave **không** ghi trực tiếp vào `attendance_daily_records` — Attendance đọc đơn nghỉ đã duyệt và tự tính lại ngày công. Chiều phụ thuộc là Attendance → Leave, một chiều.
+**Ownership rule:** Recruitment sở hữu dữ liệu ứng viên tới thời điểm offer được chấp nhận; từ đó Core HR sở hữu `employees` và mọi thứ phái sinh. Liên kết ngược duy nhất là `employees.source_application_id` (unique), dùng để đảm bảo một offer chỉ tạo một nhân viên. Chiều phụ thuộc là Core HR → Recruitment (đọc), một chiều.
 
-**Policy gate ở tầng dữ liệu:** `attendance_daily_records.policy_version` là `NOT NULL` với khóa ngoại tới `attendance_policies`, và `attendance_policies` chỉ ra khỏi trạng thái `draft` khi có người phê duyệt. Điều này biến một quyết định nghiệp vụ thành một invariant kỹ thuật: không thể tính công theo chính sách chưa được phê duyệt.
+**Trạng thái nhân sự chỉ đổi qua sự kiện:** `employees.status`, phòng ban, chức danh và quản lý trực tiếp không được sửa thẳng; mọi thay đổi đi qua `employee_events` đã `approved` và được áp dụng đúng `effective_date`. Probation review và offboarding case đều kết thúc bằng việc sinh một `employee_events`, không ghi trực tiếp vào hồ sơ.
 
 Database không có C4 Component diagram riêng vì đây là data-store container, không phải executable container. Thành phần bên trong được mô hình hóa bằng ownership ở bảng trên và ERD/DDL trong `database/`.
 
@@ -521,11 +489,9 @@ Database không có C4 Component diagram riêng vì đây là data-store contain
 frontend/
 ├── src/app/                      # composition, routing, session
 ├── src/features/
-│   ├── recruitment/              # api, components, hooks, pages — REC-03.2 implemented
+│   ├── recruitment/              # api, components, hooks, pages — sample module (skeleton)
 │   ├── core-hr/                  # proposed
 │   ├── contracts/                # proposed
-│   ├── attendance/               # proposed — policy pending
-│   ├── leave/                    # proposed — next slice (ATT-03)
 │   ├── reporting/                # proposed
 │   └── administration/           # proposed
 ├── src/shared/                   # design system and generic UI
@@ -537,13 +503,13 @@ backend/
 ├── src/Qlns.DataAccess/          # module repositories + EF Core/adapters
 ├── src/Qlns.Worker/              # proposed background processing container
 ├── tests/Qlns.BusinessLogic.UnitTests/
-└── tests/Qlns.IntegrationTests/  # proposed — required before the ATT-03 slice
+└── tests/Qlns.IntegrationTests/  # proposed — required before the first slice
 
-api/openapi.yaml                  # contract-first OpenAPI 3.0.3 (121 operations)
-database/schema.sql               # canonical schema contract before EF migrations (36 tables)
+api/openapi.yaml                  # contract-first OpenAPI 3.0.3 (87 operations)
+database/schema.sql               # canonical schema contract before EF migrations (23 tables)
 ```
 
-`tests/Qlns.IntegrationTests/` chưa tồn tại nhưng là điều kiện bắt buộc cho slice tiếp theo: phần lớn invariant của Attendance & Leave là `UNIQUE`/`EXCLUDE` constraint và conditional update ở database, và không thể verify bằng repository giả lập. Xem [Vertical Slice ATT-03](vertical_slice_leave_01.md).
+`tests/Qlns.IntegrationTests/` chưa tồn tại nhưng là điều kiện bắt buộc trước slice đầu tiên: các invariant quan trọng nhất của Core HR (một offer đang mở mỗi đơn, một hợp đồng chính đang hiệu lực, một case thôi việc đang mở, áp dụng biến động đúng ngày hiệu lực) là partial unique index và conditional update ở database, không thể verify bằng repository giả lập.
 
 Một use case mới nằm trong module sở hữu nghiệp vụ, cùng command/query, policy và test. Không đặt business rule trong route, component UI hoặc database trigger tổng quát.
 
@@ -787,17 +753,14 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 | # | Risk | Impact | Likelihood | Mitigation | Owner |
 |---|---|---|---|---|---|
 | R1 | UI prototype bị hiểu nhầm là frontend đã hoàn thành | High | High | nhãn Design-only, acceptance criteria và không dùng mock data fallback production | Product + Architecture |
-| R1b | Có OpenAPI contract đầy đủ bị hiểu nhầm là API đã hoạt động | High | High | `x-implementation-status` trên từng operation; chỉ hai operation ở trạng thái implemented, xem [Vertical Slice REC-03.2](vertical_slice_rec_03_2.md) | Architecture |
-| R2 | Canonical schema chưa được chuyển thành EF migration có version | High | High | migration plan, bật extension `btree_gist`, và constraint/invariant integration tests trên PostgreSQL thật | Data + Backend |
-| R2b | Attendance/Leave có schema và API contract nhưng **policy tính công và quỹ phép chưa được HR/Legal phê duyệt** | Critical | High | policy gate ở tầng dữ liệu (`attendance_policies.status`, `leave_types.policy_status`); [Open Decisions](open_decisions_attendance_leave.md) là điều kiện chặn trước implementation | Product + HR/Legal |
-| R2c | Giới hạn giờ tăng ca theo luật chưa được hệ thống chặn (chưa có bảng hạn mức) | High | Medium | chốt `[OD-5.4]` với Legal rồi bổ sung bảng hạn mức và kiểm tra ở service trước go-live | Product + HR/Legal |
-| R2d | Mở lại kỳ công đã bàn giao Payroll chưa có cơ chế điều chỉnh | High | Medium | chốt `[OD-8.5]` trước khi nối Payroll; tới lúc đó không cho reopen kỳ đã handoff | Product + Backend |
+| R1b | Có OpenAPI contract đầy đủ bị hiểu nhầm là API đã hoạt động | High | High | `x-implementation-status` trên từng operation; hiện **chưa operation nào** ở trạng thái implemented — source trong `src/` chỉ là skeleton cấu trúc | Architecture |
+| R2 | Canonical schema chưa được chuyển thành EF migration có version | High | High | migration plan và constraint/invariant integration tests trên PostgreSQL thật | Data + Backend |
+| R2b | Thiết kế Attendance & Leave đã tách ra `deferred/` có thể drift khỏi canonical (bảng `employees`, `users`, error model) nếu module đó quay lại phạm vi | Medium | Medium | ghi rõ phụ thuộc trong `deferred/attendance_leave/README.md`; review lại toàn bộ fragment trước khi ghép về | Architecture |
 | R3 | Stack được chọn theo sơ đồ mà không qua decision process | Medium | High | ADR framework/version và proof-of-concept vertical slice | Architecture |
 | R4 | Business rule rò vào UI/router | High | Medium | application/domain boundary, code review và architecture fitness tests | Backend lead |
 | R5 | RBAC chỉ ẩn nút, thiếu data scope server-side | Critical | Medium | deny-by-default policy tests cho từng role/scope | Security |
 | R6 | Candidate-to-employee handoff tạo dữ liệu trùng | High | Medium | source link, unique/business key, lock/version và idempotency test | Core HR + Recruitment |
-| R6b | Bội chi quỹ phép do read-modify-write khi hai đơn gửi đồng thời | High | Medium | conditional update kèm điều kiện số dư (không `SELECT` rồi `UPDATE`); test tranh chấp đồng thời trên PostgreSQL thật là bắt buộc | Backend + Data |
-| R6c | Thiết bị chấm công offline gửi bù gây nhân đôi hoặc mất dữ liệu | High | Medium | `ux_attendance_events_device` trên `device_id` + `external_event_id`; sự kiện trùng trả `202 duplicate=true` chứ không trả lỗi | Integration owner |
+| R6b | Kết quả thử việc / đóng case thôi việc sinh trùng `employee_events` khi retry | High | Medium | liên kết một-một (`probation_reviews.employee_event_id`, `offboarding_cases.employee_event_id`) và idempotency test | Core HR |
 | R7 | Provider failure làm sai trạng thái nghiệp vụ | High | Medium | outbox, delivery state, bounded retry và reconciliation | Integration owner |
 | R8 | Dữ liệu nhạy cảm xuất hiện trong log/export/test | Critical | Medium | classification, DTO allowlist, redaction, synthetic test data, export audit | Security + Data |
 | R9 | Mermaid/C4/ADR drift khỏi implementation tương lai | Medium | High | docs-first PR checklist và traceability/fitness gates | Architecture |
@@ -809,7 +772,7 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 
 ## 12. Architecture Fitness Functions
 
-Các gate dưới đây là target bắt buộc. Source baseline chỉ mới có unit tests cho REC-03.2; những gate chưa có executable job vẫn phải giữ trạng thái Planned.
+Các gate dưới đây là target bắt buộc. Skeleton source chỉ mới có unit test cho module mẫu; những gate chưa có executable job vẫn phải giữ trạng thái Planned.
 
 | Test / Gate | Rule enforced | Fails when | Status / planned location |
 |---|---|---|---|

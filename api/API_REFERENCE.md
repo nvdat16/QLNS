@@ -1,6 +1,6 @@
 # QLNS API Reference
 
-Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yaml) cho ba phân hệ được chọn triển khai trước: **Core HR** (bao gồm nhánh con Contracts), **Recruitment (ATS)** và **Attendance & Leave**, cùng Reports và Administration.
+Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yaml) cho hai phân hệ được chọn triển khai trước: **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**, cùng Reports và Administration. Attendance & Leave nằm ngoài phạm vi; contract của nhóm đó được giữ tại [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml).
 
 > OpenAPI là nguồn contract chính thức. Khi nội dung mô tả ở đây khác OpenAPI, ưu tiên `openapi.yaml`.
 
@@ -548,212 +548,9 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - Tạo signed URL ngắn hạn cho export đã hoàn tất.
 - Export chưa hoàn tất/hết hạn trả `409`; truy cập không đúng scope trả `403/404`.
 
-## 6. Attendance và Leave
+## 6. Administration và Operations
 
-> **Trạng thái:** `x-implementation-status: discovery-required`. Canonical schema đã có đủ 13 bảng cho nhóm này, nhưng công thức lịch lễ, ca đêm, làm tròn phút, hệ số tăng ca, accrual/carry-over, số dư âm và chuỗi duyệt **phải được HR/Legal chốt** trước khi triển khai. Danh sách quyết định: [Open Decisions — Attendance & Leave](../docs/open_decisions_attendance_leave.md).
->
-> Hai chốt chặn kỹ thuật: không tính được bảng công khi `attendance_policies.status = 'draft'`, và không gửi được đơn nghỉ với `leave_types.policy_status = 'draft'`.
-
-### 6.1. Ca làm việc và lịch tuần
-
-#### `GET /api/v1/attendance/shifts`
-
-- Lấy danh mục ca, có thể lọc ca đang active.
-- Trả giờ bắt đầu/kết thúc, timezone, phút nghỉ, phút công chuẩn và hệ số công.
-
-#### `POST /api/v1/attendance/shifts`
-
-- Tạo định nghĩa ca làm việc; code phải duy nhất.
-- Server xác định ca qua đêm từ giờ bắt đầu/kết thúc và trả `ETag`.
-
-#### `GET /api/v1/attendance/shifts/{shiftId}`
-
-- Lấy một định nghĩa ca cùng `ETag` hiện tại.
-
-#### `PUT /api/v1/attendance/shifts/{shiftId}`
-
-- Thay thế định nghĩa ca; bắt buộc `If-Match`.
-- Thay đổi không được làm sai lịch đã khóa hoặc dữ liệu bảng công lịch sử.
-
-#### `GET /api/v1/attendance/schedules`
-
-- Lấy lịch phân ca theo tuần; bắt buộc `weekStart` là thứ Hai.
-- Hỗ trợ lọc employee/phòng ban và phân trang.
-
-#### `PUT /api/v1/attendance/schedules`
-
-- Thay thế một tập assignment tuần trong một transaction.
-- Yêu cầu `weekStart`, `Idempotency-Key`; kiểm tra employee, ca, ngày và xung đột lịch.
-- Một nhân viên chỉ có một ca mỗi ngày (`ux_schedule_employee_date`); phân ca vào kỳ công đã khóa trả `409`.
-
-### 6.2. Lịch nghỉ lễ
-
-#### `GET /api/v1/attendance/holidays`
-
-- Lấy lịch nghỉ lễ theo `calendarCode` (mặc định `VN`) và `year`.
-- Trả cờ hưởng lương và hệ số công nếu phải làm việc trong ngày lễ.
-
-#### `POST /api/v1/attendance/holidays`
-
-- Thêm một ngày lễ vào lịch; trùng `calendarCode` + `holidayDate` trả `409`.
-
-#### `PUT /api/v1/attendance/holidays/{holidayId}`
-
-- Thay thế một mục lịch lễ; bắt buộc `If-Match`.
-
-#### `DELETE /api/v1/attendance/holidays/{holidayId}`
-
-- Xóa mục lịch lễ; bắt buộc `If-Match`.
-- Trả `409` nếu ngày lễ đang được tham chiếu bởi bảng công đã tính.
-
-### 6.3. Điểm danh và bảng công
-
-#### `POST /api/v1/attendance/events`
-
-- Nhân viên hoặc HR được phép ghi nhận check-in/check-out.
-- Body gồm thời điểm, timezone, phương thức và dữ liệu vị trí/thiết bị khi áp dụng.
-- Yêu cầu `Idempotency-Key`; event trùng không tạo bản ghi lần hai.
-
-#### `POST /api/v1/integrations/attendance/events`
-
-- Nhận event từ máy chấm công/GPS/Face ID qua `X-Device-Signature`.
-- Yêu cầu external event ID, device ID, employee external key và `Idempotency-Key`.
-- Chữ ký/thiết bị sai trả `401`; event hợp lệ được nhận bằng `202`.
-
-#### `GET /api/v1/attendance/timesheets`
-
-- Lấy bảng công cá nhân hoặc đội nhóm theo khoảng `from`–`to`.
-- Hỗ trợ employee, phòng ban, trạng thái và phân trang có giới hạn trên.
-- Các giá trị worked/late/early-leave/overtime **do server tính** và kèm `policyVersion` của từng dòng. Client không được tính lại.
-- Truy vấn ngoài data scope trả `403`, không trả danh sách rỗng.
-
-### 6.4. Hiệu chỉnh công
-
-#### `GET /api/v1/attendance/corrections`
-
-- Tra cứu đề nghị hiệu chỉnh theo employee, trạng thái và data scope.
-
-#### `POST /api/v1/attendance/corrections`
-
-- Tạo đề nghị sửa check-in/check-out của một ngày làm việc.
-- Body gồm employee, ngày công, thời điểm đề xuất và lý do; trả request `pending` cùng `ETag`.
-
-#### `POST /api/v1/attendance/corrections/{correctionId}/{action}`
-
-- Action: `approve`, `reject`, `cancel`; bắt buộc `If-Match`.
-- Reject/cancel phải có lý do theo policy.
-- Approve ghi một `attendance_events` mới với `source = 'correction'`, tính lại bảng công, ghi audit và outbox **trong cùng transaction**. Sự kiện gốc từ thiết bị không bị xóa.
-- Mỗi nhân viên chỉ có một đề nghị `pending` cho một ngày (`ux_corrections_one_pending_per_day`).
-
-### 6.5. Tăng ca
-
-#### `GET /api/v1/attendance/overtime-requests`
-
-- Tra cứu đơn tăng ca theo employee, trạng thái, khoảng ngày và `pendingMyDecision`.
-
-#### `POST /api/v1/attendance/overtime-requests`
-
-- Đăng ký tăng ca cho một ngày công; yêu cầu `Idempotency-Key`.
-- **Server tự xác định** `overtimeCategory` (`weekday` / `weekly_rest` / `holiday` / `night`) và `workCoefficient` từ lịch ca, lịch lễ và policy đang active. Giá trị client gửi lên bị bỏ qua.
-- Hai đơn `pending`/`approved` của cùng nhân viên không được giao nhau về thời gian (`ex_overtime_requests_no_overlap`) → `409`.
-
-#### `POST /api/v1/attendance/overtime-requests/{overtimeRequestId}/{action}`
-
-- Action: `approve`, `reject`, `cancel`; bắt buộc `If-Match`.
-- `approvedMinutes` có thể nhỏ hơn số đăng ký nhưng **không bao giờ lớn hơn** (`ck_overtime_minutes`) → vượt trả `422`.
-- Số phút được duyệt được cộng vào `overtime_minutes` của ngày công tương ứng.
-
-> [!WARNING]
-> **Giới hạn giờ tăng ca theo ngày/tháng/năm hiện chưa được hệ thống chặn** — chưa có bảng hạn mức. Đây là khoảng trống tuân thủ đã ghi nhận tại `[OD-5.4]` và phải được xử lý trước khi go-live.
-
-### 6.6. Nghỉ phép
-
-#### `GET /api/v1/leave/types`
-
-- Lấy loại phép, paid/unpaid, cho phép số dư âm hay không và policy version.
-
-#### `GET /api/v1/leave/balances`
-
-- Lấy quỹ phép theo năm; employee mặc định xem chính mình, HR xem theo scope.
-- Trả entitlement, used, reserved và available theo đơn vị ngày/giờ.
-
-#### `GET /api/v1/leave/requests`
-
-- Tìm đơn của cá nhân, đội nhóm hoặc hàng đợi cần chính người dùng duyệt.
-- Hỗ trợ employee, status, khoảng ngày, `pendingMyDecision` và phân trang.
-
-#### `POST /api/v1/leave/requests`
-
-- Gửi đơn và reserve số dư nguyên tử; yêu cầu `Idempotency-Key`.
-- Client gửi khoảng thời gian, timezone và hình thức nghỉ; server tự tính requested units theo lịch, ngày lễ và policy.
-- Không đủ quỹ hoặc trùng đơn trả `409`.
-
-#### `GET /api/v1/leave/requests/{leaveRequestId}`
-
-- Lấy đơn, số lượng đã tính, policy version, lịch sử quyết định và `ETag`.
-
-#### `POST /api/v1/leave/requests/{leaveRequestId}/{action}`
-
-- Action: `approve`, `reject`, `cancel`; bắt buộc `If-Match`.
-- Backend kiểm tra đúng approver chain/data scope rồi cập nhật đơn, balance, audit và outbox nguyên tử.
-
-#### `POST /api/v1/leave/requests/batch-decision`
-
-- Duyệt hoặc từ chối tối đa 100 đơn, yêu cầu `Idempotency-Key`.
-- Mỗi item mang `leaveRequestId` và `expectedVersion`.
-- Response trả kết quả riêng từng đơn; một conflict không che kết quả của các đơn khác.
-
-### 6.7. Cấu hình loại phép
-
-#### `POST /api/v1/leave/types`
-
-- Tạo loại phép ở trạng thái `policy_status = 'draft'`.
-- Loại phép `draft` **không dùng được để gửi đơn** — trả `422`.
-
-#### `PUT /api/v1/leave/types/{leaveTypeId}`
-
-- Thay thế policy còn `draft`; bắt buộc `If-Match`.
-- Policy đã `approved` không được sửa; phải tạo `policyVersion` mới.
-
-#### `POST /api/v1/leave/types/{leaveTypeId}/{action}`
-
-- Action: `approve`, `deactivate`, `reactivate`; bắt buộc `If-Match`.
-- `approve` ghi `approvedBy` và `approvedAt`; `ck_leave_type_approved` chặn trạng thái `approved` thiếu hai trường này.
-
-### 6.8. Kỳ công và khóa kỳ
-
-#### `GET /api/v1/attendance/timesheet-periods`
-
-- Liệt kê kỳ công, lọc theo trạng thái, kèm `openExceptionCount`.
-
-#### `POST /api/v1/attendance/timesheet-periods`
-
-- Tạo kỳ công với `periodCode`, `startsOn`, `endsOn`.
-- Các kỳ **không được giao nhau** (`ex_timesheet_periods_no_overlap`) → `409`.
-
-#### `GET /api/v1/attendance/timesheet-periods/{periodId}/exceptions`
-
-- Liệt kê ngoại lệ đang chặn việc duyệt kỳ: `incomplete_workday`, `unexplained_absence`, `pending_correction`, `overtime_without_attendance`, `missing_schedule`.
-- Mỗi ngoại lệ nêu rõ nhân viên, ngày và chi tiết.
-
-#### `POST /api/v1/attendance/timesheet-periods/{periodId}/{action}`
-
-- Action: `submit`, `approve`, `lock`, `reopen`; bắt buộc `If-Match`.
-- `approve` bị từ chối khi còn ngoại lệ chưa xử lý → `409` kèm danh sách.
-- `lock` làm mọi bản ghi trong kỳ trở nên bất biến: chấm công, hiệu chỉnh, phân ca và tăng ca nhắm vào kỳ đã khóa đều trả `409`.
-- `reopen` bắt buộc có lý do (`ck_timesheet_period_reopened`) và được ghi audit log.
-
-#### `POST /api/v1/attendance/timesheet-periods/{periodId}/payroll-handoff`
-
-- Bàn giao kỳ công sang Payroll; yêu cầu `Idempotency-Key` và `reference`.
-- Bị từ chối nếu kỳ chưa `locked` (`ck_timesheet_period_handoff`).
-
-> [!WARNING]
-> **Việc mở lại kỳ đã bàn giao Payroll hiện chưa có cơ chế điều chỉnh** (`[OD-8.5]`). Phải chốt trước khi nối phân hệ Payroll, nếu không sẽ tạo sai lệch giữa số đã bàn giao và số hiện tại.
-
-## 7. Administration và Operations
-
-### 7.1. User và RBAC
+### 6.1. User và RBAC
 
 #### `GET /api/v1/administration/users`
 
@@ -791,7 +588,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - Thu hồi đúng một grant, xác định thêm bằng `dataScopeType` và `dataScopeId`.
 - Không được tự thu hồi quyền cuối cùng nếu làm hệ thống mất khả năng quản trị theo policy.
 
-### 7.2. Audit và delivery
+### 6.2. Audit và delivery
 
 #### `GET /api/v1/administration/audit-logs`
 
@@ -812,7 +609,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - Lập lịch retry hữu hạn cho delivery failed/dead-letter.
 - Yêu cầu `Idempotency-Key` và lý do; không gọi provider trong transaction HTTP.
 
-### 7.3. Integration và health
+### 6.3. Integration và health
 
 #### `GET /api/v1/administration/integrations`
 
@@ -837,30 +634,21 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - Probe công khai tối giản cho biết service sẵn sàng nhận traffic.
 - Trả `200` khi ready hoặc `503` khi chưa ready; không liệt kê secret/dependency detail.
 
-## 8. Trạng thái triển khai
+## 7. Trạng thái triển khai
 
-Contract trên mô tả API mục tiêu. Source backend hiện mới triển khai đầy đủ **hai operation**:
-
-- `GET /api/v1/recruitment/applications/{applicationId}`
-- `POST /api/v1/recruitment/applications/{applicationId}/advance`
-
-Chi tiết những gì đã được viết: [Vertical Slice `REC-03.2`](../docs/vertical_slice_rec_03_2.md).
+Contract trên mô tả API mục tiêu. Source backend hiện là **skeleton cấu trúc** (bố cục solution, tách 3 layer, một module mẫu kèm unit test); **chưa operation nào được tính là đã triển khai**. Mọi operation trong `openapi.yaml` đều mang `x-implementation-status: proposed`.
 
 ### Trạng thái theo nhóm
 
 | Nhóm | `x-implementation-status` | Điều kiện để triển khai |
 | :--- | :--- | :--- |
-| Recruitment pipeline (advance/read) | **implemented** | Còn thiếu migration, runtime, IdP và integration/contract test |
-| Recruitment (phần còn lại) | `proposed` | Chốt IdP/RBAC; sinh EF Core migration |
+| Recruitment | `proposed` | Chốt IdP/RBAC; sinh EF Core migration |
 | Core HR — Employees, Organization, Onboarding, Events, Documents | `proposed` | Chốt IdP/RBAC; sinh EF Core migration |
 | Core HR — Probation, Offboarding | `proposed` | Chốt template checklist offboarding; công thức quy đổi phép chưa dùng |
 | Contracts | `proposed` | Chốt nhà cung cấp chữ ký số nếu dùng |
 | Reports | `proposed` | Chốt quy ước tính toán và quyền xuất dữ liệu |
-| **Attendance & Leave** | `discovery-required` | **Chốt [Open Decisions](../docs/open_decisions_attendance_leave.md)**; có `attendance_policies` `active` và `leave_types` `approved` |
 | Administration | `proposed` | Chốt IdP và chính sách audit |
 
 ### Nguyên tắc triển khai từng operation
 
 Mỗi operation phải được triển khai đầy đủ cả sáu phần, không tách rời: controller, authorization policy (permission + data scope), business workflow, persistence transaction (kèm audit và outbox trong cùng transaction), và contract/integration test. Một endpoint trả đúng JSON nhưng chưa có kiểm tra quyền phía server hoặc chưa ghi audit **không được tính là đã triển khai**.
-
-Slice tiếp theo được đề xuất: [`ATT-03` Đơn nghỉ phép](../docs/vertical_slice_leave_01.md).

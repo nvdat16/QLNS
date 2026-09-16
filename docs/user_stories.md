@@ -1,15 +1,12 @@
-# 📋 INVEST User Stories — 3 Phân Hệ Triển Khai Trước (QLNS / NexusHR)
+# 📋 INVEST User Stories — 2 Phân Hệ Triển Khai Trước (QLNS / NexusHR)
 
 > **Tài liệu chuẩn yêu cầu nghiệp vụ (Authoritative Requirements Baseline)**
-> **Phạm vi:** ba phân hệ được chọn triển khai trước theo bản đồ chức năng — **Core HR** (bao gồm nhánh con Contracts), **Recruitment (ATS)** và **Attendance & Leave**.
+> **Phạm vi:** hai phân hệ được chọn triển khai trước theo bản đồ chức năng — **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**. Attendance & Leave đã được tách ra ngoài phạm vi; story của nhóm đó được giữ tại [deferred/attendance_leave/user_stories_att.md](deferred/attendance_leave/user_stories_att.md).
 > **Ánh xạ kiến trúc:** [Functional Specifications](functional_specifications.md) · [Use Cases](use_cases.md) · [Architecture (arc42 + C4)](architecture.md) · [Database Schema](../database/schema.sql) · [API Contract](../api/openapi.yaml)
 > **Nguyên tắc thiết kế Story:** Tuân thủ tiêu chuẩn **INVEST** (*Independent, Negotiable, Valuable, Estimable, Small, Testable*).
 
 > [!NOTE]
 > Theo bản đồ chức năng, **Contract Management là nhánh con của Core HR** (cùng cấp với Employee Profiles, Organization Management và Employee Lifecycle). Tài liệu này giữ mã `CON-*` riêng cho dễ truy vết, nhưng về phạm vi triển khai thì `EMP-*` và `CON-*` cùng thuộc một phân hệ.
-
-> [!IMPORTANT]
-> Toàn bộ story `ATT-*` ở trạng thái **`Blocked — policy pending`**. Acceptance criteria của chúng đã được viết đầy đủ và có thể estimate, nhưng **các giá trị ngưỡng, hệ số và công thức còn là đề xuất chưa được HR/Legal phê duyệt**. Mã `[OD-x.y]` trong AC trỏ tới [Open Decisions — Attendance & Leave](open_decisions_attendance_leave.md). Không đưa story `ATT-*` vào sprint trước khi các mục tương ứng ở đó được chốt.
 
 ---
 
@@ -17,10 +14,9 @@
 
 | Phân hệ | Mã story | Trạng thái |
 | :--- | :--- | :--- |
-| **Recruitment (ATS)** | `REC-01` … `REC-06` — 10 story | Proposed · `REC-03.2` đã có source baseline |
+| **Recruitment (ATS)** | `REC-01` … `REC-06` — 10 story | Proposed |
 | **Core HR — Profile, Organization, Lifecycle** | `EMP-01` … `EMP-07` — 10 story | Proposed |
 | **Core HR — Contracts** | `CON-01` … `CON-03` — 4 story | Proposed |
-| **Attendance & Leave** | `ATT-01` … `ATT-04` — 13 story | **Blocked — policy pending** |
 
 ---
 
@@ -46,12 +42,7 @@
   - [CON-01: Soạn thảo, Ký kết & Vòng đời Hợp đồng](#con-01-soạn-thảo-ký-kết--vòng-đời-hợp-đồng)
   - [CON-02: Giám sát Hạn Hợp đồng & Cảnh báo Tự động](#con-02-giám-sát-hạn-hợp-đồng--cảnh-báo-tự-động)
   - [CON-03: Quản lý Phụ lục Hợp đồng Lao động](#con-03-quản-lý-phụ-lục-hợp-đồng-lao-động)
-- [5. Phân Hệ Chấm Công & Nghỉ Phép (Attendance & Leave)](#5-phân-hệ-chấm-công--nghỉ-phép-attendance--leave)
-  - [ATT-01: Ca làm việc, Phân ca & Lịch lễ](#att-01-ca-làm-việc-phân-ca--lịch-lễ)
-  - [ATT-02: Ghi nhận, Hiệu chỉnh Chấm công & Tăng ca](#att-02-ghi-nhận-hiệu-chỉnh-chấm-công--tăng-ca)
-  - [ATT-03: Quỹ phép, Đơn nghỉ & Phê duyệt](#att-03-quỹ-phép-đơn-nghỉ--phê-duyệt)
-  - [ATT-04: Bảng công, Duyệt kỳ & Khóa kỳ](#att-04-bảng-công-duyệt-kỳ--khóa-kỳ)
-- [6. Ma trận Phân quyền & Traceability](#6-ma-trận-phân-quyền--traceability)
+- [5. Ma trận Phân quyền & Traceability](#5-ma-trận-phân-quyền--traceability)
 
 ---
 
@@ -266,8 +257,25 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
       4. Tạo bộ checklist công việc tiếp nhận trong `onboarding_tasks`.
   - **Kịch bản 2: Chống tạo trùng lặp khi retry (Idempotency Check)**
     - **Given** ứng viên đã được chuyển đổi thành nhân viên thành công,
-    - **When** có yêu cầu xử lý lại sự kiện chấp nhận Offer (do mạng lag hoặc retry API),
-    - **Then** hệ thống nhận diện hồ sơ đã tồn tại, trả về kết quả hiện tại và không tạo thêm bản ghi nhân viên hay checklist trùng lặp.
+    - **When** có yêu cầu xử lý lại sự kiện chấp nhận Offer (do mạng lag hoặc retry API) — dù cùng hay khác `Idempotency-Key`,
+    - **Then** hệ thống nhận diện hồ sơ đã tồn tại qua `employees.source_application_id`, trả về `OfferResponseResult` với `replayed = true` và không tạo thêm bản ghi nhân viên, hợp đồng hay checklist.
+  - **Kịch bản 3: Hai yêu cầu chấp nhận song song**
+    - **Given** hai request `accept` cho cùng một Offer đến server gần như đồng thời,
+    - **When** cả hai được xử lý,
+    - **Then** đúng một request tạo dữ liệu; request còn lại nhận cùng kết quả với `replayed = true`; không bao giờ tồn tại hai `employees` có cùng `source_application_id`.
+  - **Kịch bản 4: Offer không còn mở**
+    - **Given** Offer đã `expired`, `declined` hoặc `cancelled`,
+    - **When** ứng viên bấm chấp nhận,
+    - **Then** hệ thống trả `409` với mã `recruitment.offer_not_open` và không ghi gì.
+  - **Kịch bản 5: Token không khớp Offer**
+    - **Given** `X-Offer-Token` hợp lệ nhưng thuộc một Offer khác,
+    - **When** gọi endpoint phản hồi,
+    - **Then** hệ thống trả `401` và không tiết lộ Offer đích có tồn tại hay không.
+  - **Kịch bản 6: Nhân viên mới chưa có email công vụ**
+    - **Given** ứng viên chỉ có email cá nhân,
+    - **When** handoff tạo bản ghi `employees`,
+    - **Then** `work_email` được để trống, `personal_email` được copy từ ứng viên, `status = 'probation'`; hệ thống chặn chuyển sang `active` cho tới khi IT cấp email công vụ (`ck_employee_active_requires_work_email`).
+- **Ràng buộc kỹ thuật**: Toàn bộ ghi vào `offers`, `applications`, `application_stage_events`, `employees`, `contracts`, `onboarding_tasks`, `audit_logs`, `outbox_messages` nằm trong **một transaction**. `employee_code` sinh từ `employee_code_seq` theo định dạng `EMP-00001`. Thông báo và cấp tài khoản đi qua outbox, chỉ phát sau commit.
 
 ---
 
@@ -501,11 +509,7 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
     - **Given** case đã `completed` nhưng `last_working_date` còn ở tương lai,
     - **When** nhân viên đăng nhập trong khoảng thời gian còn lại,
     - **Then** nhân viên vẫn truy cập được để hoàn thành bàn giao; tài khoản chỉ bị vô hiệu hóa đúng ngày làm việc cuối.
-  - **Kịch bản 5: Hủy đơn nghỉ phép sau ngày làm việc cuối**
-    - **Given** nhân viên có đơn nghỉ `approved` với ngày bắt đầu sau `last_working_date`,
-    - **When** HR Officer đóng case,
-    - **Then** hệ thống hủy các đơn đó, trả lại quỹ phép tương ứng và ghi audit log; nếu không hủy được thì chặn việc đóng case.
-  - **Kịch bản 6: Hồ sơ vẫn được lưu trữ sau khi thôi việc**
+  - **Kịch bản 5: Hồ sơ vẫn được lưu trữ sau khi thôi việc**
     - **Given** nhân viên đã `terminated`,
     - **When** HR Officer tra cứu hồ sơ tài liệu của nhân viên đó,
     - **Then** tài liệu vẫn truy cập được tới `retention_until`; nhân viên không còn xuất hiện trong danh bạ đang làm việc.
@@ -603,496 +607,9 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 
 ---
 
-## 5. Phân Hệ Chấm Công & Nghỉ Phép (Attendance & Leave)
+## 5. Ma trận Phân quyền & Traceability
 
-> [!IMPORTANT]
-> **Trạng thái nhóm story: `Blocked — policy pending`.**
-> Các story dưới đây đã đủ chi tiết để estimate và viết test, nhưng **mọi ngưỡng, hệ số và công thức là giá trị đề xuất**. Mã `[OD-x.y]` trỏ tới mục tương ứng trong [Open Decisions — Attendance & Leave](open_decisions_attendance_leave.md). Một story chỉ được đưa vào sprint khi tất cả mã `[OD-*]` mà nó tham chiếu đã được chốt và có người phê duyệt.
-> Canonical schema chặn kỹ thuật: không thể ghi bảng công theo `attendance_policies` còn `draft`, không thể dùng `leave_types` có `policy_status = 'draft'`.
-
-### ATT-01: Ca làm việc, Phân ca & Lịch lễ
-
-#### [ATT-01.1] Định nghĩa ca làm việc (Define Work Shift)
-- **Phụ thuộc quyết định**: `[OD-1.1]` múi giờ chuẩn, `[OD-1.3]` số phút công chuẩn, `[OD-1.8]` khung giờ và hệ số làm đêm.
-- **Mô tả**:
-  > **Là một** HR Officer,
-  > **Tôi muốn** định nghĩa các ca làm việc với giờ bắt đầu, giờ kết thúc, thời gian nghỉ giữa ca và số phút công chuẩn,
-  > **Để** hệ thống có mốc chuẩn đối chiếu khi tính đi muộn, về sớm và giờ công thực tế.
-- **Tiền điều kiện**: Người dùng có vai trò `ROLE_HR_OFFICER` hoặc `ROLE_HR_MGR`.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Tạo ca hành chính thành công**
-    - **Given** HR Officer nhập mã ca `SHIFT_ADMIN`, giờ 08:30–17:30, múi giờ `Asia/Ho_Chi_Minh`, nghỉ giữa ca 60 phút, số phút công chuẩn 480,
-    - **When** bấm lưu,
-    - **Then** hệ thống tạo bản ghi trong `work_shifts` với `crosses_midnight = false` và trả về `ETag` cho lần sửa sau.
-  - **Kịch bản 2: Tự suy ra ca qua đêm, không cho nhập mâu thuẫn**
-    - **Given** HR Officer nhập ca 22:00–06:00,
-    - **When** bấm lưu,
-    - **Then** hệ thống tự đặt `crosses_midnight = true`; nếu client gửi `crosses_midnight = false` thì bị từ chối bởi `ck_shift_crosses_midnight`.
-  - **Kịch bản 3: Chặn giá trị ngoài miền hợp lệ**
-    - **Given** HR Officer nhập `standard_work_minutes = 0` hoặc `break_minutes = 2000` hoặc `work_coefficient = 9`,
-    - **When** bấm lưu,
-    - **Then** hệ thống trả `422` và nêu rõ trường vi phạm; không bản ghi nào được tạo.
-  - **Kịch bản 4: Không cho xóa ca đang được sử dụng**
-    - **Given** ca đang được tham chiếu bởi `work_schedule_assignments` hoặc `attendance_daily_records`,
-    - **When** HR Officer cố xóa ca,
-    - **Then** hệ thống từ chối và đề xuất chuyển `active = false` thay vì xóa.
-  - **Kịch bản 5: Sửa đồng thời không ghi đè lẫn nhau**
-    - **Given** hai HR Officer cùng mở một ca để sửa,
-    - **When** người thứ hai gửi `PUT` với `If-Match` là `ETag` đã cũ,
-    - **Then** hệ thống trả `409 Conflict` và không ghi thay đổi.
-- **Ràng buộc kỹ thuật**: `work_shifts`; `code` là `UNIQUE`; `version` là nguồn `ETag`; API `GET|POST /api/v1/attendance/shifts`, `GET|PUT /api/v1/attendance/shifts/{shiftId}`.
-
----
-
-#### [ATT-01.2] Phân ca theo tuần (Assign Weekly Work Schedule)
-- **Phụ thuộc quyết định**: `[OD-1.2]` ca qua đêm thuộc ngày nào, `[OD-1.4]` ngày nghỉ hằng tuần.
-- **Mô tả**:
-  > **Là một** HR Officer,
-  > **Tôi muốn** phân ca cho nhân viên theo tuần và cập nhật nhiều phân ca trong một lần,
-  > **Để** lịch làm việc của cả đội được thiết lập nhanh và luôn là một lịch nhất quán.
-- **Tiền điều kiện**: Đã có ít nhất một ca `active`; nhân viên đang ở trạng thái làm việc.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Phân ca cả tuần thành công**
-    - **Given** HR Officer chọn tuần bắt đầu và gán ca cho từng nhân viên từng ngày,
-    - **When** gửi `PUT /api/v1/attendance/schedules` kèm `Idempotency-Key`,
-    - **Then** toàn bộ phân ca được ghi **trong một transaction**; nếu một phần tử lỗi thì không phần tử nào được ghi.
-  - **Kịch bản 2: Chặn hai ca trong cùng một ngày**
-    - **Given** nhân viên đã có ca cho ngày 2026-10-05,
-    - **When** HR Officer gán thêm một ca khác cho cùng ngày đó,
-    - **Then** hệ thống trả `409 Conflict`; `ux_schedule_employee_date` chặn ở tầng database.
-  - **Kịch bản 3: Ngày không phân ca là ngày nghỉ, không suy diễn ca mặc định**
-    - **Given** nhân viên không có bản ghi phân ca cho Chủ Nhật,
-    - **When** hệ thống tính bảng công cho ngày đó,
-    - **Then** ngày đó có `status = 'day_off'` với `scheduled_minutes = 0`; hệ thống **không** tự gán ca hành chính.
-  - **Kịch bản 4: Chặn phân ca vào kỳ công đã khóa**
-    - **Given** kỳ công chứa ngày cần phân ca đang ở `status = 'locked'`,
-    - **When** HR Officer gửi phân ca cho ngày đó,
-    - **Then** hệ thống trả `409` với mã lỗi nghiệp vụ nêu rõ kỳ công đã khóa.
-  - **Kịch bản 5: Gửi lại do timeout không tạo dữ liệu trùng**
-    - **Given** request phân ca bị timeout ở client nhưng đã thành công ở server,
-    - **When** client gửi lại cùng `Idempotency-Key`,
-    - **Then** hệ thống trả về chính kết quả lần đầu, không tạo bản ghi thứ hai.
-- **Ràng buộc kỹ thuật**: `work_schedule_assignments`; `assigned_by` lưu người thực hiện; API `GET|PUT /api/v1/attendance/schedules`.
-
----
-
-#### [ATT-01.3] Thiết lập lịch nghỉ lễ (Maintain Holiday Calendar)
-- **Phụ thuộc quyết định**: `[OD-2.1]` danh sách ngày lễ, `[OD-2.2]` người duyệt và thời hạn nhập, `[OD-2.3]` hệ số làm việc ngày lễ, `[OD-2.4]` nghỉ bù.
-- **Mô tả**:
-  > **Là một** HR Officer,
-  > **Tôi muốn** nhập lịch nghỉ lễ của năm và trình HR Manager phê duyệt,
-  > **Để** hệ thống không trừ quỹ phép và không tính vắng vào những ngày toàn công ty được nghỉ.
-- **Tiền điều kiện**: Người dùng có vai trò `ROLE_HR_OFFICER`; HR Manager phê duyệt.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Nhập lịch lễ năm sau thành công**
-    - **Given** HR Officer nhập danh sách ngày lễ với `calendar_code = 'VN'`, tên và cờ hưởng lương,
-    - **When** HR Manager phê duyệt,
-    - **Then** các bản ghi được lưu vào `holidays` và có hiệu lực cho mọi phép tính công từ thời điểm đó.
-  - **Kịch bản 2: Chặn ngày lễ trùng trong cùng một lịch**
-    - **Given** ngày 2027-01-01 đã tồn tại trong lịch `VN`,
-    - **When** HR Officer nhập lại cùng ngày đó,
-    - **Then** hệ thống trả `409`; `ux_holidays_calendar_date` chặn ở tầng database.
-  - **Kịch bản 3: Ngày lễ không bị tính là nghỉ không phép**
-    - **Given** một ngày lễ đã được duyệt và nhân viên không chấm công ngày đó,
-    - **When** hệ thống tính bảng công,
-    - **Then** ngày đó có `status = 'holiday'` và trỏ `holiday_id`, **không** phải `absent`.
-  - **Kịch bản 4: Cảnh báo khi năm tới chưa có lịch lễ**
-    - **Given** đã qua 31/12 mà năm kế tiếp chưa có bản ghi `holidays` nào,
-    - **When** HR mở dashboard chấm công,
-    - **Then** hệ thống hiển thị cảnh báo yêu cầu nhập lịch lễ, vì thiếu lịch lễ sẽ làm sai toàn bộ số ngày nghỉ phép được trừ.
-- **Ràng buộc kỹ thuật**: `holidays`; `work_coefficient` bị chặn trong khoảng 0–5; API `GET|POST /api/v1/attendance/holidays`, `PUT|DELETE /api/v1/attendance/holidays/{holidayId}`.
-
----
-
-### ATT-02: Ghi nhận, Hiệu chỉnh Chấm công & Tăng ca
-
-#### [ATT-02.1] Chấm công vào / ra (Record Check-in and Check-out)
-- **Phụ thuộc quyết định**: `[OD-1.2]` ca qua đêm, `[OD-1.6]` ân hạn muộn/về sớm, `[OD-1.7]` ngưỡng vắng, `[OD-3.1]` phương thức được chấp nhận, `[OD-3.2]` giới hạn vị trí, `[OD-3.4]` xử lý thiếu check-out, `[OD-3.5]` nhiều lần vào/ra.
-- **Mô tả**:
-  > **Là một** Nhân viên,
-  > **Tôi muốn** chấm công vào và ra trên ứng dụng và thấy ngay kết quả ngày công của mình,
-  > **Để** giờ làm việc của tôi được ghi nhận chính xác và tôi phát hiện sớm nếu có sai sót.
-- **Tiền điều kiện**: Nhân viên đã đăng nhập; đã có `attendance_policies` ở trạng thái `active`.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Chấm công đúng giờ**
-    - **Given** nhân viên có ca 08:30–17:30 và chấm công vào lúc 08:25,
-    - **When** gửi `POST /api/v1/attendance/events` với `eventType = check_in`,
-    - **Then** hệ thống ghi `attendance_events`, tính lại ngày công và trả về `status = 'on_time'` với `lateMinutes = 0`.
-  - **Kịch bản 2: Ghi nhận đi muộn**
-    - **Given** nhân viên có ca bắt đầu 08:30 và chấm công vào lúc 08:52,
-    - **When** ghi nhận check-in,
-    - **Then** ngày công có `status = 'late'` và `lateMinutes` bằng chênh lệch sau khi trừ `late_grace_minutes` của policy đang áp dụng.
-  - **Kịch bản 3: Gửi trùng không tạo bản ghi thứ hai**
-    - **Given** nhân viên bấm chấm công hai lần do mạng chậm, cùng một `Idempotency-Key`,
-    - **When** request thứ hai đến server,
-    - **Then** hệ thống trả `duplicate = true` với mã 2xx và **không** tạo bản ghi thứ hai; `ux_attendance_events_idempotency` là chốt chặn cuối.
-  - **Kịch bản 4: Chỉ có check-in, không suy diễn giờ ra**
-    - **Given** nhân viên chấm công vào nhưng quên chấm công ra,
-    - **When** hệ thống tính bảng công cuối ngày,
-    - **Then** ngày công có `status = 'incomplete'`, `worked_minutes = 0` và **không** tự điền giờ ra theo ca; hệ thống hiển thị nhắc nhở tạo đơn hiệu chỉnh.
-  - **Kịch bản 5: Ca qua đêm thuộc đúng ngày công**
-    - **Given** nhân viên có ca 22:00 ngày 05/10 đến 06:00 ngày 06/10,
-    - **When** chấm công ra lúc 06:05 ngày 06/10,
-    - **Then** cả hai sự kiện có `work_date = 2026-10-05` (ngày bắt đầu ca), và ngày công được tính trên một dòng duy nhất.
-  - **Kịch bản 6: Chặn chấm công vào kỳ đã khóa**
-    - **Given** kỳ công chứa thời điểm chấm công đang `locked`,
-    - **When** nhân viên hoặc thiết bị gửi sự kiện,
-    - **Then** hệ thống trả `409` với mã lỗi nghiệp vụ và không ghi sự kiện.
-  - **Kịch bản 7: Toạ độ GPS phải đầy đủ**
-    - **Given** client gửi latitude mà không gửi longitude,
-    - **When** ghi nhận sự kiện,
-    - **Then** hệ thống trả `422`; `ck_attendance_event_geo` đảm bảo hai trường luôn cùng có hoặc cùng không.
-- **Ràng buộc kỹ thuật**: `attendance_events` là append-only; `attendance_daily_records` là dữ liệu dẫn xuất luôn ghi kèm `policy_version`; client không được tự tính `lateMinutes`/`workedMinutes`.
-
----
-
-#### [ATT-02.2] Tiếp nhận dữ liệu từ thiết bị chấm công (Ingest Device Attendance Events)
-- **Phụ thuộc quyết định**: `[OD-3.3]` cửa sổ nhận dữ liệu gửi bù.
-- **Mô tả**:
-  > **Là một** hệ thống thiết bị chấm công (máy vân tay / Face ID),
-  > **Tôi muốn** đẩy sự kiện chấm công vào QLNS một cách có xác thực và an toàn khi gửi lại,
-  > **Để** dữ liệu chấm công không bị mất khi thiết bị mất mạng và cũng không bị nhân đôi khi gửi bù.
-- **Tiền điều kiện**: Thiết bị đã được cấp thông tin xác thực; `employeeExternalKey` map được tới một nhân viên.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Nhận sự kiện hợp lệ**
-    - **Given** thiết bị gửi sự kiện với `externalEventId` chưa từng xuất hiện,
-    - **When** gọi `POST /api/v1/integrations/attendance/events`,
-    - **Then** hệ thống trả `202 Accepted`, ghi `attendance_events` với `source = 'device'`.
-  - **Kịch bản 2: Gửi bù sau khi mất mạng không tạo bản ghi trùng**
-    - **Given** thiết bị offline 8 giờ rồi gửi lại toàn bộ 200 sự kiện, trong đó 150 sự kiện đã từng gửi thành công,
-    - **When** batch được đẩy lên,
-    - **Then** 150 sự kiện cũ trả `duplicate = true` và bị bỏ qua; chỉ 50 sự kiện mới được ghi; `ux_attendance_events_device` trên cặp `device_id` + `external_event_id` là chốt chặn.
-  - **Kịch bản 3: Chặn sự kiện thiếu định danh thiết bị**
-    - **Given** payload có `source = 'device'` nhưng thiếu `deviceId` hoặc `externalEventId`,
-    - **When** gọi API,
-    - **Then** hệ thống trả `422`; `ck_attendance_event_device` chặn ở tầng database.
-  - **Kịch bản 4: Chặn thiết bị không được xác thực**
-    - **Given** request không mang thông tin xác thực thiết bị hợp lệ,
-    - **When** gọi API,
-    - **Then** hệ thống trả `401` và không ghi bất kỳ dữ liệu nào.
-  - **Kịch bản 5: Nhân viên không map được**
-    - **Given** `employeeExternalKey` không khớp nhân viên nào,
-    - **When** gọi API,
-    - **Then** hệ thống trả `422` và đưa sự kiện vào danh sách cần xử lý thủ công, **không** im lặng bỏ qua.
-- **Ràng buộc kỹ thuật**: Endpoint dùng `deviceAuth` riêng, không dùng token người dùng; sự kiện quá cửa sổ gửi bù bị từ chối và phải đi qua luồng hiệu chỉnh `[ATT-02.3]`.
-
----
-
-#### [ATT-02.3] Đề nghị và duyệt hiệu chỉnh công (Request and Decide Attendance Correction)
-- **Phụ thuộc quyết định**: `[OD-4.1]` người duyệt, `[OD-4.2]` thời hạn gửi đơn, `[OD-4.3]` yêu cầu minh chứng, `[OD-4.4]` hiệu chỉnh sau khóa kỳ.
-- **Mô tả**:
-  > **Là một** Nhân viên,
-  > **Tôi muốn** gửi đề nghị sửa giờ vào/ra của một ngày kèm lý do và được quản lý duyệt,
-  > **Để** ngày công bị sai do quên chấm công hoặc lỗi thiết bị không làm tôi bị trừ lương oan.
-- **Tiền điều kiện**: Ngày công tồn tại; kỳ công chứa ngày đó chưa `locked`.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Gửi đơn hiệu chỉnh thành công**
-    - **Given** nhân viên chọn ngày công `incomplete` và nhập giờ vào/ra đề nghị kèm lý do,
-    - **When** gửi `POST /api/v1/attendance/corrections`,
-    - **Then** hệ thống tạo bản ghi `pending`, lưu snapshot giá trị hiện tại vào `current_check_in_at`/`current_check_out_at` để đối chiếu, và trả `ETag`.
-  - **Kịch bản 2: Bắt buộc nhập lý do**
-    - **Given** nhân viên để trống lý do,
-    - **When** gửi đơn,
-    - **Then** hệ thống trả `422`; `reason` là `NOT NULL` ở tầng database.
-  - **Kịch bản 3: Chặn đơn thứ hai cho cùng một ngày**
-    - **Given** đã có một đơn `pending` cho ngày 2026-10-05,
-    - **When** nhân viên gửi đơn thứ hai cho cùng ngày,
-    - **Then** hệ thống trả `409`; `ux_corrections_one_pending_per_day` chặn ở tầng database.
-  - **Kịch bản 4: Duyệt đơn và tái tính ngày công**
-    - **Given** Line Manager duyệt đơn với `If-Match` đúng phiên bản,
-    - **When** gửi `POST /api/v1/attendance/corrections/{correctionId}/approve`,
-    - **Then** hệ thống ghi một `attendance_events` mới với `source = 'correction'`, tính lại ngày công, đặt `status = 'corrected'`, trỏ `correction_id` và ghi `applied_at`. **Sự kiện gốc từ thiết bị không bị xóa.**
-  - **Kịch bản 5: Từ chối phải có lý do**
-    - **Given** Line Manager từ chối đơn mà không nhập lý do,
-    - **When** gửi request,
-    - **Then** hệ thống chặn và yêu cầu nhập lý do; quyết định được lưu kèm `decided_by` và `decided_at`.
-  - **Kịch bản 6: Duyệt đồng thời không ghi đè**
-    - **Given** hai người duyệt cùng mở một đơn,
-    - **When** người thứ hai gửi quyết định với `ETag` cũ,
-    - **Then** hệ thống trả `409` và giữ nguyên quyết định đầu tiên.
-  - **Kịch bản 7: Không có trạng thái "đã áp dụng nhưng chưa duyệt"**
-    - **Given** một đơn ở trạng thái `rejected` hoặc `cancelled`,
-    - **When** kiểm tra dữ liệu,
-    - **Then** `applied_at` luôn `NULL`; `ck_correction_applied` đảm bảo chỉ đơn `approved` mới có `applied_at`.
-- **Ràng buộc kỹ thuật**: `attendance_corrections`; `ck_correction_range` đảm bảo giờ ra sau giờ vào; `ck_correction_decided` đảm bảo mọi quyết định đều có người và thời điểm.
-
----
-
-#### [ATT-02.4] Đăng ký và duyệt tăng ca (Request and Approve Overtime)
-- **Phụ thuộc quyết định**: `[OD-5.1]` đăng ký trước hay sau, `[OD-5.2]` ngưỡng tối thiểu, `[OD-5.3]` hệ số theo loại, `[OD-5.4]` **giới hạn giờ tăng ca theo luật**, `[OD-5.5]` đổi OT thành nghỉ bù.
-- **Mô tả**:
-  > **Là một** Nhân viên,
-  > **Tôi muốn** đăng ký tăng ca trước khi làm và được quản lý duyệt số giờ cụ thể,
-  > **Để** giờ làm thêm của tôi được trả đúng hệ số và công ty kiểm soát được chi phí làm thêm.
-- **Tiền điều kiện**: Nhân viên có ca được phân cho ngày đó hoặc ngày đó là ngày nghỉ/lễ; policy đang `active`.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Đăng ký tăng ca ngày thường thành công**
-    - **Given** nhân viên đăng ký tăng ca 18:00–20:30 của một ngày làm việc,
-    - **When** gửi `POST /api/v1/attendance/overtime-requests`,
-    - **Then** hệ thống tạo đơn `pending`, tự xác định `overtimeCategory = 'weekday'` và gán `workCoefficient` theo policy; client không được tự gửi hệ số.
-  - **Kịch bản 2: Tự phân loại tăng ca ngày lễ**
-    - **Given** ngày đăng ký là một ngày trong `holidays`,
-    - **When** tạo đơn,
-    - **Then** hệ thống đặt `overtimeCategory = 'holiday'` và áp hệ số của ngày lễ, không phải hệ số ngày thường.
-  - **Kịch bản 3: Chặn đơn tăng ca trùng khoảng thời gian**
-    - **Given** nhân viên đã có đơn `approved` từ 18:00–20:00 ngày 05/10,
-    - **When** gửi đơn mới 19:00–21:00 cùng ngày,
-    - **Then** hệ thống trả `409`; `ex_overtime_requests_no_overlap` chặn ở tầng database.
-  - **Kịch bản 4: Duyệt ít hơn số đăng ký**
-    - **Given** nhân viên đăng ký 150 phút,
-    - **When** Line Manager duyệt 120 phút,
-    - **Then** đơn chuyển `approved` với `approvedMinutes = 120`; ngày công cộng đúng 120 phút vào `overtime_minutes`.
-  - **Kịch bản 5: Chặn duyệt vượt số đăng ký**
-    - **Given** nhân viên đăng ký 120 phút,
-    - **When** Line Manager cố duyệt 180 phút,
-    - **Then** hệ thống trả `422`; `ck_overtime_minutes` chặn `approved_minutes > requested_minutes`.
-  - **Kịch bản 6: Không ghi nhận tăng ca dưới ngưỡng**
-    - **Given** policy có `min_overtime_minutes = 30` và nhân viên chỉ làm thêm 20 phút,
-    - **When** hệ thống tính bảng công,
-    - **Then** `overtime_minutes = 0` cho ngày đó và giao diện nêu rõ lý do không đạt ngưỡng.
-  - **Kịch bản 7: Đơn đã duyệt nhưng không có dữ liệu chấm công**
-    - **Given** đơn tăng ca `approved` nhưng không có sự kiện chấm công phủ khoảng thời gian đã duyệt,
-    - **When** HR soát kỳ công,
-    - **Then** trường hợp này xuất hiện trong danh sách ngoại lệ cần xử lý và **chặn việc duyệt kỳ công** cho tới khi được giải quyết.
-- **Ràng buộc kỹ thuật**: `overtime_requests`; `ck_overtime_coefficient` giới hạn hệ số 1–5. **Giới hạn giờ tăng ca theo ngày/tháng/năm hiện chưa có bảng hạn mức** — đây là khoảng trống tuân thủ đã ghi nhận tại `[OD-5.4]` và [Open Decisions §10](open_decisions_attendance_leave.md#10-hạng-mục-còn-thiếu-trong-canonical-schema).
-
----
-
-### ATT-03: Quỹ phép, Đơn nghỉ & Phê duyệt
-
-#### [ATT-03.1] Cấu hình loại phép và chính sách (Configure Leave Types)
-- **Phụ thuộc quyết định**: `[OD-6.1]` danh mục loại phép, `[OD-6.5]` quỹ âm, `[OD-6.6]` đơn vị nhỏ nhất, `[OD-6.7]` ngày lễ trong khoảng nghỉ, `[OD-6.8]` số ngày báo trước, `[OD-6.9]` minh chứng, `[OD-7.1]` số cấp duyệt.
-- **Mô tả**:
-  > **Là một** HR Officer,
-  > **Tôi muốn** cấu hình từng loại phép với chính sách riêng và trình HR Manager phê duyệt,
-  > **Để** không loại phép nào được đưa vào sử dụng khi chính sách của nó chưa được phê duyệt chính thức.
-- **Tiền điều kiện**: Người dùng có vai trò `ROLE_HR_OFFICER`.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Tạo loại phép ở trạng thái nháp**
-    - **Given** HR Officer nhập mã `ANNUAL`, đơn vị `days`, cho phép nửa ngày, không tính ngày lễ, số ngày báo trước 3, số cấp duyệt 1,
-    - **When** bấm lưu,
-    - **Then** bản ghi được tạo với `policy_status = 'draft'` và **chưa** dùng được để gửi đơn.
-  - **Kịch bản 2: Chặn gửi đơn với loại phép còn nháp**
-    - **Given** loại phép có `policy_status = 'draft'`,
-    - **When** nhân viên gửi đơn nghỉ với loại phép đó,
-    - **Then** hệ thống trả `422` với mã lỗi nêu rõ chính sách chưa được phê duyệt.
-  - **Kịch bản 3: Phê duyệt chính sách**
-    - **Given** HR Manager xem xét và chấp thuận,
-    - **When** phê duyệt loại phép,
-    - **Then** `policy_status` chuyển `approved` cùng `approved_by` và `approved_at`; `ck_leave_type_approved` đảm bảo không tồn tại loại phép `approved` mà thiếu hai trường này.
-  - **Kịch bản 4: Chặn số cấp duyệt ngoài miền hợp lệ**
-    - **Given** HR Officer nhập `approvalLevels = 5`,
-    - **When** bấm lưu,
-    - **Then** hệ thống trả `422`; `ck_leave_type_levels` giới hạn 1–3.
-- **Ràng buộc kỹ thuật**: `leave_types`; API `GET /api/v1/leave/types` và các endpoint quản trị tương ứng.
-
----
-
-#### [ATT-03.2] Gửi đơn nghỉ phép và giữ chỗ quỹ (Submit Leave Request)
-- **Phụ thuộc quyết định**: `[OD-6.2]` … `[OD-6.9]`, đặc biệt `[OD-6.7]` cách tính ngày nghỉ khi có ngày lễ / ngày nghỉ tuần.
-- **Mô tả**:
-  > **Là một** Nhân viên,
-  > **Tôi muốn** gửi đơn nghỉ phép và thấy ngay số ngày bị trừ cùng số dư còn lại,
-  > **Để** tôi biết chắc mình còn đủ phép và không phải tự tính tay số ngày nghỉ.
-- **Tiền điều kiện**: Loại phép có `policy_status = 'approved'`; nhân viên có bản ghi `leave_balances` cho loại phép và năm tương ứng.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Gửi đơn hợp lệ và giữ chỗ quỹ**
-    - **Given** nhân viên còn `availableUnits = 8` ngày phép năm và xin nghỉ 3 ngày làm việc,
-    - **When** gửi `POST /api/v1/leave/requests`,
-    - **Then** hệ thống trả `201` với đơn `pending`, `requestedUnits = 3`; `reserved_units` tăng 3 và `available_units` giảm còn 5 — **tất cả trong một transaction** cùng audit log và outbox message.
-  - **Kịch bản 2: Server tính số ngày, bỏ qua giá trị client gửi**
-    - **Given** khoảng nghỉ từ thứ Năm đến thứ Ba tuần sau, trong đó có 2 ngày nghỉ cuối tuần và 1 ngày lễ, loại phép có `counts_holidays = false`,
-    - **When** gửi đơn,
-    - **Then** `requestedUnits` bằng 3 (chỉ đếm ngày có ca làm việc), **không** phải 6; nếu client gửi kèm số ngày tự tính thì giá trị đó bị bỏ qua.
-  - **Kịch bản 3: Không đủ quỹ thì không giữ chỗ**
-    - **Given** nhân viên còn 1 ngày phép và loại phép có `allow_negative_balance = false`,
-    - **When** xin nghỉ 3 ngày,
-    - **Then** hệ thống trả `409` với mã lỗi nghiệp vụ ổn định; **không** tạo đơn và **không** thay đổi `reserved_units`.
-  - **Kịch bản 4: Chặn trùng đơn ở tầng database**
-    - **Given** nhân viên đã có đơn `approved` từ 10/10 đến 12/10,
-    - **When** gửi đơn mới từ 11/10 đến 13/10,
-    - **Then** hệ thống trả `409`; `ex_leave_requests_no_overlap` chặn, không phụ thuộc kiểm tra đọc-rồi-ghi ở application.
-  - **Kịch bản 5: Gửi lại do retry không tạo đơn thứ hai**
-    - **Given** request bị timeout ở client nhưng server đã tạo đơn,
-    - **When** client gửi lại cùng `Idempotency-Key`,
-    - **Then** hệ thống trả về chính đơn đã tạo; `ux_leave_requests_idempotency` là chốt chặn cuối.
-  - **Kịch bản 6: Chặn đơn không đủ ngày báo trước**
-    - **Given** loại phép có `min_notice_days = 3` và nhân viên xin nghỉ vào ngày mai,
-    - **When** gửi đơn,
-    - **Then** hệ thống trả `422` nêu rõ số ngày báo trước tối thiểu.
-  - **Kịch bản 7: Bắt buộc minh chứng khi chính sách yêu cầu**
-    - **Given** loại phép có `requires_attachment = true`,
-    - **When** nhân viên gửi đơn mà không đính kèm tệp,
-    - **Then** hệ thống trả `422`; tệp đính kèm được lưu vào private object storage, không phải URL công khai.
-  - **Kịch bản 8: Hai đơn gửi đồng thời không làm âm quỹ**
-    - **Given** nhân viên còn 3 ngày phép và gửi đồng thời hai đơn, mỗi đơn 2 ngày,
-    - **When** cả hai request được xử lý song song,
-    - **Then** chỉ một đơn thành công, đơn còn lại trả `409`; tổng `reserved_units` không bao giờ vượt quỹ khả dụng.
-- **Ràng buộc kỹ thuật**: `leave_requests`, `leave_balances`; `available_units` là generated column nên không thể bị client tính lệch; `requested_units` bị chặn phải lớn hơn 0.
-
----
-
-#### [ATT-03.3] Duyệt hoặc từ chối đơn nghỉ phép (Decide Leave Request)
-- **Phụ thuộc quyết định**: `[OD-7.1]` số cấp duyệt, `[OD-7.2]` người duyệt thay, `[OD-7.3]` thời điểm trừ quỹ, `[OD-7.4]` hủy đơn đã duyệt.
-- **Mô tả**:
-  > **Là một** Line Manager,
-  > **Tôi muốn** duyệt hoặc từ chối đơn nghỉ của nhân viên trong phạm vi quản lý, kèm lý do khi từ chối,
-  > **Để** quỹ phép được cập nhật đúng và nhân viên nhận kết quả rõ ràng, có thể truy vết.
-- **Tiền điều kiện**: Đơn ở trạng thái `pending`; người dùng nằm trong chuỗi phê duyệt hợp lệ và trong phạm vi dữ liệu được phân quyền.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Duyệt đơn một cấp**
-    - **Given** đơn `pending` của loại phép có `approvalLevels = 1`,
-    - **When** Line Manager gửi `POST /api/v1/leave/requests/{leaveRequestId}/approve` kèm `If-Match` đúng phiên bản,
-    - **Then** đơn chuyển `approved`; `reserved_units` giảm và `used_units` tăng đúng `requestedUnits`; hệ thống ghi `leave_request_decisions` với `sequence = 1` và `request_version` tại thời điểm quyết định; các ngày liên quan trong bảng công được đánh dấu `on_leave`.
-  - **Kịch bản 2: Từ chối và trả lại quỹ**
-    - **Given** đơn `pending` đang giữ chỗ 3 ngày,
-    - **When** Line Manager từ chối kèm lý do,
-    - **Then** đơn chuyển `rejected`; `reserved_units` giảm 3 và `used_units` **không** đổi; `available_units` trở về giá trị trước khi gửi đơn.
-  - **Kịch bản 3: Từ chối không có lý do bị chặn**
-    - **Given** Line Manager chọn từ chối,
-    - **When** không nhập lý do,
-    - **Then** hệ thống chặn và yêu cầu nhập lý do trước khi lưu.
-  - **Kịch bản 4: Đơn nhiều cấp chuyển tiếp thay vì kết thúc**
-    - **Given** loại phép có `approvalLevels = 2` và đơn đang ở `current_approval_level = 1`,
-    - **When** Line Manager duyệt,
-    - **Then** đơn **vẫn** ở `pending` với `current_approval_level = 2` và chuyển vào hàng chờ của HR Manager; chỉ khi cấp cuối duyệt thì đơn mới chuyển `approved`.
-  - **Kịch bản 5: Sai người duyệt trả 403, không phải 409**
-    - **Given** người dùng không nằm trong chuỗi phê duyệt của đơn hoặc ngoài phạm vi dữ liệu,
-    - **When** gửi quyết định,
-    - **Then** hệ thống trả `403 Forbidden` và không ghi thay đổi; phân biệt rõ với `409` của xung đột phiên bản.
-  - **Kịch bản 6: Quyết định đồng thời không ghi đè**
-    - **Given** hai người duyệt cùng mở một đơn,
-    - **When** người thứ hai gửi quyết định với `If-Match` là phiên bản đã cũ,
-    - **Then** hệ thống trả `409` và giữ nguyên quyết định đầu tiên.
-  - **Kịch bản 7: Duyệt hàng loạt, mỗi phần tử độc lập**
-    - **Given** HR Manager chọn 10 đơn để duyệt, trong đó 2 đơn đã bị người khác xử lý,
-    - **When** gửi `POST /api/v1/leave/requests/batch-decision`,
-    - **Then** phản hồi trả kết quả **cho từng phần tử**: 8 đơn thành công, 2 đơn trả `409`; một xung đột **không** che kết quả của các phần tử còn lại.
-  - **Kịch bản 8: Không có quỹ bị giữ chỗ bởi đơn đã kết thúc**
-    - **Given** một tập đơn ở các trạng thái `approved`, `rejected`, `cancelled`,
-    - **When** đối soát quỹ phép,
-    - **Then** `reserved_units` chỉ phản ánh các đơn còn `pending`; không đơn nào đã kết thúc mà còn giữ chỗ quỹ.
-  - **Kịch bản 9: Thông báo chỉ gửi sau khi commit**
-    - **Given** transaction duyệt đơn thất bại ở bước cuối,
-    - **When** kiểm tra hộp thư nhân viên,
-    - **Then** không có email nào được gửi; thông báo đi qua outbox và chỉ được worker phát sau khi transaction commit thành công.
-- **Ràng buộc kỹ thuật**: `leave_requests`, `leave_request_decisions`, `leave_balances`, `outbox_messages`; `ux_leave_decision_sequence` đảm bảo mỗi cấp duyệt chỉ có một quyết định.
-
----
-
-#### [ATT-03.4] Xem quỹ phép và lịch sử đơn (View Leave Balance and History)
-- **Phụ thuộc quyết định**: `[OD-6.3]` cách cấp quỹ, `[OD-6.4]` chuyển quỹ sang năm sau, `[OD-9.2]` quyền xem lý do nghỉ.
-- **Mô tả**:
-  > **Là một** Nhân viên,
-  > **Tôi muốn** xem số phép được hưởng, đã dùng, đang giữ chỗ và còn lại cùng lịch sử đơn của mình,
-  > **Để** tôi tự lập kế hoạch nghỉ mà không phải hỏi HR.
-- **Tiền điều kiện**: Nhân viên đã đăng nhập.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Xem quỹ phép của chính mình**
-    - **Given** nhân viên có quỹ phép năm hiện tại,
-    - **When** gọi `GET /api/v1/leave/balances?year=2026`,
-    - **Then** hệ thống trả `entitledUnits`, `carriedOverUnits`, `usedUnits`, `reservedUnits` và `availableUnits` kèm `policyVersion` đã áp dụng.
-  - **Kịch bản 2: Chặn xem quỹ người khác**
-    - **Given** nhân viên không có quyền quản lý,
-    - **When** gọi API với `employeeId` của người khác,
-    - **Then** hệ thống trả `403 Forbidden`, **không** trả danh sách rỗng — tránh để người dùng suy ra sự tồn tại của dữ liệu ngoài phạm vi.
-  - **Kịch bản 3: Quản lý xem trong phạm vi phòng ban**
-    - **Given** Line Manager có `data_scope_type = 'department'`,
-    - **When** xem quỹ phép của đội mình,
-    - **Then** chỉ nhân viên thuộc phạm vi được trả về; nhân viên ngoài phạm vi không xuất hiện.
-  - **Kịch bản 4: Hiển thị hạn dùng quỹ chuyển tiếp**
-    - **Given** nhân viên có `carriedOverUnits = 5` với `carry_over_expires_on = 2026-03-31`,
-    - **When** xem quỹ phép,
-    - **Then** giao diện nêu rõ số quỹ chuyển tiếp và ngày hết hạn, cảnh báo khi còn dưới 30 ngày.
-  - **Kịch bản 5: Lịch đội nhóm không tiết lộ lý do nghỉ**
-    - **Given** nhân viên xem lịch nghỉ của đồng nghiệp trong phòng,
-    - **When** mở lịch đội nhóm,
-    - **Then** chỉ thấy trạng thái nghỉ và khoảng thời gian; **không** thấy loại phép chi tiết và lý do nghỉ.
-- **Ràng buộc kỹ thuật**: `leave_balances`, `leave_requests`; `availableUnits` lấy từ generated column ở database, không tính lại ở frontend.
-
----
-
-### ATT-04: Bảng công, Duyệt kỳ & Khóa kỳ
-
-#### [ATT-04.1] Xem bảng công cá nhân và đội nhóm (View Timesheet)
-- **Phụ thuộc quyết định**: `[OD-1.5]` làm tròn, `[OD-1.6]` ân hạn, `[OD-1.7]` ngưỡng vắng, `[OD-9.1]` phạm vi xem.
-- **Mô tả**:
-  > **Là một** Nhân viên hoặc Line Manager,
-  > **Tôi muốn** xem bảng công theo khoảng ngày với đầy đủ chỉ số và biết số liệu được tính theo quy tắc nào,
-  > **Để** phát hiện sai sót sớm và tin được con số trước khi nó đi vào lương.
-- **Tiền điều kiện**: Có `attendance_policies` ở trạng thái `active`.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Xem bảng công cá nhân**
-    - **Given** nhân viên chọn khoảng từ 01/10 đến 31/10,
-    - **When** gọi `GET /api/v1/attendance/timesheets?from=2026-10-01&to=2026-10-31`,
-    - **Then** hệ thống trả từng ngày với `status`, `scheduledMinutes`, `workedMinutes`, `lateMinutes`, `earlyLeaveMinutes`, `overtimeMinutes` và `policyVersion`.
-  - **Kịch bản 2: Công khai quy tắc đã dùng để tính**
-    - **Given** hai ngày công được tính theo hai phiên bản policy khác nhau,
-    - **When** xem bảng công,
-    - **Then** mỗi dòng hiển thị `policyVersion` riêng của nó; giao diện không gộp thành một quy tắc duy nhất.
-  - **Kịch bản 3: Quản lý chỉ xem được trong phạm vi**
-    - **Given** Line Manager có phạm vi `department`,
-    - **When** truy vấn bảng công với `departmentId` ngoài phạm vi,
-    - **Then** hệ thống trả `403`, không trả dữ liệu.
-  - **Kịch bản 4: Phân trang có giới hạn**
-    - **Given** truy vấn một phòng ban lớn trong 3 tháng,
-    - **When** gọi API không truyền `pageSize`,
-    - **Then** hệ thống áp `pageSize` mặc định có giới hạn trên và trả `page` metadata; không bao giờ trả toàn bộ tập dữ liệu không giới hạn.
-  - **Kịch bản 5: Client không được tính lại số liệu**
-    - **Given** frontend nhận về `workedMinutes`,
-    - **When** hiển thị tổng giờ công của kỳ,
-    - **Then** tổng được lấy từ phản hồi của server; frontend **không** tự cộng trừ theo giờ vào/ra để tránh lệch với số liệu lương.
-- **Ràng buộc kỹ thuật**: `attendance_daily_records`; `ux_attendance_daily_employee_date` đảm bảo một dòng công mỗi nhân viên mỗi ngày.
-
----
-
-#### [ATT-04.2] Duyệt và khóa kỳ công (Review, Approve and Lock Timesheet Period)
-- **Phụ thuộc quyết định**: `[OD-8.1]` chu kỳ kỳ công, `[OD-8.2]` hạn chốt, `[OD-8.3]` người khóa/mở lại, `[OD-8.4]` hình thức bàn giao Payroll, `[OD-8.5]` **điều chỉnh sau bàn giao**.
-- **Mô tả**:
-  > **Là một** HR Manager,
-  > **Tôi muốn** duyệt rồi khóa kỳ công sau khi mọi ngoại lệ đã được xử lý,
-  > **Để** số liệu bàn giao cho Payroll là bất biến và mọi thay đổi sau đó đều có dấu vết.
-- **Tiền điều kiện**: Kỳ công tồn tại; người dùng có vai trò `ROLE_HR_MGR`.
-- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Chặn duyệt kỳ khi còn ngoại lệ**
-    - **Given** trong kỳ còn ít nhất một đơn hiệu chỉnh `pending`, hoặc một ngày `incomplete`, hoặc một đơn tăng ca đã duyệt mà không có dữ liệu chấm công,
-    - **When** HR Manager bấm duyệt kỳ,
-    - **Then** hệ thống từ chối và liệt kê cụ thể từng ngoại lệ kèm nhân viên và ngày tương ứng.
-  - **Kịch bản 2: Duyệt và khóa kỳ thành công**
-    - **Given** toàn bộ ngoại lệ đã được xử lý,
-    - **When** HR Manager duyệt rồi khóa kỳ,
-    - **Then** kỳ chuyển `approved` rồi `locked` với `locked_by` và `locked_at`; `ck_timesheet_period_locked` đảm bảo không tồn tại kỳ `locked` mà thiếu hai trường này.
-  - **Kịch bản 3: Kỳ đã khóa là bất biến**
-    - **Given** kỳ đang ở `locked`,
-    - **When** có sự kiện chấm công, đơn hiệu chỉnh, phân ca hoặc đơn tăng ca nhắm vào ngày trong kỳ,
-    - **Then** mọi thao tác đó bị từ chối với `409` và mã lỗi nghiệp vụ nêu rõ kỳ công đã khóa.
-  - **Kịch bản 4: Mở lại kỳ bắt buộc có lý do**
-    - **Given** HR Manager cần sửa số liệu của kỳ đã khóa,
-    - **When** mở lại kỳ mà không nhập lý do,
-    - **Then** hệ thống từ chối; `ck_timesheet_period_reopened` đảm bảo kỳ `reopened` luôn có `reopened_by` và `reopen_reason`; hành động được ghi audit log.
-  - **Kịch bản 5: Chặn tạo kỳ công giao nhau**
-    - **Given** đã có kỳ 01/10–31/10,
-    - **When** HR Officer tạo kỳ 15/10–15/11,
-    - **Then** hệ thống trả `409`; `ex_timesheet_periods_no_overlap` chặn ở tầng database.
-  - **Kịch bản 6: Không bàn giao Payroll khi chưa khóa kỳ**
-    - **Given** kỳ đang ở `approved` nhưng chưa `locked`,
-    - **When** HR Officer thực hiện bàn giao Payroll,
-    - **Then** hệ thống từ chối; `ck_timesheet_period_handoff` đảm bảo `payroll_handoff_at` chỉ tồn tại khi đã có `locked_at`.
-  - **Kịch bản 7: Thay đổi policy không âm thầm tái tính số cũ**
-    - **Given** một `attendance_policies` mới được kích hoạt giữa kỳ,
-    - **When** kiểm tra các ngày đã tính trước đó,
-    - **Then** các ngày đó **giữ nguyên** `policy_version` cũ và số liệu cũ; tái tính là hành động tường minh, có audit log.
-  - **Kịch bản 8: Nhân viên tạm hoãn không sinh dòng công tính lương**
-    - **Given** nhân viên có `employee_events` loại `suspension` đang hiệu lực,
-    - **When** hệ thống tính bảng công cho khoảng thời gian tạm hoãn,
-    - **Then** không sinh dòng công tính lương cho nhân viên đó trong khoảng đó.
-- **Ràng buộc kỹ thuật**: `timesheet_periods`, `attendance_daily_records`. **Việc mở lại kỳ đã bàn giao Payroll hiện chưa có cơ chế điều chỉnh** — rủi ro đã ghi nhận tại `[OD-8.5]`; phải chốt trước khi nối phân hệ Payroll.
-
----
-
-## 6. Ma trận Phân quyền & Traceability
-
-### 6.1. Bảng phân quyền Role-to-Story
+### 5.1. Bảng phân quyền Role-to-Story
 
 | Mã User Story | Tiêu đề tóm tắt | Employee | Recruiter | Interviewer / Hiring Mgr | Line Manager | HR Officer | HR Manager | Super Admin |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -1120,25 +637,12 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 | **CON-01.2** | Ký kết & Kích hoạt HĐ | Xem/Ký | — | — | — | **Thực hiện** | Giám sát | — |
 | **CON-02.1** | Cảnh báo hạn hợp đồng | — | — | Nhận thông báo | Nhận thông báo | **Xử lý** | Giám sát | — |
 | **CON-03.1** | Quản lý phụ lục hợp đồng | Xem của mình | — | — | — | **Soạn thảo** | **Phê duyệt** | — |
-| **ATT-01.1** | Định nghĩa ca làm việc | Xem ca của mình | — | — | Xem đội nhóm | **Tạo/Sửa** | Phê duyệt | Quản trị |
-| **ATT-01.2** | Phân ca theo tuần | Xem của mình | — | — | Xem đội nhóm | **Phân ca** | Giám sát | — |
-| **ATT-01.3** | Thiết lập lịch nghỉ lễ | Xem | Xem | Xem | Xem | **Nhập** | **Phê duyệt** | — |
-| **ATT-02.1** | Chấm công vào / ra | **Chấm công** | — | — | Xem đội nhóm | Xem toàn bộ | Giám sát | — |
-| **ATT-02.2** | Tiếp nhận dữ liệu thiết bị | — | — | — | — | Xử lý ngoại lệ | Giám sát | **Cấu hình thiết bị** |
-| **ATT-02.3** | Hiệu chỉnh công | **Gửi đơn** | — | — | **Phê duyệt** | Duyệt thay | Giám sát | — |
-| **ATT-02.4** | Đăng ký & duyệt tăng ca | **Gửi đơn** | — | — | **Phê duyệt** | Đối soát | Giám sát | — |
-| **ATT-03.1** | Cấu hình loại phép | Xem | — | — | Xem | **Cấu hình** | **Phê duyệt** | — |
-| **ATT-03.2** | Gửi đơn nghỉ phép | **Gửi đơn** | — | — | Xem đội nhóm | Xem toàn bộ | Giám sát | — |
-| **ATT-03.3** | Duyệt / từ chối đơn nghỉ | Nhận kết quả | — | — | **Phê duyệt cấp 1** | Hủy đơn đã qua | **Phê duyệt cấp 2** | — |
-| **ATT-03.4** | Xem quỹ phép & lịch sử | **Xem của mình** | — | — | Xem phạm vi | Xem toàn bộ | Xem toàn bộ | — |
-| **ATT-04.1** | Xem bảng công | **Xem của mình** | — | — | **Soát đội nhóm** | Đối soát | Xem toàn bộ | — |
-| **ATT-04.2** | Duyệt & khóa kỳ công | — | — | — | Soát đội nhóm | Chuẩn bị kỳ | **Duyệt & Khóa** | — |
 
 Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_scope_type`. Nhãn "Xem phạm vi" và "Xem đội nhóm" tương ứng `data_scope_type = 'department'`; "Xem của mình" tương ứng `'self'`.
 
 ---
 
-### 6.2. Ánh xạ Cơ sở Dữ liệu & Use Cases (Traceability Matrix)
+### 5.2. Ánh xạ Cơ sở Dữ liệu & Use Cases (Traceability Matrix)
 
 > Bảng dưới đây đã được đối chiếu với [`schema.sql`](../database/schema.sql) và [`openapi.yaml`](../api/openapi.yaml). Tất cả tên bảng và endpoint đều tồn tại trong canonical artifact; base path là `/api/v1`.
 
@@ -1169,32 +673,11 @@ Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_sco
 | **CON-02.1** | `UC_MONITOR`, `UC_ALERT` | `contracts`, `outbox_messages` | `GET /api/v1/contracts/expiring` |
 | **CON-03.1** | `UC_ADDENDUM`, `UC_ADDENDUM_EFFECT` | `contract_addenda`, `contracts`, `employee_events` | `POST /api/v1/contracts/{contractId}/addenda`, `POST /api/v1/contract-addenda/{addendumId}/{action}` |
 
-#### Attendance & Leave
-
-| User Story ID | Use Case ID | Bảng Cơ sở Dữ liệu (`schema.sql`) | API Endpoints (`openapi.yaml`) |
-| :--- | :--- | :--- | :--- |
-| **ATT-01.1** | `UC_SHIFT` | `work_shifts` | `GET\|POST /api/v1/attendance/shifts`, `GET\|PUT /api/v1/attendance/shifts/{shiftId}` |
-| **ATT-01.2** | `UC_ASSIGN` | `work_schedule_assignments`, `work_shifts` | `GET\|PUT /api/v1/attendance/schedules` |
-| **ATT-01.3** | `UC_HOLIDAY` | `holidays` | `GET\|POST /api/v1/attendance/holidays`, `PUT\|DELETE /api/v1/attendance/holidays/{holidayId}` |
-| **ATT-02.1** | `UC_CAPTURE`, `UC_CALCULATE` | `attendance_events`, `attendance_daily_records`, `attendance_policies` | `POST /api/v1/attendance/events` |
-| **ATT-02.2** | `UC_CAPTURE` | `attendance_events` | `POST /api/v1/integrations/attendance/events` |
-| **ATT-02.3** | `UC_CORRECT` | `attendance_corrections`, `attendance_events`, `attendance_daily_records` | `GET\|POST /api/v1/attendance/corrections`, `POST /api/v1/attendance/corrections/{correctionId}/{action}` |
-| **ATT-02.4** | `UC_OVERTIME` | `overtime_requests`, `attendance_daily_records`, `holidays` | `GET\|POST /api/v1/attendance/overtime-requests`, `POST /api/v1/attendance/overtime-requests/{overtimeRequestId}/{action}` |
-| **ATT-03.1** | `UC_LEAVE_POLICY` | `leave_types` | `GET /api/v1/leave/types`, `POST /api/v1/leave/types`, `POST /api/v1/leave/types/{leaveTypeId}/{action}` |
-| **ATT-03.2** | `UC_LEAVE`, `UC_VALIDATE` | `leave_requests`, `leave_balances`, `leave_types`, `holidays`, `work_schedule_assignments`, `outbox_messages` | `POST /api/v1/leave/requests` |
-| **ATT-03.3** | `UC_APPROVE`, `UC_AUTH`, `UC_AUDIT` | `leave_requests`, `leave_request_decisions`, `leave_balances`, `audit_logs`, `outbox_messages` | `POST /api/v1/leave/requests/{leaveRequestId}/{action}`, `POST /api/v1/leave/requests/batch-decision` |
-| **ATT-03.4** | `UC_BALANCE` | `leave_balances`, `leave_requests` | `GET /api/v1/leave/balances`, `GET /api/v1/leave/requests`, `GET /api/v1/leave/requests/{leaveRequestId}` |
-| **ATT-04.1** | `UC_TIMESHEET` | `attendance_daily_records`, `attendance_policies` | `GET /api/v1/attendance/timesheets` |
-| **ATT-04.2** | `UC_PERIOD_LOCK` | `timesheet_periods`, `attendance_daily_records`, `audit_logs` | `GET\|POST /api/v1/attendance/timesheet-periods`, `POST /api/v1/attendance/timesheet-periods/{periodId}/{action}` |
-
 ---
 
-### 6.3. Điều kiện đưa story vào sprint
+### 5.3. Điều kiện đưa story vào sprint
 
 | Nhóm story | Điều kiện bắt buộc |
 | :--- | :--- |
 | `REC-*`, `EMP-01`…`EMP-05`, `CON-*` | Chốt Identity Provider và RBAC; sinh EF Core migration đầu tiên từ canonical schema. |
-| `EMP-06`, `EMP-07` | Chốt template checklist offboarding theo đơn vị; chốt công thức quy đổi phép chưa dùng khi thôi việc `[OD-6.4]`. |
-| `ATT-01`, `ATT-02` | Chốt toàn bộ Mục 1–5 của [Open Decisions](open_decisions_attendance_leave.md); có `attendance_policies` ở trạng thái `active`. |
-| `ATT-03` | Chốt Mục 6 và 7 của Open Decisions; có `leave_types` với `policy_status = 'approved'`. |
-| `ATT-04` | Chốt Mục 8 của Open Decisions, **bao gồm `[OD-8.5]`** trước khi nối Payroll. |
+| `EMP-06`, `EMP-07` | Chốt template checklist offboarding theo đơn vị; chốt danh mục khoản thanh toán khi chấm dứt (thuộc Payroll, hiện ngoài phạm vi). |

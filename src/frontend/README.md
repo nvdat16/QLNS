@@ -1,6 +1,6 @@
 # QLNS React frontend
 
-This feature-oriented React/Vite shell demonstrates the REC-03.2 vertical slice without modifying the standalone prototypes in `uiux/`.
+This feature-oriented React/Vite shell is a structural skeleton with one sample feature module (recruitment applications) and does not modify the standalone prototypes in `uiux/`.
 
 - `src/app`: composition and global presentation.
 - `src/api`: shared HTTP/error handling.

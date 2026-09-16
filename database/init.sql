@@ -1,7 +1,7 @@
 -- =============================================================================
 -- DEPRECATED — reference seed/DDL script for eyeballing the design only.
--- The canonical schema contract is database/schema.sql (36 tables).
--- This file predates identity/RBAC, audit, outbox and Attendance & Leave.
+-- The canonical schema contract is database/schema.sql (23 tables).
+-- This file predates identity/RBAC, audit, outbox and the lifecycle tables.
 -- Do not generate EF Core migrations or seed production data from this file.
 -- =============================================================================
 

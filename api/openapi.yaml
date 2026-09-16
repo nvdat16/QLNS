@@ -3,9 +3,10 @@ info:
   title: QLNS API
   version: 1.0.0
   description: >-
-    Contract-first API for the three modules selected for first delivery —
-    Core HR (including Contracts), Recruitment and Attendance & Leave —
-    plus Reports and Administration.
+    Contract-first API for the two modules selected for first delivery —
+    Core HR (including Contracts) and Recruitment — plus Reports and Administration.
+    Attendance & Leave is out of scope; its contract is parked under
+    docs/deferred/attendance_leave/openapi_attendance_leave.yaml.
     Workflow changes use explicit commands, ETag/If-Match concurrency control,
     server-side authorization, audit logging and transactional outbox delivery.
 servers:
@@ -29,15 +30,6 @@ tags:
   - { name: Contract Addenda }
   - { name: Reports }
   - { name: Report Exports }
-  - { name: Attendance Shifts }
-  - { name: Attendance Holidays }
-  - { name: Attendance Events }
-  - { name: Attendance Overtime }
-  - { name: Timesheets }
-  - { name: Timesheet Periods }
-  - { name: Attendance Corrections }
-  - { name: Leave }
-  - { name: Leave Policy }
   - { name: Probation }
   - { name: Offboarding }
   - { name: Administration Users }
@@ -52,6 +44,7 @@ paths:
     get:
       tags: [Recruitment Requisitions]
       operationId: listRecruitmentRequisitions
+      x-implementation-status: proposed
       summary: Search requisitions in the actor's data scope
       x-requirement: REC-01.1, REC-01.2
       parameters:
@@ -71,6 +64,7 @@ paths:
     post:
       tags: [Recruitment Requisitions]
       operationId: createRecruitmentRequisition
+      x-implementation-status: proposed
       summary: Create a draft requisition
       x-requirement: REC-01.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionWrite' } } } }
@@ -89,6 +83,7 @@ paths:
     get:
       tags: [Recruitment Requisitions]
       operationId: getRecruitmentRequisition
+      x-implementation-status: proposed
       summary: Get one requisition
       x-requirement: REC-01.1, REC-01.2
       responses:
@@ -102,6 +97,7 @@ paths:
     put:
       tags: [Recruitment Requisitions]
       operationId: replaceRecruitmentRequisitionDraft
+      x-implementation-status: proposed
       summary: Replace editable fields of a draft or returned requisition
       x-requirement: REC-01.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -121,6 +117,7 @@ paths:
     post:
       tags: [Recruitment Requisitions]
       operationId: transitionRecruitmentRequisition
+      x-implementation-status: proposed
       summary: Submit, approve, reject, publish, close or cancel a requisition
       description: Reject requires a reason; publish requires at least one channel.
       x-requirement: REC-01.2
@@ -144,6 +141,7 @@ paths:
     post:
       tags: [Recruitment Intake]
       operationId: startRecruitmentIntake
+      x-implementation-status: proposed
       summary: Scan and parse a PDF, DOC or DOCX resume up to 10 MiB
       x-requirement: REC-02.1
       requestBody: { required: true, content: { multipart/form-data: { schema: { $ref: '#/components/schemas/ResumeUpload' } } } }
@@ -162,6 +160,7 @@ paths:
     get:
       tags: [Recruitment Intake]
       operationId: getRecruitmentIntake
+      x-implementation-status: proposed
       summary: Get scan, parse and duplicate-detection state
       x-requirement: REC-02.1, REC-02.2
       parameters: [{ $ref: '#/components/parameters/IntakeId' }]
@@ -175,6 +174,7 @@ paths:
     post:
       tags: [Recruitment Intake]
       operationId: confirmRecruitmentIntake
+      x-implementation-status: proposed
       summary: Confirm parsed data, resolve duplicates and create an application
       x-requirement: REC-02.2
       parameters:
@@ -196,6 +196,7 @@ paths:
     get:
       tags: [Recruitment Pipeline]
       operationId: getRecruitmentPipeline
+      x-implementation-status: proposed
       summary: Get a filtered, paged Kanban pipeline
       x-requirement: REC-03.1
       parameters:
@@ -214,6 +215,7 @@ paths:
     get:
       tags: [Recruitment Pipeline]
       operationId: getRecruitmentApplication
+      x-implementation-status: proposed
       summary: Get one authorized recruitment application
       x-requirement: REC-03.1, REC-03.2
       parameters: [{ $ref: '#/components/parameters/ApplicationId' }]
@@ -230,6 +232,7 @@ paths:
     post:
       tags: [Recruitment Pipeline]
       operationId: advanceRecruitmentApplication
+      x-implementation-status: proposed
       summary: Advance an application exactly one active stage
       x-requirement: REC-03.2
       parameters: [{ $ref: '#/components/parameters/ApplicationId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -250,6 +253,7 @@ paths:
     post:
       tags: [Recruitment Pipeline]
       operationId: terminateRecruitmentApplication
+      x-implementation-status: proposed
       summary: Reject or withdraw an application with a reason
       x-requirement: REC-03.2
       parameters:
@@ -272,6 +276,7 @@ paths:
     get:
       tags: [Recruitment Interviews]
       operationId: listRecruitmentInterviews
+      x-implementation-status: proposed
       summary: Search interviews visible to the actor
       x-requirement: REC-04.1
       parameters:
@@ -289,6 +294,7 @@ paths:
     post:
       tags: [Recruitment Interviews]
       operationId: scheduleRecruitmentInterview
+      x-implementation-status: proposed
       summary: Schedule an interview and enqueue invitations
       x-requirement: REC-04.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/InterviewWrite' } } } }
@@ -306,6 +312,7 @@ paths:
     post:
       tags: [Recruitment Interviews]
       operationId: transitionRecruitmentInterview
+      x-implementation-status: proposed
       summary: Reschedule, complete or cancel an interview
       x-requirement: REC-04.1
       parameters:
@@ -328,6 +335,7 @@ paths:
     get:
       tags: [Recruitment Evaluations]
       operationId: listInterviewEvaluations
+      x-implementation-status: proposed
       summary: List evaluations subject to blind-evaluation policy
       x-requirement: REC-05.1
       parameters: [{ $ref: '#/components/parameters/InterviewId' }]
@@ -339,6 +347,7 @@ paths:
     post:
       tags: [Recruitment Evaluations]
       operationId: submitInterviewEvaluation
+      x-implementation-status: proposed
       summary: Submit an immutable scorecard
       x-requirement: REC-05.1
       parameters: [{ $ref: '#/components/parameters/InterviewId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
@@ -358,6 +367,7 @@ paths:
     post:
       tags: [Recruitment Evaluations]
       operationId: unlockInterviewEvaluation
+      x-implementation-status: proposed
       summary: Unlock by creating a new auditable evaluation version
       x-requirement: REC-05.1
       parameters: [{ $ref: '#/components/parameters/EvaluationId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -376,6 +386,7 @@ paths:
     get:
       tags: [Recruitment Offers]
       operationId: listRecruitmentOffers
+      x-implementation-status: proposed
       summary: Search offers in the actor's scope
       x-requirement: REC-06.1
       parameters:
@@ -390,6 +401,7 @@ paths:
     post:
       tags: [Recruitment Offers]
       operationId: createRecruitmentOffer
+      x-implementation-status: proposed
       summary: Create a draft offer
       x-requirement: REC-06.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OfferWrite' } } } }
@@ -407,6 +419,7 @@ paths:
     get:
       tags: [Recruitment Offers]
       operationId: getRecruitmentOffer
+      x-implementation-status: proposed
       summary: Get one offer
       x-requirement: REC-06.1
       parameters: [{ $ref: '#/components/parameters/OfferId' }]
@@ -423,6 +436,7 @@ paths:
     post:
       tags: [Recruitment Offers]
       operationId: transitionRecruitmentOffer
+      x-implementation-status: proposed
       summary: Approve, send, extend or cancel an offer
       x-requirement: REC-06.1
       parameters:
@@ -445,6 +459,7 @@ paths:
     post:
       tags: [Recruitment Offers]
       operationId: respondToRecruitmentOffer
+      x-implementation-status: proposed
       summary: Accept or decline as the candidate
       description: Acceptance idempotently creates an employee, initial contract and onboarding checklist.
       x-requirement: REC-06.2
@@ -462,6 +477,7 @@ paths:
     get:
       tags: [Employees]
       operationId: listEmployees
+      x-implementation-status: proposed
       summary: Search the scope-filtered employee directory
       x-requirement: EMP-01.1
       parameters:
@@ -471,7 +487,7 @@ paths:
         - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
         - { name: positionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
         - { name: status, in: query, schema: { $ref: '#/components/schemas/EmployeeStatus' } }
-        - { name: sort, in: query, description: Allowlist is name, -name, employeeCode, hireDate., schema: { type: string, default: name } }
+        - { name: sort, in: query, description: 'Allowlist is name, -name, employeeCode, hireDate.', schema: { type: string, default: name } }
       responses:
         '200': { description: Paged employees, content: { application/json: { schema: { $ref: '#/components/schemas/EmployeePage' } } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
@@ -481,6 +497,7 @@ paths:
     get:
       tags: [Employees]
       operationId: getEmployee
+      x-implementation-status: proposed
       summary: Get an employee with sensitive fields masked by policy
       x-requirement: EMP-01.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -497,6 +514,7 @@ paths:
     patch:
       tags: [Employees]
       operationId: updateEmployeePersonalProfile
+      x-implementation-status: proposed
       summary: Update only personal fields allowed by field policy
       description: Work email, department, position, manager, status and salary cannot be changed here.
       x-requirement: EMP-01.2
@@ -517,6 +535,7 @@ paths:
     get:
       tags: [Organization]
       operationId: getOrganizationChart
+      x-implementation-status: proposed
       summary: Get hierarchical departments with managers and headcount
       x-requirement: EMP-02.1
       parameters:
@@ -531,6 +550,7 @@ paths:
     get:
       tags: [Organization]
       operationId: listDepartments
+      x-implementation-status: proposed
       summary: List departments
       x-requirement: EMP-02.1
       responses:
@@ -539,6 +559,7 @@ paths:
     post:
       tags: [Organization]
       operationId: createDepartment
+      x-implementation-status: proposed
       summary: Create a department
       x-requirement: EMP-02.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DepartmentWrite' } } } }
@@ -556,6 +577,7 @@ paths:
     put:
       tags: [Organization]
       operationId: replaceDepartment
+      x-implementation-status: proposed
       summary: Replace department metadata
       x-requirement: EMP-02.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -571,6 +593,7 @@ paths:
     delete:
       tags: [Organization]
       operationId: deleteDepartment
+      x-implementation-status: proposed
       summary: Delete a department only when it has no child, employee or open requisition
       x-requirement: EMP-02.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -584,6 +607,7 @@ paths:
     get:
       tags: [Organization]
       operationId: listPositions
+      x-implementation-status: proposed
       summary: List position definitions
       x-requirement: EMP-02.1
       responses:
@@ -592,6 +616,7 @@ paths:
     post:
       tags: [Organization]
       operationId: createPosition
+      x-implementation-status: proposed
       summary: Create a position definition
       x-requirement: EMP-02.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PositionWrite' } } } }
@@ -608,6 +633,7 @@ paths:
     put:
       tags: [Organization]
       operationId: replacePosition
+      x-implementation-status: proposed
       summary: Replace position metadata
       x-requirement: EMP-02.1
       parameters: [{ $ref: '#/components/parameters/PositionId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -624,6 +650,7 @@ paths:
     get:
       tags: [Onboarding]
       operationId: listOnboardingTasks
+      x-implementation-status: proposed
       summary: Search onboarding tasks and overdue work
       x-requirement: EMP-03.1
       parameters:
@@ -642,6 +669,7 @@ paths:
     post:
       tags: [Onboarding]
       operationId: transitionOnboardingTask
+      x-implementation-status: proposed
       summary: Start, complete or reopen an onboarding task
       x-requirement: EMP-03.1
       parameters:
@@ -662,6 +690,7 @@ paths:
     put:
       tags: [Onboarding]
       operationId: updateOnboardingTaskAssignment
+      x-implementation-status: proposed
       summary: Update task ownership, description and due date
       x-requirement: EMP-03.1
       parameters: [{ $ref: '#/components/parameters/TaskId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -680,6 +709,7 @@ paths:
     get:
       tags: [Employee Events]
       operationId: listEmployeeEvents
+      x-implementation-status: proposed
       summary: List immutable movement history
       x-requirement: EMP-04.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
@@ -690,6 +720,7 @@ paths:
     post:
       tags: [Employee Events]
       operationId: createEmployeeEvent
+      x-implementation-status: proposed
       summary: Create a draft employee movement proposal
       x-requirement: EMP-04.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -708,6 +739,7 @@ paths:
     post:
       tags: [Employee Events]
       operationId: transitionEmployeeEvent
+      x-implementation-status: proposed
       summary: Submit, approve or cancel an event; applied events are immutable
       x-requirement: EMP-04.1
       parameters:
@@ -728,6 +760,7 @@ paths:
     get:
       tags: [Employee Documents]
       operationId: listEmployeeDocuments
+      x-implementation-status: proposed
       summary: List authorized private-document metadata
       x-requirement: EMP-05.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -738,6 +771,7 @@ paths:
     post:
       tags: [Employee Documents]
       operationId: uploadEmployeeDocument
+      x-implementation-status: proposed
       summary: Scan and store a new private document version
       x-requirement: EMP-05.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -757,6 +791,7 @@ paths:
     post:
       tags: [Employee Documents]
       operationId: createEmployeeDocumentDownloadUrl
+      x-implementation-status: proposed
       summary: Create an authorized download URL valid for at most 15 minutes
       x-requirement: EMP-05.1
       parameters: [{ $ref: '#/components/parameters/DocumentId' }]
@@ -769,6 +804,7 @@ paths:
     get:
       tags: [Contracts]
       operationId: listContracts
+      x-implementation-status: proposed
       summary: Search contracts; employees can only access their own
       x-requirement: CON-01.1, CON-01.2
       parameters:
@@ -784,6 +820,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: createContract
+      x-implementation-status: proposed
       summary: Create a draft employment contract
       x-requirement: CON-01.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContractWrite' } } } }
@@ -800,6 +837,7 @@ paths:
     get:
       tags: [Contracts]
       operationId: listExpiringContracts
+      x-implementation-status: proposed
       summary: List contracts at configured expiry-alert thresholds
       x-requirement: CON-02.1
       parameters:
@@ -816,6 +854,7 @@ paths:
     get:
       tags: [Contracts]
       operationId: getContract
+      x-implementation-status: proposed
       summary: Get one authorized contract
       x-requirement: CON-01.1, CON-01.2
       responses:
@@ -828,6 +867,7 @@ paths:
     put:
       tags: [Contracts]
       operationId: replaceContractDraft
+      x-implementation-status: proposed
       summary: Replace editable fields of a draft contract
       x-requirement: CON-01.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -846,6 +886,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: transitionContract
+      x-implementation-status: proposed
       summary: Approve, activate, terminate or cancel a contract
       x-requirement: CON-01.1, CON-01.2
       parameters:
@@ -866,6 +907,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: uploadSignedContractDocument
+      x-implementation-status: proposed
       summary: Upload a signed PDF before activation
       x-requirement: CON-01.2
       parameters: [{ $ref: '#/components/parameters/ContractId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -886,6 +928,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: createContractDownloadUrl
+      x-implementation-status: proposed
       summary: Create a short-lived URL for an authorized signed-contract download
       x-requirement: CON-01.2
       parameters: [{ $ref: '#/components/parameters/ContractId' }]
@@ -898,6 +941,7 @@ paths:
     get:
       tags: [Contract Addenda]
       operationId: listContractAddenda
+      x-implementation-status: proposed
       summary: List addenda without mutating the original contract
       x-requirement: CON-03.1
       parameters: [{ $ref: '#/components/parameters/ContractId' }]
@@ -908,6 +952,7 @@ paths:
     post:
       tags: [Contract Addenda]
       operationId: createContractAddendum
+      x-implementation-status: proposed
       summary: Create a draft addendum with before and after terms
       x-requirement: CON-03.1
       parameters: [{ $ref: '#/components/parameters/ContractId' }]
@@ -926,6 +971,7 @@ paths:
     post:
       tags: [Contract Addenda]
       operationId: transitionContractAddendum
+      x-implementation-status: proposed
       summary: Submit, approve, mark signed, make effective or cancel an addendum
       description: Making an addendum effective creates an employee event when master data changes.
       x-requirement: CON-03.1
@@ -947,6 +993,7 @@ paths:
     post:
       tags: [Contract Addenda]
       operationId: uploadSignedContractAddendum
+      x-implementation-status: proposed
       summary: Upload the signed PDF before making an addendum effective
       x-requirement: CON-03.1
       parameters: [{ $ref: '#/components/parameters/AddendumId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -969,7 +1016,7 @@ paths:
       operationId: getHeadcountReport
       summary: Get authorized headcount and workforce KPIs
       description: Every metric includes its formula identifier and the read-model refresh time.
-      x-requirement: REP-01.1
+      x-requirement: REP-01
       x-implementation-status: proposed
       parameters:
         - $ref: '#/components/parameters/ReportFrom'
@@ -988,7 +1035,7 @@ paths:
       tags: [Reports]
       operationId: getRecruitmentReport
       summary: Get recruitment funnel, velocity, source and offer KPIs
-      x-requirement: REP-02.1
+      x-requirement: REP-02
       x-implementation-status: proposed
       parameters:
         - $ref: '#/components/parameters/ReportFrom'
@@ -1009,7 +1056,7 @@ paths:
       operationId: createReportExport
       summary: Create an audited asynchronous report export
       description: Exports are data-scope filtered, field-allowlisted and watermarked by the server.
-      x-requirement: REP-01.1, REP-02.1, SYS-04
+      x-requirement: REP-01, REP-02, SYS-04
       x-implementation-status: proposed
       parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateReportExportRequest' } } } }
@@ -1046,632 +1093,6 @@ paths:
       parameters: [{ $ref: '#/components/parameters/ExportId' }]
       responses:
         '200': { description: Signed download, content: { application/json: { schema: { $ref: '#/components/schemas/SignedDownload' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/attendance/shifts:
-    get:
-      tags: [Attendance Shifts]
-      operationId: listWorkShifts
-      summary: List work-shift definitions
-      x-requirement: ATT-01
-      x-implementation-status: discovery-required
-      parameters:
-        - { name: active, in: query, schema: { type: boolean } }
-      responses:
-        '200': { description: Shift definitions, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/WorkShift' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    post:
-      tags: [Attendance Shifts]
-      operationId: createWorkShift
-      summary: Create a work-shift definition
-      x-requirement: ATT-01
-      x-implementation-status: discovery-required
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/WorkShiftWrite' } } } }
-      responses:
-        '201':
-          description: Shift created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/WorkShift' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/shifts/{shiftId}:
-    parameters: [{ $ref: '#/components/parameters/ShiftId' }]
-    get:
-      tags: [Attendance Shifts]
-      operationId: getWorkShift
-      summary: Get one work-shift definition
-      x-requirement: ATT-01
-      x-implementation-status: discovery-required
-      responses:
-        '200':
-          description: Shift
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/WorkShift' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-    put:
-      tags: [Attendance Shifts]
-      operationId: replaceWorkShift
-      summary: Replace a work-shift definition
-      x-requirement: ATT-01
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/WorkShiftWrite' } } } }
-      responses:
-        '200':
-          description: Shift updated
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/WorkShift' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/schedules:
-    get:
-      tags: [Attendance Shifts]
-      operationId: listWorkSchedules
-      summary: Get employee shift assignments for a week
-      x-requirement: ATT-01
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/WeekStart'
-        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-      responses:
-        '200': { description: Paged weekly schedules, content: { application/json: { schema: { $ref: '#/components/schemas/WorkSchedulePage' } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    put:
-      tags: [Attendance Shifts]
-      operationId: replaceWorkScheduleAssignments
-      summary: Replace selected weekly shift assignments atomically
-      x-requirement: ATT-01
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/WeekStart'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReplaceWorkScheduleRequest' } } } }
-      responses:
-        '200': { description: Updated assignments, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/WorkScheduleAssignment' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/events:
-    post:
-      tags: [Attendance Events]
-      operationId: recordAttendanceEvent
-      summary: Record an employee check-in or check-out
-      x-requirement: ATT-02
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceEventWrite' } } } }
-      responses:
-        '201':
-          description: Attendance event recorded or deduplicated
-          headers: { Location: { $ref: '#/components/headers/Location' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceEvent' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/integrations/attendance/events:
-    post:
-      tags: [Attendance Events]
-      operationId: ingestDeviceAttendanceEvent
-      summary: Ingest a signed and idempotent attendance-device event
-      x-requirement: ATT-02, SYS-04
-      x-implementation-status: discovery-required
-      security: [{ deviceAuth: [] }]
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DeviceAttendanceEventWrite' } } } }
-      responses:
-        '202': { description: Device event accepted, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceEvent' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/timesheets:
-    get:
-      tags: [Timesheets]
-      operationId: listTimesheets
-      summary: Get calculated personal or team timesheets
-      description: Calculated values expose the policy version used; clients must not recalculate payroll-grade totals.
-      x-requirement: ATT-02
-      x-implementation-status: discovery-required
-      parameters:
-        - { name: from, in: query, required: true, schema: { type: string, format: date } }
-        - { name: to, in: query, required: true, schema: { type: string, format: date } }
-        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/TimesheetStatus' } }
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-      responses:
-        '200': { description: Paged timesheet rows, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPage' } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/attendance/corrections:
-    get:
-      tags: [Attendance Corrections]
-      operationId: listAttendanceCorrections
-      summary: Search attendance correction requests
-      x-requirement: ATT-02
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/ApprovalStatus' } }
-      responses:
-        '200': { description: Paged corrections, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrectionPage' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    post:
-      tags: [Attendance Corrections]
-      operationId: createAttendanceCorrection
-      summary: Request a correction to one workday's attendance events
-      x-requirement: ATT-02
-      x-implementation-status: discovery-required
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrectionWrite' } } } }
-      responses:
-        '201':
-          description: Pending correction created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrection' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/corrections/{correctionId}/{action}:
-    post:
-      tags: [Attendance Corrections]
-      operationId: transitionAttendanceCorrection
-      summary: Approve, reject or cancel an attendance correction
-      x-requirement: ATT-02
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/CorrectionId'
-        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, cancel] } }
-        - $ref: '#/components/parameters/IfMatch'
-      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
-      responses:
-        '200':
-          description: Correction updated and approved values recalculated when applicable
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/AttendanceCorrection' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/leave/types:
-    get:
-      tags: [Leave]
-      operationId: listLeaveTypes
-      summary: List leave types and their current policy metadata
-      x-requirement: ATT-03
-      x-implementation-status: discovery-required
-      responses:
-        '200': { description: Leave types, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/LeaveType' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-    post:
-      tags: [Leave Policy]
-      operationId: createLeaveType
-      summary: Create a leave type in draft policy state
-      description: A newly created leave type cannot be used to submit requests until its policy is approved.
-      x-requirement: ATT-03.1
-      x-implementation-status: discovery-required
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveTypeWrite' } } } }
-      responses:
-        '201':
-          description: Draft leave type created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveType' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/leave/balances:
-    get:
-      tags: [Leave]
-      operationId: listLeaveBalances
-      summary: Get authorized leave balances for a calendar year
-      x-requirement: ATT-03
-      x-implementation-status: discovery-required
-      parameters:
-        - { name: year, in: query, required: true, schema: { type: integer, minimum: 2000, maximum: 2100 } }
-        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-      responses:
-        '200': { description: Leave balances, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/LeaveBalance' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/leave/requests:
-    get:
-      tags: [Leave]
-      operationId: listLeaveRequests
-      summary: Search personal, team or approval-queue leave requests
-      x-requirement: ATT-03
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/ApprovalStatus' } }
-        - { name: from, in: query, schema: { type: string, format: date } }
-        - { name: to, in: query, schema: { type: string, format: date } }
-        - { name: pendingMyDecision, in: query, schema: { type: boolean } }
-      responses:
-        '200': { description: Paged leave requests, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequestPage' } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    post:
-      tags: [Leave]
-      operationId: createLeaveRequest
-      summary: Submit a leave request and reserve balance atomically
-      description: The server calculates requested units from schedule, holidays, timezone and policy version.
-      x-requirement: ATT-03
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequestWrite' } } } }
-      responses:
-        '201':
-          description: Pending request created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequest' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/leave/requests/{leaveRequestId}:
-    get:
-      tags: [Leave]
-      operationId: getLeaveRequest
-      summary: Get a leave request and its decision history
-      x-requirement: ATT-03
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/LeaveRequestId' }]
-      responses:
-        '200':
-          description: Leave request
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequest' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/v1/leave/requests/{leaveRequestId}/{action}:
-    post:
-      tags: [Leave]
-      operationId: transitionLeaveRequest
-      summary: Approve, reject or cancel a leave request
-      x-requirement: ATT-03
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/LeaveRequestId'
-        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, cancel] } }
-        - $ref: '#/components/parameters/IfMatch'
-      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
-      responses:
-        '200':
-          description: Request and reserved balance updated atomically
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveRequest' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/leave/requests/batch-decision:
-    post:
-      tags: [Leave]
-      operationId: decideLeaveRequestsBatch
-      summary: Approve or reject multiple leave requests independently
-      description: The response reports a result per item; one conflict does not hide other item results.
-      x-requirement: ATT-03
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/BatchLeaveDecisionRequest' } } } }
-      responses:
-        '200': { description: Per-request decision results, content: { application/json: { schema: { $ref: '#/components/schemas/BatchLeaveDecisionResult' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/holidays:
-    get:
-      tags: [Attendance Holidays]
-      operationId: listHolidays
-      summary: List holidays for a calendar and year
-      x-requirement: ATT-01.3
-      x-implementation-status: discovery-required
-      parameters:
-        - { name: calendarCode, in: query, schema: { type: string, default: VN } }
-        - { name: year, in: query, required: true, schema: { type: integer, minimum: 2000, maximum: 2100 } }
-      responses:
-        '200': { description: Holidays, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Holiday' } } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-    post:
-      tags: [Attendance Holidays]
-      operationId: createHoliday
-      summary: Add a holiday to a calendar
-      x-requirement: ATT-01.3
-      x-implementation-status: discovery-required
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/HolidayWrite' } } } }
-      responses:
-        '201':
-          description: Holiday created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/Holiday' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/holidays/{holidayId}:
-    parameters: [{ $ref: '#/components/parameters/HolidayId' }]
-    put:
-      tags: [Attendance Holidays]
-      operationId: replaceHoliday
-      summary: Replace a holiday entry
-      x-requirement: ATT-01.3
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/HolidayWrite' } } } }
-      responses:
-        '200':
-          description: Holiday updated
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/Holiday' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-    delete:
-      tags: [Attendance Holidays]
-      operationId: deleteHoliday
-      summary: Remove a holiday entry that is not referenced by a computed timesheet
-      x-requirement: ATT-01.3
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
-      responses:
-        '204': { description: Holiday removed }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/attendance/overtime-requests:
-    get:
-      tags: [Attendance Overtime]
-      operationId: listOvertimeRequests
-      summary: Search overtime requests
-      x-requirement: ATT-02.4
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - { name: employeeId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/ApprovalStatus' } }
-        - { name: from, in: query, schema: { type: string, format: date } }
-        - { name: to, in: query, schema: { type: string, format: date } }
-        - { name: pendingMyDecision, in: query, schema: { type: boolean } }
-      responses:
-        '200': { description: Paged overtime requests, content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequestPage' } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    post:
-      tags: [Attendance Overtime]
-      operationId: createOvertimeRequest
-      summary: Request overtime for one workday
-      description: >-
-        The server derives overtimeCategory and workCoefficient from the work schedule,
-        holiday calendar and the active attendance policy. Client-supplied values are ignored.
-      x-requirement: ATT-02.4
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequestWrite' } } } }
-      responses:
-        '201':
-          description: Pending overtime request created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequest' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/overtime-requests/{overtimeRequestId}/{action}:
-    post:
-      tags: [Attendance Overtime]
-      operationId: transitionOvertimeRequest
-      summary: Approve, reject or cancel an overtime request
-      description: Approving may grant fewer minutes than requested but never more.
-      x-requirement: ATT-02.4
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/OvertimeRequestId'
-        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, reject, cancel] } }
-        - $ref: '#/components/parameters/IfMatch'
-      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeDecisionRequest' } } } }
-      responses:
-        '200':
-          description: Overtime request updated and timesheet minutes recalculated when applicable
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/OvertimeRequest' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/timesheet-periods:
-    get:
-      tags: [Timesheet Periods]
-      operationId: listTimesheetPeriods
-      summary: List timesheet periods
-      x-requirement: ATT-04.2
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/TimesheetPeriodStatus' } }
-      responses:
-        '200': { description: Paged timesheet periods, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriodPage' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    post:
-      tags: [Timesheet Periods]
-      operationId: createTimesheetPeriod
-      summary: Create a non-overlapping timesheet period
-      x-requirement: ATT-04.2
-      x-implementation-status: discovery-required
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriodWrite' } } } }
-      responses:
-        '201':
-          description: Period created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriod' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/timesheet-periods/{periodId}/exceptions:
-    get:
-      tags: [Timesheet Periods]
-      operationId: listTimesheetPeriodExceptions
-      summary: List unresolved exceptions blocking approval of a period
-      description: >-
-        Exceptions include incomplete workdays, unexplained absences, pending corrections
-        and approved overtime without matching attendance events.
-      x-requirement: ATT-04.2
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/PeriodId'
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-      responses:
-        '200': { description: Paged exceptions, content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetExceptionPage' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/v1/attendance/timesheet-periods/{periodId}/{action}:
-    post:
-      tags: [Timesheet Periods]
-      operationId: transitionTimesheetPeriod
-      summary: Submit, approve, lock or reopen a timesheet period
-      description: >-
-        Approval is refused while unresolved exceptions remain. Locking makes every record in
-        the period immutable. Reopening requires a reason and is audited.
-      x-requirement: ATT-04.2
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/PeriodId'
-        - { name: action, in: path, required: true, schema: { type: string, enum: [submit, approve, lock, reopen] } }
-        - $ref: '#/components/parameters/IfMatch'
-      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
-      responses:
-        '200':
-          description: Period state updated
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriod' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/attendance/timesheet-periods/{periodId}/payroll-handoff:
-    post:
-      tags: [Timesheet Periods]
-      operationId: handOffTimesheetPeriodToPayroll
-      summary: Hand a locked period off to payroll
-      description: Refused unless the period is locked. Records the handoff timestamp and reference.
-      x-requirement: ATT-04.2
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/PeriodId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PayrollHandoffRequest' } } } }
-      responses:
-        '200':
-          description: Handoff recorded
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/TimesheetPeriod' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/leave/types/{leaveTypeId}:
-    parameters: [{ $ref: '#/components/parameters/LeaveTypeId' }]
-    put:
-      tags: [Leave Policy]
-      operationId: replaceLeaveType
-      summary: Replace a draft leave-type policy
-      description: Only a draft policy can be replaced. An approved policy requires a new policyVersion.
-      x-requirement: ATT-03.1
-      x-implementation-status: discovery-required
-      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/LeaveTypeWrite' } } } }
-      responses:
-        '200':
-          description: Leave type updated
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveType' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/leave/types/{leaveTypeId}/{action}:
-    post:
-      tags: [Leave Policy]
-      operationId: transitionLeaveType
-      summary: Approve, deactivate or reactivate a leave-type policy
-      description: >-
-        A leave type cannot be used to submit requests until its policy is approved.
-        Approval records the approver and timestamp.
-      x-requirement: ATT-03.1
-      x-implementation-status: discovery-required
-      parameters:
-        - $ref: '#/components/parameters/LeaveTypeId'
-        - { name: action, in: path, required: true, schema: { type: string, enum: [approve, deactivate, reactivate] } }
-        - $ref: '#/components/parameters/IfMatch'
-      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/DecisionRequest' } } } }
-      responses:
-        '200':
-          description: Leave type policy updated
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/LeaveType' } } }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -2161,7 +1582,6 @@ components:
   securitySchemes:
     bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: OIDC access token for workforce users. }
     offerToken: { type: apiKey, in: header, name: X-Offer-Token, description: Short-lived single-offer candidate token. }
-    deviceAuth: { type: apiKey, in: header, name: X-Device-Signature, description: Rotated device credential plus request signature verified by the attendance adapter. }
   parameters:
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
     PageSize: { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -2183,31 +1603,23 @@ components:
     ContractId: { name: contractId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     AddendumId: { name: addendumId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     ExportId: { name: exportId, in: path, required: true, schema: { type: string, format: uuid } }
-    ShiftId: { name: shiftId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    HolidayId: { name: holidayId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    OvertimeRequestId: { name: overtimeRequestId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    PeriodId: { name: periodId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    LeaveTypeId: { name: leaveTypeId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     ReviewId: { name: reviewId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     CaseId: { name: caseId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    CorrectionId: { name: correctionId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    LeaveRequestId: { name: leaveRequestId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     UserId: { name: userId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     AuditLogId: { name: auditLogId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     DeliveryId: { name: deliveryId, in: path, required: true, schema: { type: string, format: uuid } }
     IntegrationKey: { name: integrationKey, in: path, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9_-]{1,79}$' } }
     ReportFrom: { name: from, in: query, required: true, schema: { type: string, format: date } }
     ReportTo: { name: to, in: query, required: true, schema: { type: string, format: date } }
-    WeekStart: { name: weekStart, in: query, required: true, description: Monday starting the requested work week., schema: { type: string, format: date } }
   headers:
     ETag: { description: Quoted numeric resource version., schema: { type: string, example: '"5"' } }
     Location: { description: Created resource URI., schema: { type: string, format: uri-reference } }
   responses:
     BadRequest: { description: Malformed request or If-Match header, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
     Unauthorized: { description: Authentication is required or invalid, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
-    Forbidden: { description: Insufficient permission, field access or data scope, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
+    Forbidden: { description: 'Insufficient permission, field access or data scope', content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
     NotFound: { description: Resource is not visible or does not exist, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
-    Conflict: { description: Workflow, prerequisite, uniqueness or concurrency conflict, content: { application/problem+json: { schema: { $ref: '#/components/schemas/BusinessProblemDetails' } } } }
+    Conflict: { description: 'Workflow, prerequisite, uniqueness or concurrency conflict', content: { application/problem+json: { schema: { $ref: '#/components/schemas/BusinessProblemDetails' } } } }
     UnprocessableEntity: { description: Semantically invalid fields, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ValidationProblemDetails' } } } }
     PayloadTooLarge: { description: File exceeds its documented limit, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
     UnsupportedMediaType: { description: File type is not allowed, content: { application/problem+json: { schema: { $ref: '#/components/schemas/ProblemDetails' } } } }
@@ -2402,124 +1814,7 @@ components:
       required: [id, reportType, format, status, requestedAt, expiresAt]
       properties: { id: { type: string, format: uuid }, reportType: { $ref: '#/components/schemas/ReportType' }, format: { $ref: '#/components/schemas/ExportFormat' }, status: { type: string, enum: [queued, processing, completed, failed, expired] }, requestedAt: { type: string, format: date-time }, completedAt: { type: string, format: date-time, nullable: true }, expiresAt: { type: string, format: date-time }, failureCode: { type: string, nullable: true } }
 
-    LocalTime: { type: string, pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$', example: '08:30' }
-    WorkShiftWrite:
-      type: object
-      required: [code, name, startsAt, endsAt, timezone, breakMinutes, standardWorkMinutes, workCoefficient, active]
-      properties: { code: { type: string, maxLength: 50 }, name: { type: string, maxLength: 255 }, startsAt: { $ref: '#/components/schemas/LocalTime' }, endsAt: { $ref: '#/components/schemas/LocalTime' }, timezone: { type: string, example: Asia/Ho_Chi_Minh }, breakMinutes: { type: integer, minimum: 0, maximum: 1440 }, standardWorkMinutes: { type: integer, minimum: 1, maximum: 1440 }, workCoefficient: { type: number, minimum: 0, maximum: 5 }, active: { type: boolean } }
-    WorkShift:
-      allOf: [{ $ref: '#/components/schemas/WorkShiftWrite' }, { type: object, required: [id, crossesMidnight, version], properties: { id: { type: integer, format: int64 }, crossesMidnight: { type: boolean }, version: { type: integer, format: int64, minimum: 1 } } }]
-    WorkScheduleAssignment:
-      type: object
-      required: [id, employeeId, workDate, shiftId, timezone, version]
-      properties: { id: { type: integer, format: int64 }, employeeId: { type: integer, format: int64 }, workDate: { type: string, format: date }, shiftId: { type: integer, format: int64 }, timezone: { type: string }, version: { type: integer, format: int64, minimum: 1 } }
-    WorkScheduleAssignmentWrite:
-      type: object
-      additionalProperties: false
-      required: [employeeId, workDate, shiftId]
-      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, workDate: { type: string, format: date }, shiftId: { type: integer, format: int64, minimum: 1 } }
-    ReplaceWorkScheduleRequest:
-      type: object
-      additionalProperties: false
-      required: [assignments]
-      properties: { assignments: { type: array, minItems: 1, maxItems: 1000, items: { $ref: '#/components/schemas/WorkScheduleAssignmentWrite' } } }
-    WorkSchedulePage: { type: object, required: [items, page, weekStart], properties: { items: { type: array, items: { $ref: '#/components/schemas/WorkScheduleAssignment' } }, page: { $ref: '#/components/schemas/PageMetadata' }, weekStart: { type: string, format: date } } }
-    AttendanceEventType: { type: string, enum: [check_in, check_out] }
-    AttendanceMethod: { type: string, enum: [fingerprint, gps, face_id, wifi, web, manual] }
-    AttendanceEventWrite:
-      type: object
-      required: [eventType, occurredAt, timezone, method]
-      properties: { employeeId: { type: integer, format: int64, minimum: 1, nullable: true }, eventType: { $ref: '#/components/schemas/AttendanceEventType' }, occurredAt: { type: string, format: date-time }, timezone: { type: string }, method: { $ref: '#/components/schemas/AttendanceMethod' }, latitude: { type: number, minimum: -90, maximum: 90, nullable: true }, longitude: { type: number, minimum: -180, maximum: 180, nullable: true }, deviceId: { type: string, maxLength: 200, nullable: true } }
-    DeviceAttendanceEventWrite:
-      allOf: [{ $ref: '#/components/schemas/AttendanceEventWrite' }, { type: object, required: [externalEventId, employeeExternalKey, deviceId], properties: { externalEventId: { type: string, maxLength: 200 }, employeeExternalKey: { type: string, maxLength: 200 } } }]
-    AttendanceEvent:
-      allOf: [{ $ref: '#/components/schemas/AttendanceEventWrite' }, { type: object, required: [id, employeeId, recordedAt, duplicate], properties: { id: { type: string, format: uuid }, employeeId: { type: integer, format: int64 }, recordedAt: { type: string, format: date-time }, duplicate: { type: boolean } } }]
-    TimesheetStatus: { type: string, enum: [on_time, late, early_leave, absent, incomplete, corrected, on_leave] }
-    TimesheetRow:
-      type: object
-      required: [employeeId, workDate, status, scheduledMinutes, workedMinutes, policyVersion]
-      properties: { employeeId: { type: integer, format: int64 }, workDate: { type: string, format: date }, shiftId: { type: integer, format: int64, nullable: true }, firstCheckInAt: { type: string, format: date-time, nullable: true }, lastCheckOutAt: { type: string, format: date-time, nullable: true }, status: { $ref: '#/components/schemas/TimesheetStatus' }, scheduledMinutes: { type: integer, minimum: 0 }, workedMinutes: { type: integer, minimum: 0 }, lateMinutes: { type: integer, minimum: 0 }, earlyLeaveMinutes: { type: integer, minimum: 0 }, policyVersion: { type: string } }
-    TimesheetPage: { type: object, required: [items, page, from, to], properties: { items: { type: array, items: { $ref: '#/components/schemas/TimesheetRow' } }, page: { $ref: '#/components/schemas/PageMetadata' }, from: { type: string, format: date }, to: { type: string, format: date } } }
-    ApprovalStatus: { type: string, enum: [pending, approved, rejected, cancelled] }
     DecisionRequest: { type: object, additionalProperties: false, properties: { reason: { type: string, maxLength: 1000, nullable: true } } }
-    AttendanceCorrectionWrite:
-      type: object
-      required: [employeeId, workDate, proposedCheckInAt, proposedCheckOutAt, reason]
-      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, workDate: { type: string, format: date }, proposedCheckInAt: { type: string, format: date-time }, proposedCheckOutAt: { type: string, format: date-time }, reason: { type: string, minLength: 1, maxLength: 1000 } }
-    AttendanceCorrection:
-      allOf: [{ $ref: '#/components/schemas/AttendanceCorrectionWrite' }, { type: object, required: [id, status, requestedBy, version, createdAt], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/ApprovalStatus' }, requestedBy: { type: integer, format: int64 }, decidedBy: { type: integer, format: int64, nullable: true }, decisionReason: { type: string, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
-    AttendanceCorrectionPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/AttendanceCorrection' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-
-    LeaveUnit: { type: string, enum: [full_day, first_half, second_half, hours] }
-    LeaveType:
-      type: object
-      required: [id, code, name, paid, allowNegativeBalance, policyVersion, active]
-      properties: { id: { type: integer, format: int64 }, code: { type: string }, name: { type: string }, paid: { type: boolean }, allowNegativeBalance: { type: boolean }, policyVersion: { type: string }, active: { type: boolean } }
-    LeaveBalance:
-      type: object
-      required: [employeeId, leaveTypeId, year, entitledUnits, usedUnits, reservedUnits, availableUnits, unit, policyVersion]
-      properties: { employeeId: { type: integer, format: int64 }, leaveTypeId: { type: integer, format: int64 }, year: { type: integer }, entitledUnits: { type: number }, usedUnits: { type: number }, reservedUnits: { type: number }, availableUnits: { type: number }, unit: { type: string, enum: [days, hours] }, policyVersion: { type: string } }
-    LeaveRequestWrite:
-      type: object
-      required: [employeeId, leaveTypeId, startsAt, endsAt, timezone, unit, reason]
-      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, leaveTypeId: { type: integer, format: int64, minimum: 1 }, startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string }, unit: { $ref: '#/components/schemas/LeaveUnit' }, reason: { type: string, minLength: 1, maxLength: 2000 } }
-    LeaveDecision:
-      type: object
-      required: [sequence, approverUserId, decision, decidedAt]
-      properties: { sequence: { type: integer, minimum: 1 }, approverUserId: { type: integer, format: int64 }, decision: { type: string, enum: [approved, rejected] }, reason: { type: string, nullable: true }, decidedAt: { type: string, format: date-time } }
-    LeaveRequest:
-      allOf: [{ $ref: '#/components/schemas/LeaveRequestWrite' }, { type: object, required: [id, requestCode, status, requestedUnits, unitOfBalance, policyVersion, decisions, version, createdAt], properties: { id: { type: integer, format: int64 }, requestCode: { type: string }, status: { $ref: '#/components/schemas/ApprovalStatus' }, requestedUnits: { type: number, minimum: 0 }, unitOfBalance: { type: string, enum: [days, hours] }, policyVersion: { type: string }, decisions: { type: array, items: { $ref: '#/components/schemas/LeaveDecision' } }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
-    LeaveRequestPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/LeaveRequest' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-    BatchLeaveDecisionItem: { type: object, additionalProperties: false, required: [leaveRequestId, expectedVersion], properties: { leaveRequestId: { type: integer, format: int64, minimum: 1 }, expectedVersion: { type: integer, format: int64, minimum: 1 } } }
-    BatchLeaveDecisionRequest: { type: object, additionalProperties: false, required: [decision, items], properties: { decision: { type: string, enum: [approve, reject] }, reason: { type: string, maxLength: 1000, nullable: true }, items: { type: array, minItems: 1, maxItems: 100, items: { $ref: '#/components/schemas/BatchLeaveDecisionItem' } } } }
-    BatchItemResult: { type: object, required: [leaveRequestId, status], properties: { leaveRequestId: { type: integer, format: int64 }, status: { type: integer }, code: { type: string, nullable: true }, newVersion: { type: integer, format: int64, nullable: true } } }
-    BatchLeaveDecisionResult: { type: object, required: [results], properties: { results: { type: array, items: { $ref: '#/components/schemas/BatchItemResult' } } } }
-
-    HolidayWrite:
-      type: object
-      additionalProperties: false
-      required: [holidayDate, name, paid, workCoefficient]
-      properties: { calendarCode: { type: string, maxLength: 50, default: VN }, holidayDate: { type: string, format: date }, name: { type: string, maxLength: 255 }, paid: { type: boolean }, workCoefficient: { type: number, minimum: 0, maximum: 5 } }
-    Holiday:
-      allOf: [{ $ref: '#/components/schemas/HolidayWrite' }, { type: object, required: [id, calendarCode, version], properties: { id: { type: integer, format: int64 }, version: { type: integer, format: int64, minimum: 1 } } }]
-    OvertimeCategory: { type: string, enum: [weekday, weekly_rest, holiday, night] }
-    OvertimeRequestWrite:
-      type: object
-      additionalProperties: false
-      required: [employeeId, workDate, startsAt, endsAt, timezone, reason]
-      properties: { employeeId: { type: integer, format: int64, minimum: 1 }, workDate: { type: string, format: date }, startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string }, reason: { type: string, minLength: 1, maxLength: 2000 } }
-    OvertimeRequest:
-      allOf: [{ $ref: '#/components/schemas/OvertimeRequestWrite' }, { type: object, required: [id, requestCode, overtimeCategory, requestedMinutes, workCoefficient, status, policyVersion, version, createdAt], properties: { id: { type: integer, format: int64 }, requestCode: { type: string }, overtimeCategory: { $ref: '#/components/schemas/OvertimeCategory' }, requestedMinutes: { type: integer, minimum: 1 }, approvedMinutes: { type: integer, minimum: 0, nullable: true }, workCoefficient: { type: number, minimum: 1, maximum: 5 }, status: { $ref: '#/components/schemas/ApprovalStatus' }, requestedBy: { type: integer, format: int64 }, decidedBy: { type: integer, format: int64, nullable: true }, decisionReason: { type: string, nullable: true }, policyVersion: { type: string }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
-    OvertimeRequestPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/OvertimeRequest' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-    OvertimeDecisionRequest:
-      type: object
-      additionalProperties: false
-      properties: { approvedMinutes: { type: integer, minimum: 0, nullable: true, description: Must not exceed requestedMinutes. Defaults to requestedMinutes when omitted. }, reason: { type: string, maxLength: 1000, nullable: true } }
-    TimesheetPeriodStatus: { type: string, enum: [open, pending_approval, approved, locked, reopened] }
-    TimesheetPeriodWrite:
-      type: object
-      additionalProperties: false
-      required: [periodCode, startsOn, endsOn]
-      properties: { periodCode: { type: string, maxLength: 50, example: '2026-09' }, startsOn: { type: string, format: date }, endsOn: { type: string, format: date } }
-    TimesheetPeriod:
-      allOf: [{ $ref: '#/components/schemas/TimesheetPeriodWrite' }, { type: object, required: [id, status, version], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/TimesheetPeriodStatus' }, reviewedBy: { type: integer, format: int64, nullable: true }, reviewedAt: { type: string, format: date-time, nullable: true }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, lockedBy: { type: integer, format: int64, nullable: true }, lockedAt: { type: string, format: date-time, nullable: true }, reopenReason: { type: string, nullable: true }, payrollHandoffAt: { type: string, format: date-time, nullable: true }, payrollHandoffReference: { type: string, nullable: true }, openExceptionCount: { type: integer, minimum: 0 }, version: { type: integer, format: int64 } } }]
-    TimesheetPeriodPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/TimesheetPeriod' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-    TimesheetExceptionKind: { type: string, enum: [incomplete_workday, unexplained_absence, pending_correction, overtime_without_attendance, missing_schedule] }
-    TimesheetException:
-      type: object
-      required: [kind, employeeId, workDate, detail]
-      properties: { kind: { $ref: '#/components/schemas/TimesheetExceptionKind' }, employeeId: { type: integer, format: int64 }, workDate: { type: string, format: date }, detail: { type: string }, relatedId: { type: integer, format: int64, nullable: true } }
-    TimesheetExceptionPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/TimesheetException' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-    PayrollHandoffRequest:
-      type: object
-      additionalProperties: false
-      required: [reference]
-      properties: { reference: { type: string, minLength: 1, maxLength: 200 }, note: { type: string, maxLength: 1000, nullable: true } }
-    LeaveTypeWrite:
-      type: object
-      additionalProperties: false
-      required: [code, name, paid, unitOfBalance, allowNegativeBalance, allowHalfDay, countsHolidays, requiresAttachment, minNoticeDays, approvalLevels, policyVersion]
-      properties: { code: { type: string, maxLength: 50 }, name: { type: string, maxLength: 255 }, paid: { type: boolean }, unitOfBalance: { type: string, enum: [days, hours] }, allowNegativeBalance: { type: boolean }, allowHalfDay: { type: boolean }, countsHolidays: { type: boolean }, requiresAttachment: { type: boolean }, minNoticeDays: { type: integer, minimum: 0 }, maxConsecutiveUnits: { type: number, minimum: 0, nullable: true }, approvalLevels: { type: integer, minimum: 1, maximum: 3 }, policyVersion: { type: string, maxLength: 50 } }
     ProbationReviewStatus: { type: string, enum: [pending, in_review, decided, cancelled] }
     ProbationOutcome: { type: string, enum: [confirmed, extended, terminated] }
     ProbationReviewWrite:
@@ -2546,7 +1841,7 @@ components:
       required: [employeeId, separationType, lastWorkingDate, reason]
       properties: { employeeId: { type: integer, format: int64, minimum: 1 }, separationType: { $ref: '#/components/schemas/SeparationType' }, noticeReceivedOn: { type: string, format: date, nullable: true }, lastWorkingDate: { type: string, format: date }, handoverToEmployeeId: { type: integer, format: int64, minimum: 1, nullable: true }, reason: { type: string, minLength: 1, maxLength: 4000 } }
     OffboardingCase:
-      allOf: [{ $ref: '#/components/schemas/OffboardingCaseWrite' }, { type: object, required: [id, status, finalSettlementStatus, version, createdAt], properties: { id: { type: integer, format: int64 }, employeeEventId: { type: integer, format: int64, nullable: true }, exitInterviewAt: { type: string, format: date-time, nullable: true }, finalSettlementStatus: { $ref: '#/components/schemas/FinalSettlementStatus' }, status: { $ref: '#/components/schemas/OffboardingStatus' }, blockingTasksOutstanding: { type: integer, minimum: 0 }, noticePeriodShortfallDays: { type: integer, nullable: true, description: Positive when the notice period is shorter than the contract requires. Reported as a warning, not an error. }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, completedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
+      allOf: [{ $ref: '#/components/schemas/OffboardingCaseWrite' }, { type: object, required: [id, status, finalSettlementStatus, version, createdAt], properties: { id: { type: integer, format: int64 }, employeeEventId: { type: integer, format: int64, nullable: true }, exitInterviewAt: { type: string, format: date-time, nullable: true }, finalSettlementStatus: { $ref: '#/components/schemas/FinalSettlementStatus' }, status: { $ref: '#/components/schemas/OffboardingStatus' }, blockingTasksOutstanding: { type: integer, minimum: 0 }, noticePeriodShortfallDays: { type: integer, nullable: true, description: 'Positive when the notice period is shorter than the contract requires. Reported as a warning, not an error.' }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, completedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time } } }]
     OffboardingCasePage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/OffboardingCase' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
     OffboardingTask:
       type: object

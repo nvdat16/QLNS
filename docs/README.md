@@ -5,9 +5,9 @@
 Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc của hệ thống Quản lý Nhân sự **QLNS / HRMS**.
 
 > [!IMPORTANT]
-> Repository có **UI/UX prototype**, canonical database/OpenAPI contract và source baseline React/.NET 10 cho vertical slice `REC-03.2`. Migration runtime, tích hợp PostgreSQL/IdP và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là source hiện có; không suy diễn thành production-ready.
+> Repository có **UI/UX prototype**, canonical database/OpenAPI contract và **skeleton source** React/.NET 10 (cấu trúc dự án 3-tier/3-layer và một module mẫu, chưa phải code chính thức). Migration runtime, tích hợp PostgreSQL/IdP và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là source hiện có; không suy diễn thành production-ready.
 
-> **Phạm vi triển khai trước:** ba phân hệ được chọn theo bản đồ chức năng — **Core HR** (bao gồm nhánh con Contracts), **Recruitment (ATS)** và **Attendance & Leave**. Payroll, Performance và Learning chưa thuộc baseline thiết kế.
+> **Phạm vi triển khai trước:** hai phân hệ được chọn theo bản đồ chức năng — **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**. Attendance & Leave đã có thiết kế nhưng được **tách ra ngoài phạm vi** và giữ tại [deferred/attendance_leave/](deferred/attendance_leave/README.md). Payroll, Performance và Learning chưa thuộc baseline thiết kế.
 
 ---
 
@@ -15,17 +15,15 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 
 | Document | Purpose | Status |
 |---|---|---|
-| [INVEST User Stories](user_stories.md) | 37 user story theo INVEST cho ba phân hệ triển khai trước, có acceptance criteria Gherkin và traceability | Proposed · Authoritative for delivery |
-| [Open Decisions — Attendance & Leave](open_decisions_attendance_leave.md) | Agenda workshop và biên bản quyết định: mọi ngưỡng, hệ số và công thức cần HR/Legal chốt, kèm đề xuất mặc định | **Open · Blocks ATT-\* delivery** |
-| [REC-03.2 Vertical Slice](vertical_slice_rec_03_2.md) | Những gì đã được code cho slice đầu tiên, và khuôn mẫu nó thiết lập cho các slice sau | Source implemented · Runtime verification pending |
-| [ATT-03 Vertical Slice (đề xuất)](vertical_slice_leave_01.md) | Định nghĩa slice thứ hai: phạm vi, điều kiện bắt đầu, tiêu chí nghiệm thu end-to-end | Proposed · Blocked — policy pending |
+| [INVEST User Stories](user_stories.md) | 24 user story theo INVEST cho hai phân hệ triển khai trước, có acceptance criteria Gherkin và traceability | Proposed · Authoritative for delivery |
+| [Deferred — Attendance & Leave](deferred/attendance_leave/README.md) | Toàn bộ thiết kế của phân hệ đã tách khỏi phạm vi: SRS, 13 story, use case, 3 sequence, DDL 13 bảng, OpenAPI fragment, Open Decisions | **Out of scope · Parked** |
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules | Proposed · Authoritative |
-| [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho cả ba phân hệ, cùng Reporting/Administration | Proposed · Supporting |
-| [Sequence Diagrams](sequence_diagrams.md) | 9 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
-| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 36 bảng | Design artifact |
+| [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ, cùng Reporting/Administration | Proposed · Supporting |
+| [Sequence Diagrams](sequence_diagrams.md) | 6 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
+| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |
-| [API Contract](../api/README.md) | OpenAPI 3.0.3, 121 operation trên 94 path, kèm `x-implementation-status` từng operation | Design artifact |
+| [API Contract](../api/README.md) | OpenAPI 3.0.3, 87 operation trên 70 path, kèm `x-implementation-status` từng operation | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
 
 Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
@@ -34,7 +32,7 @@ Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
 2. **Business rule và acceptance criteria** → `functional_specifications.md` / `user_stories.md`.
 3. **Kiểu dữ liệu, constraint và invariant** → `database/schema.sql` (canonical, thắng cả `database_design.md`).
 4. **Hợp đồng API** → `api/openapi.yaml` (thắng `API_REFERENCE.md`).
-5. **Chính sách chấm công và nghỉ phép** → `open_decisions_attendance_leave.md` khi đã có quyết định; trước đó không có nguồn nào được coi là đã chốt.
+5. **Nội dung trong `deferred/`** không có thẩm quyền với phạm vi hiện tại; nó chỉ là điểm khởi đầu nếu module tương ứng quay lại phạm vi.
 
 ---
 
@@ -45,9 +43,8 @@ Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
 | Core HR — Profile & Organization | UI prototype; canonical schema; OpenAPI; user story có AC | API, authorization, workflow, persistence runtime | IdP/RBAC, migration |
 | Core HR — Lifecycle (onboarding, biến động, thử việc, thôi việc) | UI prototype (onboarding); canonical schema; OpenAPI; user story có AC | toàn bộ implementation; sequence cho offboarding chưa vẽ | IdP/RBAC, migration, template checklist |
 | Core HR — Contracts | UI prototype; canonical schema; OpenAPI; user story có AC | toàn bộ implementation | IdP/RBAC, migration |
-| Recruitment ATS | UI prototype; canonical schema/OpenAPI; **source `REC-03.2`** | runtime verification, IdP, provider integration, các story còn lại | migration, PostgreSQL runtime, IdP |
-| Attendance | UI prototype; canonical schema (9 bảng); OpenAPI; SRS; 9 user story có AC; 2 sequence | toàn bộ implementation | **HR/Legal policy** |
-| Leave | UI prototype; canonical schema (4 bảng); OpenAPI; SRS; 4 user story có AC; 1 sequence | toàn bộ implementation | **HR/Legal policy** |
+| Recruitment ATS | UI prototype; canonical schema/OpenAPI; skeleton source (module mẫu) | toàn bộ implementation | IdP/RBAC, migration, PostgreSQL runtime |
+| Attendance & Leave | UI prototype; thiết kế đầy đủ đã tách sang `deferred/` | — | **Ngoài phạm vi** — không triển khai |
 | Identity / RBAC / Audit | vai trò và policy được đặc tả; `users`, `user_roles`, `audit_logs` trong canonical schema | IdP, server-side enforcement, audit storage runtime | chọn IdP |
 | Deployment / Operations | topology mục tiêu trong tài liệu kiến trúc | container image, Docker Compose, CI/CD, monitoring, backup runtime | ADR hạ tầng |
 
@@ -93,16 +90,15 @@ Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác
 
 ## 4. Functional Coverage
 
-Đặc tả bao phủ ba phân hệ triển khai trước:
+Đặc tả bao phủ hai phân hệ triển khai trước:
 
 1. **Core HR** — employee master data, organization, onboarding, employee events, documents, probation review, offboarding & handover, và nhánh con Contracts (lifecycle, cảnh báo hết hạn, phụ lục).
 2. **Recruitment ATS** — requisition, CV intake, candidate pipeline, interview, scorecard, offer và onboarding handoff.
-3. **Attendance & Leave** — ca làm việc, phân ca, lịch lễ, chấm công, hiệu chỉnh, tăng ca, quỹ phép, đơn nghỉ, và bảng công / khóa kỳ.
 
 Cùng hai nhóm hỗ trợ: **HR Analytics** (headcount, recruitment funnel) và **System Administration** (tài khoản, RBAC, audit, integration).
 
-> [!WARNING]
-> Attendance & Leave đã có schema, API contract, SRS và user story đầy đủ, nhưng **mọi công thức tính toán chưa được HR/Legal phê duyệt**. Xem [Open Decisions](open_decisions_attendance_leave.md). Không bắt đầu implementation của nhóm này trước khi các quyết định liên quan được chốt — sai công thức ở đây dẫn tới tính sai giờ công và sai quỹ phép của người thật.
+> [!NOTE]
+> **Attendance & Leave** đã được thiết kế đầy đủ (SRS, 13 story, DDL 13 bảng, 24 endpoint, 3 sequence, danh sách quyết định HR/Legal) nhưng **không thuộc phạm vi triển khai**. Toàn bộ được giữ nguyên tại [deferred/attendance_leave/](deferred/attendance_leave/README.md) để có thể ghép lại khi phạm vi mở rộng. Không tham chiếu tới nó từ tài liệu authoritative.
 
 Payroll, Performance và Learning chưa thuộc baseline thiết kế chính.
 
@@ -127,12 +123,11 @@ Trước khi bắt đầu frontend/backend, tối thiểu cần:
 
 - Chấp thuận stack frontend/backend và phiên bản bằng ADR.
 - Chốt Identity Provider, authentication flow, RBAC và data-scope policy.
-- Review canonical schema **36 bảng** và sinh EF Core migration đầu tiên có version (bao gồm bật extension `btree_gist` cho các exclusion constraint).
+- Review canonical schema **23 bảng** và sinh EF Core migration đầu tiên có version.
 - Chốt API convention, error model, pagination và concurrency strategy. ✅ đã có trong `api/README.md`.
-- Chọn vertical slice tiếp theo cùng acceptance test end-to-end. ✅ đã đề xuất: [`ATT-03`](vertical_slice_leave_01.md).
+- Chọn vertical slice đầu tiên cùng acceptance test end-to-end.
 - Thiết lập architecture, security, migration và contract gates trong CI.
-- Tạo integration test project chạy trên PostgreSQL thật — bắt buộc, vì phần lớn invariant của Attendance & Leave là constraint ở database và không thể verify bằng mock.
-- **Với Attendance & Leave:** hoàn tất workshop [Open Decisions](open_decisions_attendance_leave.md) và có bản ghi `attendance_policies` ở trạng thái `active`, `leave_types` ở `policy_status = 'approved'`.
+- Tạo integration test project chạy trên PostgreSQL thật — bắt buộc, vì các invariant quan trọng của Core HR (partial unique index, conditional update) không thể verify bằng mock.
 
 Các open decision đầy đủ được theo dõi tại [Architecture Decisions](architecture.md#9-architecture-decisions-adr-index).
 

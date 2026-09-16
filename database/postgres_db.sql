@@ -2,18 +2,17 @@
 -- DEPRECATED — DO NOT USE AS A SOURCE OF TRUTH.
 --
 -- This file is a legacy reference DDL kept for historical comparison only.
--- The canonical schema contract is database/schema.sql (36 tables).
+-- The canonical schema contract is database/schema.sql (23 tables).
 --
 -- Known divergences from canonical v1:
 --   * Missing: users, user_roles, audit_logs, outbox_messages,
 --     contract_addenda, application_stage_events, probation_reviews,
---     offboarding_cases, offboarding_tasks, attendance_policies, holidays,
---     attendance_daily_records, attendance_corrections, overtime_requests,
---     timesheet_periods, leave_balances, leave_request_decisions.
+--     offboarding_cases, offboarding_tasks.
 --   * Attendance/Leave tables here (work_shifts, employee_shifts,
 --     work_schedules, attendance_records, leave_types, leave_requests,
---     leave_approvals) are superseded by the canonical Attendance & Leave
---     tables and must NOT be used to generate migrations.
+--     leave_approvals) are OUT OF SCOPE. A newer, non-canonical design for
+--     that module is parked in docs/deferred/attendance_leave/; neither this
+--     file nor that one may be used to generate migrations.
 --   * Uses integer PKs, naive timestamps and no version/ETag column.
 --
 -- Do not generate EF Core migrations from this file.

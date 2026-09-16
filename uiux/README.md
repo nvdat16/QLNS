@@ -12,7 +12,7 @@ Giao diện dùng design system chung trong [`hrm-theme.css`](./hrm-theme.css): 
 
 - [1. Danh Sách Giao Diện Độc Lập](#1-danh-sách-giao-diện-độc-lập)
 - [2. Thư Viện Hình Ảnh Giao Diện (Visual Showcase)](#2-thư-viện-hình-ảnh-giao-diện-visual-showcase)
-  - [2.1. Dashboard tổng quan (main.html)](#21-dashboard-tổng-quan-mainhtml)
+  - [2.1. Dashboard tổng quan (main.html)](#21-dashboard-tổng-quan-mainhtmlviewdashboard)
   - [2.2. Phân hệ Hồ sơ Nhân sự & Hợp đồng (main.html)](#22-phân-hệ-hồ-sơ-nhân-sự--hợp-đồng-mainhtml)
   - [2.3. Phân hệ Tuyển dụng & Onboarding ATS (recruitment.html)](#23-phân-hệ-tuyển-dụng--onboarding-ats-recruitmenthtml)
   - [2.4. Phân hệ Chấm công & Quản lý Nghỉ phép (attendance.html)](#24-phân-hệ-chấm-công--quản-lý-nghỉ-phép-attendancehtml)
@@ -34,7 +34,7 @@ Hệ thống cung cấp 4 file HTML độc lập hoàn chỉnh, chạy trực ti
 | :--- | :--- | :--- |
 | **`main.html`** | Dashboard tổng quan, Hồ sơ Nhân sự, Hợp đồng lao động, Sơ đồ tổ chức và Drawer chi tiết nhân sự | [Xem file main.html](./main.html) |
 | **`recruitment.html`** | Phân hệ Tuyển dụng ATS: Quản lý Ứng viên (Pipeline Kanban/Table), Yêu cầu tuyển dụng, Lịch phỏng vấn & Đánh giá, Chuyển tiếp Tiếp nhận (Onboarding Handoff) | [Xem file recruitment.html](./recruitment.html) |
-| **`attendance.html`** | Phân hệ Chấm công & Nghỉ phép: Bảng công & Điểm danh (Check-in/out), Định nghĩa & Lịch phân ca (Work Shifts), Đơn xin nghỉ phép & Quỹ phép (Leave Requests), Xét duyệt nghỉ phép (Leave Approval) | [Xem file attendance.html](./attendance.html) |
+| **`attendance.html`** | ⏸️ **Ngoài phạm vi triển khai** (giữ làm concept). Phân hệ Chấm công & Nghỉ phép: Bảng công & Điểm danh (Check-in/out), Định nghĩa & Lịch phân ca (Work Shifts), Đơn xin nghỉ phép & Quỹ phép (Leave Requests), Xét duyệt nghỉ phép (Leave Approval) | [Xem file attendance.html](./attendance.html) |
 | **`auth.html`** | Cổng xác thực: đăng nhập, đăng ký tài khoản, hiện/ẩn mật khẩu, kiểm tra biểu mẫu và điều hướng vào dashboard prototype. | [Xem file auth.html](./auth.html) |
 
 ---

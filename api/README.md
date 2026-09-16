@@ -1,10 +1,10 @@
 # QLNS API contract
 
-[`openapi.yaml`](openapi.yaml) is the contract-first OpenAPI 3.0.3 target for the three modules selected for first delivery — **Core HR** (including Contracts), **Recruitment (ATS)** and **Attendance & Leave** — plus Reports and Administration. It currently defines **121 operations across 94 paths**.
+[`openapi.yaml`](openapi.yaml) is the contract-first OpenAPI 3.0.3 target for the two modules selected for first delivery — **Core HR** (including Contracts) and **Recruitment (ATS)** — plus Reports and Administration. It currently defines **87 operations across 70 paths**.
 
 The ASP.NET Core application must preserve operation IDs, schemas, status codes and error codes from this document. `x-requirement` links each operation to the requirements baseline; **presence in the contract does not by itself mean the operation is implemented** — check `x-implementation-status` on each operation.
 
-Attendance/Leave operations stay `discovery-required` until business policy is approved, even though the canonical database schema for them now exists. The blocking decisions are tracked in [Open Decisions — Attendance & Leave](../docs/open_decisions_attendance_leave.md).
+Attendance & Leave is out of scope. Its contract fragment (24 paths, 46 schemas) is parked in [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml) and is not part of this document.
 
 Human-readable endpoint documentation: [`API_REFERENCE.md`](API_REFERENCE.md).
 
@@ -22,26 +22,22 @@ Human-readable endpoint documentation: [`API_REFERENCE.md`](API_REFERENCE.md).
 
 ## Current implementation
 
-`POST /api/v1/recruitment/applications/{applicationId}/advance` advances exactly one canonical stage. A success atomically writes the application update, `application_stage_events` row and `audit_logs` row. Invalid workflow prerequisites and stale versions return `409` without partial writes. `GET /api/v1/recruitment/applications/{applicationId}` reads one application within the caller's data scope and returns its `ETag`.
+No operation in this contract is implemented yet; every operation carries `x-implementation-status: proposed`. The source under `src/backend` is a structural skeleton that fixes the project layout (`Qlns.Api` → `Qlns.BusinessLogic` ← `Qlns.DataAccess`) and includes one sample module to show where controller, service, repository and unit tests belong. It is not production code.
 
-Those two operations are the whole of the implemented surface. What exactly was built, and the patterns it establishes for later slices, is documented in [Vertical Slice `REC-03.2`](../docs/vertical_slice_rec_03_2.md).
-
-All other operations in the current contract are target contracts for phased implementation. Backend code is organized by `Modules/<Module>/<Feature>` so each OpenAPI tag has an explicit owner.
+All operations in the current contract are target contracts for phased implementation. Backend code is organized by `Modules/<Module>/<Feature>` so each OpenAPI tag has an explicit owner.
 
 ## Where server-side calculation is mandatory
 
-Several operations deliberately ignore client-supplied values because the server owns the formula. Clients must display what the server returns rather than recomputing it — otherwise the number on screen can diverge from the number that reaches payroll.
+Several operations deliberately ignore client-supplied values because the server owns the rule. Clients must display what the server returns rather than recomputing it.
 
 | Operation | Server-owned value | Ignored if sent by client |
 |---|---|---|
-| `POST /api/v1/leave/requests` | `requestedUnits` — derived from work schedule, holiday calendar and leave policy | any client-side day count |
-| `GET /api/v1/leave/balances` | `availableUnits` — a generated column in PostgreSQL | any client-side subtraction |
-| `POST /api/v1/attendance/events` | `status`, `workedMinutes`, `lateMinutes`, `earlyLeaveMinutes` | — |
-| `POST /api/v1/attendance/overtime-requests` | `overtimeCategory`, `workCoefficient` | both |
-| `GET /api/v1/attendance/timesheets` | every minute total, plus the `policyVersion` used | any client-side aggregation |
+| `POST /api/v1/recruitment/applications/{applicationId}/advance` | next `stage`, new `version` | any client-side stage arithmetic |
+| `POST /api/v1/recruitment/interviews/{interviewId}/evaluations` | `overallScore` — weighted per position policy | any client-side average |
+| `POST /api/v1/offboarding/cases` | `noticePeriodShortfallDays`, `blockingTasksOutstanding` | both |
+| `POST /api/v1/probation-reviews/{reviewId}/decide` | the `employee_events` row created for the outcome | — |
+| `GET /api/v1/reports/*` | every KPI value and the refresh timestamp | any client-side aggregation |
 
 ## Idempotency and duplicate handling
 
-Device attendance ingestion is the one place where a duplicate is **not** an error: `POST /api/v1/integrations/attendance/events` returns `202` with `duplicate: true` for an event it has already stored. An offline device replaying its buffer must be a safe operation — returning `409` there would make the device either retry forever or drop data.
-
-Everywhere else, `Idempotency-Key` makes a retried create return the original resource instead of creating a second one.
+`Idempotency-Key` makes a retried create return the original resource instead of creating a second one. Offer acceptance is additionally idempotent by design: one accepted offer yields at most one employee, one initial contract and one onboarding checklist, regardless of retries.

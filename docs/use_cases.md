@@ -1,6 +1,6 @@
 # Use Cases — Tổng Quan và Các Chức Năng Quản Lý Chính
 
-> **Trạng thái:** Proposed business design. Các mã trong ngoặc vuông truy vết tới `user_stories.md` hoặc `functional_specifications.md`. Use case `REC-03.2` đã có source baseline; các use case còn lại chưa được xem là implemented.
+> **Trạng thái:** Proposed business design. Các mã trong ngoặc vuông truy vết tới `user_stories.md` hoặc `functional_specifications.md`. Chưa use case nào được xem là implemented; source trong `src/` chỉ là skeleton cấu trúc.
 
 ## Quy ước
 
@@ -30,7 +30,6 @@ flowchart LR
         Interviews[Schedule interviews & submit scorecards]
         Offers[Approve offers & onboarding]
         Records[Manage employee records & contracts]
-        Attendance[Manage attendance & leave]
         Reports[View workforce reports]
         Access[Manage accounts & RBAC]
     end
@@ -44,7 +43,6 @@ flowchart LR
     HRMgr --> Records
     HRMgr --> Reports
     HROfficer --> Records
-    HROfficer --> Attendance
     User --> ATS
     User --> Records
     Admin --> Access
@@ -277,118 +275,7 @@ flowchart LR
 - Phụ lục không sửa nội dung hợp đồng gốc và phải giữ before/after, phê duyệt, chữ ký, phiên bản.
 - Lỗi gửi cảnh báo không rollback trạng thái hợp đồng; delivery được retry hữu hạn.
 
-## 5. Quản lý chấm công và nghỉ phép
-
-> **Trạng thái:** canonical schema và API contract đã có đầy đủ cho nhóm này (13 bảng, xem [Database Design §5–§6](../database/database_design.md#5-attendance-module-canonical-proposed)), và yêu cầu đã được đặc tả tại [Functional Specifications PHÂN HỆ 5](functional_specifications.md#phân-hệ-5-chấm-công--nghỉ-phép-attendance--leave) cùng 13 user story `ATT-*`.
-> **Điều kiện còn thiếu:** policy ngày công, lịch lễ, hệ số làm đêm/tăng ca, quỹ phép và chuỗi phê duyệt **chưa được HR/Legal phê duyệt**. Toàn bộ danh sách quyết định cần chốt được theo dõi tại [Open Decisions — Attendance & Leave](open_decisions_attendance_leave.md).
-
-```mermaid
-flowchart LR
-    Employee(["👤 Nhân viên"])
-    Manager(["👤 Quản lý trực tiếp"])
-    HROfficer(["👤 HR Officer"])
-    HRManager(["👤 HR Manager"])
-    Device["Hệ thống ngoài<br/>Thiết bị / GPS / Face ID"]
-
-    subgraph QLNS_TIME["QLNS — Attendance & Leave"]
-        direction TB
-        UC_POLICY(["Phê duyệt phiên bản chính sách tính công<br/>[ATT-02]"])
-        UC_SHIFT(["Định nghĩa ca làm việc<br/>[ATT-01.1]"])
-        UC_ASSIGN(["Phân ca / Lập lịch tuần<br/>[ATT-01.2]"])
-        UC_HOLIDAY(["Thiết lập lịch nghỉ lễ<br/>[ATT-01.3]"])
-        UC_CAPTURE(["Ghi nhận check-in / check-out<br/>[ATT-02.1]"])
-        UC_INGEST(["Tiếp nhận sự kiện từ thiết bị<br/>[ATT-02.2]"])
-        UC_CALCULATE(["Tính đi muộn, về sớm, giờ công"])
-        UC_TIMESHEET(["Xem bảng công cá nhân / đội nhóm<br/>[ATT-04.1]"])
-        UC_CORRECT(["Đề nghị / Phê duyệt hiệu chỉnh công<br/>[ATT-02.3]"])
-        UC_OVERTIME(["Đăng ký / Phê duyệt tăng ca<br/>[ATT-02.4]"])
-        UC_LEAVE_POLICY(["Cấu hình & duyệt loại phép<br/>[ATT-03.1]"])
-        UC_BALANCE(["Xem quỹ phép<br/>[ATT-03.4]"])
-        UC_LEAVE(["Tạo / Hủy đơn nghỉ<br/>[ATT-03.2]"])
-        UC_VALIDATE(["Kiểm tra lịch, quỹ phép và trùng đơn"])
-        UC_APPROVE(["Duyệt / Từ chối đơn nghỉ<br/>[ATT-03.3]"])
-        UC_PERIOD_LOCK(["Soát, duyệt & khóa kỳ công<br/>[ATT-04.2]"])
-        UC_HANDOFF(["Bàn giao kỳ công sang Payroll<br/>[ATT-04.2]"])
-        UC_AUTH(["Kiểm tra quyền và data scope"])
-        UC_AUDIT(["Ghi audit quyết định"])
-
-        UC_ASSIGN -. "<<include>>" .-> UC_SHIFT
-        UC_CAPTURE -. "<<include>>" .-> UC_CALCULATE
-        UC_INGEST -. "<<include>>" .-> UC_CALCULATE
-        UC_CALCULATE -. "<<include>>" .-> UC_POLICY
-        UC_CALCULATE -. "<<include>>" .-> UC_HOLIDAY
-        UC_CORRECT -. "<<extend>>" .-> UC_TIMESHEET
-        UC_CORRECT -. "<<include>>" .-> UC_AUDIT
-        UC_OVERTIME -. "<<include>>" .-> UC_AUTH
-        UC_OVERTIME -. "<<include>>" .-> UC_AUDIT
-        UC_OVERTIME -. "<<extend>> cộng phút OT" .-> UC_CALCULATE
-        UC_LEAVE -. "<<include>>" .-> UC_VALIDATE
-        UC_LEAVE -. "<<include>>" .-> UC_LEAVE_POLICY
-        UC_VALIDATE -. "<<include>>" .-> UC_HOLIDAY
-        UC_APPROVE -. "<<include>>" .-> UC_VALIDATE
-        UC_APPROVE -. "<<include>>" .-> UC_AUTH
-        UC_APPROVE -. "<<include>>" .-> UC_AUDIT
-        UC_APPROVE -. "<<extend>> đánh dấu ngày nghỉ" .-> UC_CALCULATE
-        UC_PERIOD_LOCK -. "<<include>>" .-> UC_TIMESHEET
-        UC_PERIOD_LOCK -. "<<include>>" .-> UC_AUDIT
-        UC_HANDOFF -. "<<extend>> chỉ khi kỳ đã khóa" .-> UC_PERIOD_LOCK
-    end
-
-    Device --> UC_INGEST
-    Employee --> UC_CAPTURE
-    Employee --> UC_TIMESHEET
-    Employee --> UC_CORRECT
-    Employee --> UC_OVERTIME
-    Employee --> UC_BALANCE
-    Employee --> UC_LEAVE
-    Manager --> UC_TIMESHEET
-    Manager --> UC_APPROVE
-    Manager --> UC_CORRECT
-    Manager --> UC_OVERTIME
-    HROfficer --> UC_SHIFT
-    HROfficer --> UC_ASSIGN
-    HROfficer --> UC_HOLIDAY
-    HROfficer --> UC_CORRECT
-    HROfficer --> UC_LEAVE_POLICY
-    HROfficer --> UC_HANDOFF
-    HRManager --> UC_APPROVE
-    HRManager --> UC_POLICY
-    HRManager --> UC_HOLIDAY
-    HRManager --> UC_LEAVE_POLICY
-    HRManager --> UC_PERIOD_LOCK
-```
-
-### Ranh giới nghiệp vụ đã được chốt ở tầng thiết kế
-
-Những quy tắc sau đã được enforce ở canonical schema, không phụ thuộc quyết định policy:
-
-- Sự kiện chấm công là **append-only**; hiệu chỉnh tạo sự kiện mới, không sửa và không xóa sự kiện gốc.
-- Chống ghi trùng từ thiết bị bằng cặp `device_id` + `external_event_id`; thiết bị offline gửi bù là thao tác an toàn.
-- Một nhân viên chỉ có **một ca mỗi ngày**, **một đơn hiệu chỉnh `pending` mỗi ngày**, và **một dòng bảng công mỗi ngày**.
-- Đơn nghỉ và đơn tăng ca **không được trùng khoảng thời gian** — chặn bằng exclusion constraint ở database, không dựa vào kiểm tra ở application.
-- Kỳ công **không giao nhau**; kỳ đã khóa là bất biến; mở lại kỳ bắt buộc có lý do và audit log.
-- Bàn giao Payroll chỉ được thực hiện sau khi kỳ đã khóa.
-- Mọi dòng bảng công **bắt buộc ghi kèm `policy_version`** đã dùng để tính; không thể tính công theo policy còn ở trạng thái `draft`.
-
-### Ranh giới nghiệp vụ cần chốt
-
-Xem bảng chi tiết kèm đề xuất mặc định tại [Open Decisions](open_decisions_attendance_leave.md). Các nhóm quyết định:
-
-| Nhóm | Nội dung cần chốt | Mã |
-| :--- | :--- | :--- |
-| Ngày công & ca | Múi giờ chuẩn, ngày công của ca qua đêm, phút công chuẩn, ngày nghỉ tuần, làm tròn, ân hạn, ngưỡng vắng, khung giờ đêm | `[OD-1.1]`…`[OD-1.8]` |
-| Lịch lễ | Danh sách ngày lễ, người duyệt, hệ số ngày lễ, nghỉ bù | `[OD-2.1]`…`[OD-2.4]` |
-| Nguồn chấm công | Phương thức được chấp nhận, giới hạn vị trí GPS, cửa sổ gửi bù, xử lý thiếu check-out | `[OD-3.1]`…`[OD-3.5]` |
-| Hiệu chỉnh | Người duyệt, thời hạn gửi đơn, yêu cầu minh chứng | `[OD-4.1]`…`[OD-4.4]` |
-| Tăng ca | Đăng ký trước hay sau, ngưỡng tối thiểu, hệ số theo loại, **giới hạn giờ theo luật** | `[OD-5.1]`…`[OD-5.5]` |
-| Quỹ phép | Danh mục loại phép, số ngày và thâm niên, accrual, carry-over, quỹ âm, đơn vị nhỏ nhất, **cách trừ ngày lễ** | `[OD-6.1]`…`[OD-6.9]` |
-| Phê duyệt | Số cấp duyệt, người duyệt thay, thời điểm trừ quỹ, hủy đơn đã duyệt | `[OD-7.1]`…`[OD-7.6]` |
-| Kỳ công | Chu kỳ, hạn chốt, người khóa/mở lại, hình thức bàn giao, **điều chỉnh sau bàn giao** | `[OD-8.1]`…`[OD-8.5]` |
-| Bảo mật | Phạm vi xem bảng công, quyền xem lý do nghỉ, lưu trữ toạ độ GPS, quyền xuất dữ liệu | `[OD-9.1]`…`[OD-9.4]` |
-
-Bốn hạng mục hiện **chưa có bảng/cột trong canonical schema** và chỉ được bổ sung sau khi quyết định tương ứng được chốt: vùng vị trí hợp lệ khi chấm công GPS `[OD-3.2]`, hạn mức giờ tăng ca `[OD-5.4]`, cấu hình người duyệt thay `[OD-7.2]`, cơ chế điều chỉnh sau khi đã bàn giao Payroll `[OD-8.5]`.
-
-## 6. Báo cáo, quản trị và dịch vụ dùng chung
+## 5. Báo cáo, quản trị và dịch vụ dùng chung
 
 ```mermaid
 flowchart LR
@@ -402,8 +289,8 @@ flowchart LR
 
     subgraph QLNS_SHARED["QLNS — Reporting & Administration"]
         direction TB
-        UC_HEADCOUNT(["Xem dashboard quân số<br/>[REP-01.1]"])
-        UC_FUNNEL(["Xem recruitment funnel<br/>[REP-02.1]"])
+        UC_HEADCOUNT(["Xem dashboard quân số<br/>[REP-01]"])
+        UC_FUNNEL(["Xem recruitment funnel<br/>[REP-02]"])
         UC_FILTER(["Lọc theo thời gian / đơn vị / vị trí"])
         UC_EXPORT(["Xuất CSV / Excel / PDF"])
         UC_PROTECT(["Mask field / Watermark / Data scope"])
@@ -447,18 +334,19 @@ flowchart LR
 - Export dữ liệu nhạy cảm cần permission riêng, watermark và audit.
 - QLNS lưu ánh xạ actor/role/data scope; IdP chịu trách nhiệm xác thực danh tính và phát token.
 
-## 7. Ma trận actor — nhóm chức năng
+## 6. Ma trận actor — nhóm chức năng
 
-| Actor | Tuyển dụng | Core HR | Hợp đồng | Chấm công / Nghỉ phép | Báo cáo / Quản trị |
-|---|---|---|---|---|---|
-| Candidate | Nộp CV, phản hồi Offer | — | — | — | — |
-| Employee | — | Hồ sơ cá nhân, sơ đồ tổ chức, bàn giao khi thôi việc | Xem/ký hợp đồng | Chấm công, bảng công của mình, đơn nghỉ, đơn hiệu chỉnh, đơn tăng ca, quỹ phép | — |
-| Hiring/Line Manager | Requisition, phỏng vấn | Cơ cấu đội ngũ, onboarding, đánh giá thử việc, xác nhận bàn giao | — | Soát bảng công đội nhóm; duyệt đơn nghỉ, hiệu chỉnh và tăng ca theo scope | Báo cáo theo scope |
-| Recruiter | Pipeline, lịch, scorecard, Offer | — | — | — | Recruitment analytics |
-| HR Officer / C&B | Hỗ trợ tiếp nhận | Hồ sơ, onboarding, biến động, tài liệu, khởi tạo & đóng case thôi việc | Soạn hợp đồng/phụ lục | Ca, phân ca, lịch lễ, cấu hình loại phép, hiệu chỉnh, đối soát kỳ công, bàn giao Payroll | Export theo quyền |
-| HR Manager | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc | Phê duyệt hợp đồng/phụ lục | Phê duyệt policy tính công và loại phép; duyệt cấp 2; **duyệt, khóa và mở lại kỳ công** | Dashboard toàn quyền HR |
-| Attendance Device | — | — | — | Đẩy sự kiện chấm công qua webhook có xác thực riêng (`deviceAuth`), không dùng token người dùng | — |
-| System Admin | — | Không mặc định xem dữ liệu HR; vô hiệu hóa tài khoản khi thôi việc | — | Cấu hình và giám sát thiết bị chấm công; không duyệt nghiệp vụ | Account, role, integration, health |
-| Auditor | — | — | — | Audit read-only | Audit read-only theo mandate |
+| Actor | Tuyển dụng | Core HR | Hợp đồng | Báo cáo / Quản trị |
+|---|---|---|---|---|
+| Candidate | Nộp CV, phản hồi Offer | — | — | — |
+| Employee | — | Hồ sơ cá nhân, sơ đồ tổ chức, bàn giao khi thôi việc | Xem/ký hợp đồng | — |
+| Hiring/Line Manager | Requisition, phỏng vấn | Cơ cấu đội ngũ, onboarding, đánh giá thử việc, xác nhận bàn giao | — | Báo cáo theo scope |
+| Recruiter | Pipeline, lịch, scorecard, Offer | — | — | Recruitment analytics |
+| HR Officer / C&B | Hỗ trợ tiếp nhận | Hồ sơ, onboarding, biến động, tài liệu, khởi tạo & đóng case thôi việc | Soạn hợp đồng/phụ lục | Export theo quyền |
+| HR Manager | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc | Phê duyệt hợp đồng/phụ lục | Dashboard toàn quyền HR |
+| System Admin | — | Không mặc định xem dữ liệu HR; vô hiệu hóa tài khoản khi thôi việc | — | Account, role, integration, health |
+| Auditor | — | — | — | Audit read-only theo mandate |
+
+Chấm công / nghỉ phép không còn là một cột ở đây vì nhóm chức năng đó nằm ngoài phạm vi triển khai; use case của nó được giữ tại [deferred/attendance_leave/use_cases_att.md](deferred/attendance_leave/use_cases_att.md).
 
 System Admin không mặc nhiên có quyền đọc hồ sơ, lương hoặc hợp đồng; quyền vận hành và quyền dữ liệu nghiệp vụ phải tách biệt.

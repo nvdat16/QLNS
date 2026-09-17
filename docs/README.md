@@ -5,7 +5,7 @@
 Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc của hệ thống Quản lý Nhân sự **QLNS / HRMS**.
 
 > [!IMPORTANT]
-> Repository có **UI/UX prototype**, canonical database/OpenAPI contract và **skeleton source** React/.NET 10 (cấu trúc dự án 3-tier/3-layer và một module mẫu, chưa phải code chính thức). Migration runtime, tích hợp PostgreSQL/IdP và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là source hiện có; không suy diễn thành production-ready.
+> Repository có **UI/UX prototype**, canonical database/OpenAPI contract và **backend .NET 10 code-complete** cho toàn bộ 66 operation (3 layer, audit/outbox cùng transaction, 1248 unit test) cùng skeleton frontend React. Integration test trên PostgreSQL, migration runtime, tích hợp IdP, background worker và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là hoàn tất; `code-complete` chưa phải production-ready.
 
 > **Phạm vi giao hàng:** hai phân hệ được chọn theo bản đồ chức năng [`topdown-approach.png`](../topdown-approach.png) — **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**. Quy ước đọc bản đồ: **chỉ các chức năng lá in đậm dưới hai phân hệ này thuộc phạm vi**; mọi thứ khác ngoài phạm vi, kể cả bốn chức năng lá không in đậm nằm ngay trong hai phân hệ đó. Nguồn chuẩn về phạm vi là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected); chi tiết ở [mục 4](#4-functional-coverage) dưới đây.
 
@@ -22,7 +22,7 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 | [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ trong phạm vi: Core HR và Recruitment | Proposed · Supporting |
 | [Sequence Diagrams](sequence_diagrams.md) | 6 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
 | [Class Diagrams](class_diagrams.md) | Domain model 23 class theo module, design class diagram của vertical slice đã có code, và pattern 3-layer cho module còn lại | Proposed · Supporting |
-| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng | Design artifact |
+| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng v1; bảng thứ 24 và các delta v1.1 ở Database README | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |
 | [API Contract](../api/README.md) | OpenAPI 3.0.3, 66 operation trên 51 path, kèm `x-implementation-status` từng operation | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
@@ -41,10 +41,10 @@ Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
 
 | Area | Existing artifacts | Not implemented | Chặn bởi |
 |---|---|---|---|
-| Core HR — Profile & Organization | UI prototype; canonical schema; OpenAPI; user story có AC | API, authorization, workflow, persistence runtime | IdP, migration |
-| Core HR — Lifecycle (onboarding, biến động, thử việc, thôi việc) | UI prototype (onboarding); canonical schema; OpenAPI; user story có AC | toàn bộ implementation; sequence cho offboarding chưa vẽ | IdP, migration, template checklist |
-| Core HR — Contracts | UI prototype; canonical schema; OpenAPI; user story có AC | toàn bộ implementation | IdP, migration |
-| Recruitment ATS | UI prototype; canonical schema/OpenAPI; skeleton source (module mẫu) | toàn bộ implementation | IdP, migration, PostgreSQL runtime |
+| Core HR — Profile & Organization | UI prototype; canonical schema; OpenAPI; user story có AC; **backend code-complete** (EMP-01, EMP-02) | integration test, IdP thật | IdP, migration |
+| Core HR — Lifecycle (onboarding, biến động, thử việc, thôi việc) | UI prototype (onboarding); canonical schema; OpenAPI; user story có AC; **backend code-complete** (EMP-03 … EMP-07) | integration test; Effective-Date Worker và worker khóa tài khoản; sequence cho offboarding chưa vẽ | IdP, migration, Payroll (final settlement) |
+| Core HR — Contracts | UI prototype; canonical schema; OpenAPI; user story có AC; **backend code-complete** (CON-01 … CON-03) | integration test; worker hết hạn/cảnh báo; object store thật | IdP, migration |
+| Recruitment ATS | UI prototype; canonical schema/OpenAPI; **backend code-complete** (REC-01 … REC-06) | integration test; outbox worker (email/.ics/offer token); CV parser và malware scanner thật | IdP, migration, PostgreSQL runtime |
 | Attendance & Leave | UI prototype; thiết kế đầy đủ đã tách sang `deferred/` | — | **Ngoài phạm vi** — không triển khai |
 | Identity & data scope | vai trò, permission và data scope được đặc tả; `users`, `user_roles` là **dữ liệu định danh canonical** mà authorization đọc | IdP, server-side enforcement runtime | chọn IdP |
 | Audit & outbox (crosscutting) | `audit_logs` và `outbox_messages` là **cơ chế bắt buộc** của mọi command, ghi cùng transaction nghiệp vụ; đã có trong canonical schema | persistence và outbox dispatcher runtime | migration, email/calendar provider |
@@ -140,7 +140,7 @@ Trước khi bắt đầu frontend/backend, tối thiểu cần:
 
 - Chấp thuận stack frontend/backend và phiên bản bằng ADR.
 - Chốt Identity Provider và authentication flow: việc cấp tài khoản và vai trò do IdP bên ngoài đảm nhiệm, QLNS chỉ tiêu thụ kết quả. Chốt bảng permission và data-scope policy mà server phải kiểm tra trên mọi request.
-- Review canonical schema **23 bảng** và sinh EF Core migration đầu tiên có version.
+- Review canonical schema **24 bảng (v1.1)** và sinh EF Core migration đầu tiên có version.
 - Chốt API convention, error model, pagination và concurrency strategy. ✅ đã có trong `api/README.md`.
 - Chọn vertical slice đầu tiên cùng acceptance test end-to-end.
 - Thiết lập architecture, security, migration và contract gates trong CI.

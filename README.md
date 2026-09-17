@@ -6,12 +6,13 @@
 
 *Specify the business. Freeze the contract. Then write the code.*
 
-[![Status](https://img.shields.io/badge/status-design%20%2B%20skeleton-orange)](docs/README.md#2-current-project-scope)
+[![Status](https://img.shields.io/badge/status-code--complete%20%C2%B7%20integration%20pending-yellow)](docs/README.md#2-current-project-scope)
 [![Spec](https://img.shields.io/badge/spec-arc42%20%2B%20C4%20%2B%20ADR-informational)](docs/architecture.md)
 [![API](https://img.shields.io/badge/OpenAPI-3.0.3%20%C2%B7%2066%20ops%20%2F%2051%20paths-blue)](api/openapi.yaml)
-[![Schema](https://img.shields.io/badge/schema-23%20canonical%20tables-blue)](database/schema.sql)
+[![Schema](https://img.shields.io/badge/schema-24%20canonical%20tables%20%C2%B7%20v1.1-blue)](database/schema.sql)
 [![Stories](https://img.shields.io/badge/INVEST-24%20user%20stories-informational)](docs/user_stories.md)
-[![Implemented](https://img.shields.io/badge/implemented-0%20of%2066%20operations-red)](api/API_REFERENCE.md#6-trạng-thái-triển-khai)
+[![Code complete](https://img.shields.io/badge/code--complete-66%20of%2066%20operations-brightgreen)](api/API_REFERENCE.md#6-trạng-thái-triển-khai)
+[![Unit tests](https://img.shields.io/badge/unit%20tests-1248%20passing-brightgreen)](src/backend/README.md#local-testing)
 
 </div>
 
@@ -21,20 +22,19 @@ flowchart LR
     A["Architecture<br/><small>arc42 + C4 + 9 ADR</small>"]
     D["Data contract<br/><small>23 canonical tables</small>"]
     C["API contract<br/><small>66 operations</small>"]
-    K["Skeleton code<br/><small>1 sample module</small>"]
-    R["Runtime<br/><small>migration · IdP · deployment</small>"]
+    K["Backend code<br/><small>66 operations · 3 layers · 1248 unit tests</small>"]
+    R["Runtime<br/><small>integration tests · migration · IdP · worker · deployment</small>"]
 
     S --> A --> D --> C --> K --> R
 
     classDef done fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
     classDef partial fill:#fef3c7,stroke:#b45309,color:#78350f
     classDef todo fill:#f1f5f9,stroke:#94a3b8,color:#475569,stroke-dasharray: 4 4
-    class S,A,D,C done
-    class K partial
+    class S,A,D,C,K done
     class R todo
 ```
 
-**Blue is written and reviewable. Amber is a structural sample, not a feature. Grey does not exist yet.**
+**Blue is written and reviewable. Grey does not exist yet.** Every operation is `code-complete` (controller, policy, workflow, transactional persistence with audit/outbox, unit tests); integration tests against PostgreSQL and the real Identity Provider are the remaining gate to `implemented`.
 
 <div align="center">
 
@@ -347,7 +347,7 @@ version of all of them is [docs/architecture.md](docs/architecture.md).
 flowchart TD
     A["React 19 + Vite web client<br/><small>presentation tier</small>"]
     B["ASP.NET Core API · .NET 10<br/><small>application tier</small>"]
-    C["PostgreSQL<br/><small>system of record · 23 tables</small>"]
+    C["PostgreSQL<br/><small>system of record · 24 tables</small>"]
     D["Providers<br/><small>IdP · email · calendar · object storage</small>"]
 
     A -->|HTTPS · /api/v1 · JWT| B
@@ -367,7 +367,7 @@ source-code boundaries inside the application tier.
 
 Advancing a candidate one stage, as specified in
 [sequence 3](docs/sequence_diagrams.md#3-chuyển-application-sang-giai-đoạn-tiếp-theo)
-and sketched by the sample module in
+and implemented in
 [RecruitmentPipelineService.cs](src/backend/src/Qlns.BusinessLogic/Modules/Recruitment/Applications/RecruitmentPipelineService.cs).
 
 ```mermaid

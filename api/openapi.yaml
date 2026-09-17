@@ -14,6 +14,10 @@ info:
     Suspension & Return to Work. See README.md section 2 for the scope table.
     Workflow changes use explicit commands, ETag/If-Match concurrency control,
     server-side authorization, audit logging and transactional outbox delivery.
+    x-implementation-status values: proposed (contract only), code-complete (controller,
+    authorization policy, business workflow, transactional persistence with audit/outbox and
+    unit tests exist under src/backend; integration/contract tests against PostgreSQL are
+    still pending), implemented (all of the above plus integration tests).
     Audit logging and outbox delivery remain crosscutting mechanisms; the
     administration endpoints that would expose or configure them are out of scope.
 servers:
@@ -44,7 +48,7 @@ paths:
     get:
       tags: [Recruitment Requisitions]
       operationId: listRecruitmentRequisitions
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Search requisitions in the actor's data scope
       x-requirement: REC-01.1, REC-01.2
       parameters:
@@ -64,7 +68,7 @@ paths:
     post:
       tags: [Recruitment Requisitions]
       operationId: createRecruitmentRequisition
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a draft requisition
       x-requirement: REC-01.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RequisitionWrite' } } } }
@@ -83,7 +87,7 @@ paths:
     get:
       tags: [Recruitment Requisitions]
       operationId: getRecruitmentRequisition
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Get one requisition
       x-requirement: REC-01.1, REC-01.2
       responses:
@@ -97,7 +101,7 @@ paths:
     put:
       tags: [Recruitment Requisitions]
       operationId: replaceRecruitmentRequisitionDraft
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Replace editable fields of a draft or returned requisition
       x-requirement: REC-01.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -117,7 +121,7 @@ paths:
     post:
       tags: [Recruitment Requisitions]
       operationId: transitionRecruitmentRequisition
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Submit, approve, reject, publish, close or cancel a requisition
       description: >-
         Reject requires a reason. Publishing makes the posting visible on the single
@@ -144,7 +148,7 @@ paths:
     post:
       tags: [Recruitment Intake]
       operationId: startRecruitmentIntake
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Scan and parse a PDF, DOC or DOCX resume up to 10 MiB
       x-requirement: REC-02.1
       requestBody: { required: true, content: { multipart/form-data: { schema: { $ref: '#/components/schemas/ResumeUpload' } } } }
@@ -163,7 +167,7 @@ paths:
     get:
       tags: [Recruitment Intake]
       operationId: getRecruitmentIntake
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Get scan, parse and duplicate-detection state
       x-requirement: REC-02.1, REC-02.2
       parameters: [{ $ref: '#/components/parameters/IntakeId' }]
@@ -177,7 +181,7 @@ paths:
     post:
       tags: [Recruitment Intake]
       operationId: confirmRecruitmentIntake
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Confirm parsed data, resolve duplicates and create an application
       x-requirement: REC-02.2
       parameters:
@@ -199,7 +203,7 @@ paths:
     get:
       tags: [Recruitment Pipeline]
       operationId: getRecruitmentPipeline
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Get a filtered, paged Kanban pipeline
       x-requirement: REC-03.1
       parameters:
@@ -218,7 +222,7 @@ paths:
     get:
       tags: [Recruitment Pipeline]
       operationId: getRecruitmentApplication
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Get one authorized recruitment application
       x-requirement: REC-03.1, REC-03.2
       parameters: [{ $ref: '#/components/parameters/ApplicationId' }]
@@ -235,7 +239,7 @@ paths:
     post:
       tags: [Recruitment Pipeline]
       operationId: advanceRecruitmentApplication
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Advance an application exactly one active stage
       x-requirement: REC-03.2
       parameters: [{ $ref: '#/components/parameters/ApplicationId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -256,7 +260,7 @@ paths:
     post:
       tags: [Recruitment Pipeline]
       operationId: terminateRecruitmentApplication
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Reject or withdraw an application with a reason
       x-requirement: REC-03.2
       parameters:
@@ -279,7 +283,7 @@ paths:
     get:
       tags: [Recruitment Interviews]
       operationId: listRecruitmentInterviews
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Search interviews visible to the actor
       x-requirement: REC-04.1
       parameters:
@@ -297,7 +301,7 @@ paths:
     post:
       tags: [Recruitment Interviews]
       operationId: scheduleRecruitmentInterview
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Schedule an interview and enqueue invitations
       x-requirement: REC-04.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/InterviewWrite' } } } }
@@ -315,7 +319,7 @@ paths:
     post:
       tags: [Recruitment Interviews]
       operationId: transitionRecruitmentInterview
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Reschedule, complete or cancel an interview
       x-requirement: REC-04.1
       parameters:
@@ -338,7 +342,7 @@ paths:
     get:
       tags: [Recruitment Evaluations]
       operationId: listInterviewEvaluations
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: List evaluations subject to blind-evaluation policy
       x-requirement: REC-05.1
       parameters: [{ $ref: '#/components/parameters/InterviewId' }]
@@ -350,7 +354,7 @@ paths:
     post:
       tags: [Recruitment Evaluations]
       operationId: submitInterviewEvaluation
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Submit an immutable scorecard
       x-requirement: REC-05.1
       parameters: [{ $ref: '#/components/parameters/InterviewId' }, { $ref: '#/components/parameters/IdempotencyKey' }]
@@ -370,7 +374,7 @@ paths:
     post:
       tags: [Recruitment Evaluations]
       operationId: unlockInterviewEvaluation
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Unlock by creating a new auditable evaluation version
       x-requirement: REC-05.1
       parameters: [{ $ref: '#/components/parameters/EvaluationId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -389,7 +393,7 @@ paths:
     get:
       tags: [Recruitment Offers]
       operationId: listRecruitmentOffers
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Search offers in the actor's scope
       x-requirement: REC-06.1
       parameters:
@@ -404,7 +408,7 @@ paths:
     post:
       tags: [Recruitment Offers]
       operationId: createRecruitmentOffer
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a draft offer
       x-requirement: REC-06.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OfferWrite' } } } }
@@ -422,7 +426,7 @@ paths:
     get:
       tags: [Recruitment Offers]
       operationId: getRecruitmentOffer
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Get one offer
       x-requirement: REC-06.1
       parameters: [{ $ref: '#/components/parameters/OfferId' }]
@@ -439,7 +443,7 @@ paths:
     post:
       tags: [Recruitment Offers]
       operationId: transitionRecruitmentOffer
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Approve, send, extend or cancel an offer
       x-requirement: REC-06.1
       parameters:
@@ -462,7 +466,7 @@ paths:
     post:
       tags: [Recruitment Offers]
       operationId: respondToRecruitmentOffer
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Accept or decline as the candidate
       description: Acceptance idempotently creates an employee, initial contract and onboarding checklist.
       x-requirement: REC-06.2
@@ -480,7 +484,7 @@ paths:
     get:
       tags: [Employees]
       operationId: listEmployees
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Search the scope-filtered employee directory
       x-requirement: EMP-01.1
       parameters:
@@ -500,7 +504,7 @@ paths:
     get:
       tags: [Employees]
       operationId: getEmployee
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Get an employee with sensitive fields masked by policy
       x-requirement: EMP-01.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -517,7 +521,7 @@ paths:
     patch:
       tags: [Employees]
       operationId: updateEmployeePersonalProfile
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Update only personal fields allowed by field policy
       description: Work email, department, position, manager, status and salary cannot be changed here.
       x-requirement: EMP-01.2
@@ -538,7 +542,7 @@ paths:
     get:
       tags: [Organization]
       operationId: listDepartments
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: List departments
       x-requirement: EMP-02.1
       responses:
@@ -547,7 +551,7 @@ paths:
     post:
       tags: [Organization]
       operationId: createDepartment
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a department
       x-requirement: EMP-02.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/DepartmentWrite' } } } }
@@ -565,7 +569,7 @@ paths:
     put:
       tags: [Organization]
       operationId: replaceDepartment
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Replace department metadata
       x-requirement: EMP-02.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -581,7 +585,7 @@ paths:
     delete:
       tags: [Organization]
       operationId: deleteDepartment
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Delete a department only when it has no child, employee or open requisition
       x-requirement: EMP-02.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -595,7 +599,7 @@ paths:
     get:
       tags: [Organization]
       operationId: listPositions
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: List position definitions
       x-requirement: EMP-02.1
       responses:
@@ -604,7 +608,7 @@ paths:
     post:
       tags: [Organization]
       operationId: createPosition
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a position definition
       x-requirement: EMP-02.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PositionWrite' } } } }
@@ -621,7 +625,7 @@ paths:
     put:
       tags: [Organization]
       operationId: replacePosition
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Replace position metadata
       x-requirement: EMP-02.1
       parameters: [{ $ref: '#/components/parameters/PositionId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -638,7 +642,7 @@ paths:
     get:
       tags: [Onboarding]
       operationId: listOnboardingTasks
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Search onboarding tasks and overdue work
       x-requirement: EMP-03.1
       parameters:
@@ -657,7 +661,7 @@ paths:
     post:
       tags: [Onboarding]
       operationId: transitionOnboardingTask
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Start, complete or reopen an onboarding task
       x-requirement: EMP-03.1
       parameters:
@@ -678,7 +682,7 @@ paths:
     put:
       tags: [Onboarding]
       operationId: updateOnboardingTaskAssignment
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Update task ownership, description and due date
       x-requirement: EMP-03.1
       parameters: [{ $ref: '#/components/parameters/TaskId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -697,7 +701,7 @@ paths:
     get:
       tags: [Employee Events]
       operationId: listEmployeeEvents
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: List immutable movement history
       x-requirement: EMP-04.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }, { $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/PageSize' }]
@@ -708,7 +712,7 @@ paths:
     post:
       tags: [Employee Events]
       operationId: createEmployeeEvent
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a draft employee movement proposal
       x-requirement: EMP-04.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -727,7 +731,7 @@ paths:
     post:
       tags: [Employee Events]
       operationId: transitionEmployeeEvent
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Submit, approve or cancel an event; applied events are immutable
       x-requirement: EMP-04.1
       parameters:
@@ -748,7 +752,7 @@ paths:
     get:
       tags: [Employee Documents]
       operationId: listEmployeeDocuments
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: List authorized private-document metadata
       x-requirement: EMP-05.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -759,7 +763,7 @@ paths:
     post:
       tags: [Employee Documents]
       operationId: uploadEmployeeDocument
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Scan and store a new private document version
       x-requirement: EMP-05.1
       parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
@@ -779,7 +783,7 @@ paths:
     post:
       tags: [Employee Documents]
       operationId: createEmployeeDocumentDownloadUrl
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create an authorized download URL valid for at most 15 minutes
       x-requirement: EMP-05.1
       parameters: [{ $ref: '#/components/parameters/DocumentId' }]
@@ -792,7 +796,7 @@ paths:
     get:
       tags: [Contracts]
       operationId: listContracts
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Search contracts; employees can only access their own
       x-requirement: CON-01.1, CON-01.2
       parameters:
@@ -808,7 +812,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: createContract
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a draft employment contract
       x-requirement: CON-01.1
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ContractWrite' } } } }
@@ -825,7 +829,7 @@ paths:
     get:
       tags: [Contracts]
       operationId: listExpiringContracts
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: List contracts at configured expiry-alert thresholds
       x-requirement: CON-02.1
       parameters:
@@ -842,7 +846,7 @@ paths:
     get:
       tags: [Contracts]
       operationId: getContract
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Get one authorized contract
       x-requirement: CON-01.1, CON-01.2
       responses:
@@ -855,7 +859,7 @@ paths:
     put:
       tags: [Contracts]
       operationId: replaceContractDraft
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Replace editable fields of a draft contract
       x-requirement: CON-01.1
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
@@ -874,7 +878,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: transitionContract
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Approve, activate, terminate or cancel a contract
       x-requirement: CON-01.1, CON-01.2
       parameters:
@@ -895,7 +899,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: uploadSignedContractDocument
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Upload a signed PDF before activation
       x-requirement: CON-01.2
       parameters: [{ $ref: '#/components/parameters/ContractId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -916,7 +920,7 @@ paths:
     post:
       tags: [Contracts]
       operationId: createContractDownloadUrl
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a short-lived URL for an authorized signed-contract download
       x-requirement: CON-01.2
       parameters: [{ $ref: '#/components/parameters/ContractId' }]
@@ -929,7 +933,7 @@ paths:
     get:
       tags: [Contract Addenda]
       operationId: listContractAddenda
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: List addenda without mutating the original contract
       x-requirement: CON-03.1
       parameters: [{ $ref: '#/components/parameters/ContractId' }]
@@ -940,7 +944,7 @@ paths:
     post:
       tags: [Contract Addenda]
       operationId: createContractAddendum
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Create a draft addendum with before and after terms
       x-requirement: CON-03.1
       parameters: [{ $ref: '#/components/parameters/ContractId' }]
@@ -959,7 +963,7 @@ paths:
     post:
       tags: [Contract Addenda]
       operationId: transitionContractAddendum
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Submit, approve, mark signed, make effective or cancel an addendum
       description: Making an addendum effective creates an employee event when master data changes.
       x-requirement: CON-03.1
@@ -981,7 +985,7 @@ paths:
     post:
       tags: [Contract Addenda]
       operationId: uploadSignedContractAddendum
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       summary: Upload the signed PDF before making an addendum effective
       x-requirement: CON-03.1
       parameters: [{ $ref: '#/components/parameters/AddendumId' }, { $ref: '#/components/parameters/IfMatch' }]
@@ -1005,7 +1009,7 @@ paths:
       operationId: getProbationReview
       summary: Get the probation review for the employee's current probation contract
       x-requirement: EMP-06.1
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       responses:
         '200':
           description: Probation review
@@ -1020,7 +1024,7 @@ paths:
       summary: Submit or update the probation assessment
       description: Only the assigned reviewer may submit. Recommending termination requires improvement notes.
       x-requirement: EMP-06.1
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters: [{ $ref: '#/components/parameters/IfMatch' }]
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ProbationReviewWrite' } } } }
       responses:
@@ -1040,7 +1044,7 @@ paths:
       operationId: listProbationReviews
       summary: Search probation reviews, including overdue ones
       x-requirement: EMP-06.1
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
@@ -1061,7 +1065,7 @@ paths:
         Deciding requires an outcome and an effective date, and atomically creates the matching
         employee event. A terminated outcome also opens an offboarding case.
       x-requirement: EMP-06.2
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters:
         - $ref: '#/components/parameters/ReviewId'
         - { name: action, in: path, required: true, schema: { type: string, enum: [decide, cancel, unlock] } }
@@ -1084,7 +1088,7 @@ paths:
       operationId: listOffboardingCases
       summary: Search offboarding cases
       x-requirement: EMP-07.1
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PageSize'
@@ -1102,7 +1106,7 @@ paths:
         Refused when the employee already has an open case. A shorter-than-required notice period
         is reported as a warning in the response rather than blocking the case.
       x-requirement: EMP-07.1
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/OffboardingCaseWrite' } } } }
       responses:
         '201':
@@ -1120,7 +1124,7 @@ paths:
       operationId: getOffboardingCase
       summary: Get one offboarding case with its blocking-task summary
       x-requirement: EMP-07.1
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters: [{ $ref: '#/components/parameters/CaseId' }]
       responses:
         '200':
@@ -1141,7 +1145,7 @@ paths:
         not paid or waived. Cancelling approved leave that starts after the last working date is
         deferred with the Attendance & Leave module and is not part of this delivery.
       x-requirement: EMP-07.2
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters:
         - $ref: '#/components/parameters/CaseId'
         - { name: action, in: path, required: true, schema: { type: string, enum: [approve, start, complete, cancel] } }
@@ -1164,7 +1168,7 @@ paths:
       operationId: listOffboardingTasks
       summary: List the handover and asset-recovery checklist of a case
       x-requirement: EMP-07.2
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters:
         - $ref: '#/components/parameters/CaseId'
         - { name: category, in: query, schema: { $ref: '#/components/schemas/OffboardingTaskCategory' } }
@@ -1181,7 +1185,7 @@ paths:
       operationId: transitionOffboardingTask
       summary: Start, complete or reopen an offboarding checklist task
       x-requirement: EMP-07.2
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       parameters:
         - $ref: '#/components/parameters/TaskId'
         - { name: action, in: path, required: true, schema: { type: string, enum: [start, complete, reopen] } }
@@ -1206,7 +1210,7 @@ paths:
         Platform probe required by the deployment view in docs/architecture.md, not a business
         function on the functional decomposition map. It has no requirement identifier because
         System Administration is out of scope for this delivery.
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       security: []
       responses:
         '200': { description: Process is alive, content: { application/json: { schema: { $ref: '#/components/schemas/HealthStatus' } } } }
@@ -1220,7 +1224,7 @@ paths:
         Platform probe required by the deployment view in docs/architecture.md, not a business
         function on the functional decomposition map. It has no requirement identifier because
         System Administration is out of scope for this delivery.
-      x-implementation-status: proposed
+      x-implementation-status: code-complete
       security: []
       responses:
         '200': { description: Service is ready, content: { application/json: { schema: { $ref: '#/components/schemas/HealthStatus' } } } }
@@ -1348,7 +1352,7 @@ components:
     InterviewWrite:
       type: object
       required: [applicationId, interviewType, startsAt, endsAt, timezone, interviewerUserIds]
-      properties: { applicationId: { type: integer, format: int64, minimum: 1 }, interviewType: { type: string, maxLength: 50 }, startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string, example: Asia/Ho_Chi_Minh }, interviewerUserIds: { type: array, minItems: 1, uniqueItems: true, items: { type: integer, format: int64, minimum: 1 } }, location: { type: string, nullable: true }, meetingUrl: { type: string, format: uri, nullable: true } }
+      properties: { applicationId: { type: integer, format: int64, minimum: 1 }, interviewType: { type: string, maxLength: 50 }, startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string, example: Asia/Ho_Chi_Minh }, interviewerUserIds: { type: array, minItems: 1, uniqueItems: true, description: 'Interview panel, persisted in interview_panelists; the first id is the lead interviewer (interviews.interviewer_user_id).', items: { type: integer, format: int64, minimum: 1 } }, location: { type: string, nullable: true }, meetingUrl: { type: string, format: uri, nullable: true } }
     Interview:
       allOf: [{ $ref: '#/components/schemas/InterviewWrite' }, { type: object, required: [id, status, version], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/InterviewStatus' }, cancellationReason: { type: string, nullable: true }, version: { type: integer, format: int64, minimum: 1 } } }]
     InterviewAction: { type: object, additionalProperties: false, properties: { startsAt: { type: string, format: date-time }, endsAt: { type: string, format: date-time }, timezone: { type: string }, location: { type: string }, meetingUrl: { type: string, format: uri }, reason: { type: string, maxLength: 1000 } } }

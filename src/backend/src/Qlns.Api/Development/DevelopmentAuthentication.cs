@@ -3,7 +3,16 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using Qlns.BusinessLogic.Modules.Contracts.Shared;
+using Qlns.BusinessLogic.Modules.CoreHr.Offboarding;
+using Qlns.BusinessLogic.Modules.CoreHr.Probation;
 using Qlns.BusinessLogic.Modules.CoreHr.Shared;
+using Qlns.BusinessLogic.Modules.Recruitment.Applications;
+using Qlns.BusinessLogic.Modules.Recruitment.Evaluations;
+using Qlns.BusinessLogic.Modules.Recruitment.Intake;
+using Qlns.BusinessLogic.Modules.Recruitment.Interviews;
+using Qlns.BusinessLogic.Modules.Recruitment.Offers;
+using Qlns.BusinessLogic.Modules.Recruitment.Requisitions;
 
 namespace Qlns.Api.Development;
 
@@ -73,27 +82,89 @@ public static class DevelopmentAuthentication
         CoreHrPermissions.DocumentRead, CoreHrPermissions.DocumentReadSensitive, CoreHrPermissions.DocumentUpload
     ];
 
-    /// <summary>Personas match users/employees in database/seed_dev.sql.</summary>
+    private static readonly string[] AllLifecyclePermissions =
+    [
+        ProbationPermissions.Read, ProbationPermissions.Manage, ProbationPermissions.Decide,
+        OffboardingPermissions.Read, OffboardingPermissions.Write, OffboardingPermissions.Approve
+    ];
+
+    private static readonly string[] AllContractPermissions =
+    [
+        ContractPermissions.Read, ContractPermissions.Write, ContractPermissions.Approve
+    ];
+
+    private static readonly string[] AllRecruitmentPermissions =
+    [
+        RequisitionPermissions.Read, RequisitionPermissions.Write, RequisitionPermissions.Approve, RequisitionPermissions.Publish,
+        IntakePermissions.Read, IntakePermissions.Write,
+        ApplicationPermissions.Read, ApplicationPermissions.Advance, ApplicationPermissions.Terminate,
+        InterviewPermissions.Read, InterviewPermissions.Manage,
+        EvaluationPermissions.Read, EvaluationPermissions.ReadAll, EvaluationPermissions.Submit, EvaluationPermissions.Unlock,
+        OfferPermissions.Read, OfferPermissions.Write, OfferPermissions.Approve
+    ];
+
+    /// <summary>Personas match users/employees in database/seed_dev.sql and the role matrix in docs/user_stories.md §5.1.</summary>
     private static readonly Dictionary<string, Claim[]> Personas = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["hr-manager"] = Build(userId: 1, employeeId: 2, scope: "organization", departments: [], AllCoreHrPermissions),
+        // HR Manager: approves everything, organization-wide.
+        ["hr-manager"] = Build(userId: 1, employeeId: 2, scope: "organization", departments: [],
+            Union(AllCoreHrPermissions, AllLifecyclePermissions, AllContractPermissions, AllRecruitmentPermissions)),
+
+        // HR Officer (C&B / Records): drafts and operates, never approves.
         ["hr-officer"] = Build(userId: 2, employeeId: 6, scope: "organization", departments: [],
-            AllCoreHrPermissions.Except([CoreHrPermissions.EventApprove]).ToArray()),
+            Union(
+                AllCoreHrPermissions.Except([CoreHrPermissions.EventApprove]),
+                [ProbationPermissions.Read, ProbationPermissions.Manage, OffboardingPermissions.Read, OffboardingPermissions.Write],
+                [ContractPermissions.Read, ContractPermissions.Write],
+                [RequisitionPermissions.Read, IntakePermissions.Read, ApplicationPermissions.Read, InterviewPermissions.Read, OfferPermissions.Read])),
+
+        // Line Manager / Hiring Manager: department scope (2, 4); raises requisitions, reviews probation, confirms handover.
         ["line-manager"] = Build(userId: 3, employeeId: 3, scope: "department", departments: [2, 4],
-        [
-            CoreHrPermissions.EmployeeRead, CoreHrPermissions.EmployeeProfileUpdate, CoreHrPermissions.OrganizationRead,
-            CoreHrPermissions.OnboardingRead, CoreHrPermissions.OnboardingManage,
-            CoreHrPermissions.EventRead, CoreHrPermissions.EventWrite, CoreHrPermissions.DocumentRead
-        ]),
+            Union(
+                [
+                    CoreHrPermissions.EmployeeRead, CoreHrPermissions.EmployeeProfileUpdate, CoreHrPermissions.OrganizationRead,
+                    CoreHrPermissions.OnboardingRead, CoreHrPermissions.OnboardingManage,
+                    CoreHrPermissions.EventRead, CoreHrPermissions.EventWrite, CoreHrPermissions.DocumentRead
+                ],
+                [ProbationPermissions.Read, OffboardingPermissions.Read, OffboardingPermissions.Write],
+                [ContractPermissions.Read],
+                [
+                    RequisitionPermissions.Read, RequisitionPermissions.Write, IntakePermissions.Read, ApplicationPermissions.Read,
+                    InterviewPermissions.Read, EvaluationPermissions.Read, EvaluationPermissions.Submit, OfferPermissions.Read
+                ])),
+
+        // Recruiter: organization-wide recruitment operations; no employee record.
+        ["recruiter"] = Build(userId: 7, employeeId: null, scope: "organization", departments: [],
+            Union(
+                [CoreHrPermissions.OrganizationRead],
+                [
+                    RequisitionPermissions.Read, RequisitionPermissions.Publish,
+                    IntakePermissions.Read, IntakePermissions.Write,
+                    ApplicationPermissions.Read, ApplicationPermissions.Advance, ApplicationPermissions.Terminate,
+                    InterviewPermissions.Read, InterviewPermissions.Manage, EvaluationPermissions.Read,
+                    OfferPermissions.Read, OfferPermissions.Write
+                ])),
+
+        // Employee: self scope only.
         ["employee"] = Build(userId: 4, employeeId: 4, scope: "self", departments: [],
-        [
-            CoreHrPermissions.EmployeeRead, CoreHrPermissions.EmployeeProfileUpdate, CoreHrPermissions.OrganizationRead,
-            CoreHrPermissions.OnboardingRead, CoreHrPermissions.EventRead,
-            CoreHrPermissions.DocumentRead, CoreHrPermissions.DocumentUpload
-        ]),
+            Union(
+                [
+                    CoreHrPermissions.EmployeeRead, CoreHrPermissions.EmployeeProfileUpdate, CoreHrPermissions.OrganizationRead,
+                    CoreHrPermissions.OnboardingRead, CoreHrPermissions.EventRead,
+                    CoreHrPermissions.DocumentRead, CoreHrPermissions.DocumentUpload
+                ],
+                [ProbationPermissions.Read, OffboardingPermissions.Read],
+                [ContractPermissions.Read])),
+
+        // IT Admin: onboarding/offboarding checklist assignee.
         ["it-admin"] = Build(userId: 5, employeeId: null, scope: "self", departments: [],
-            [CoreHrPermissions.OnboardingRead, CoreHrPermissions.OnboardingManage])
+            Union(
+                [CoreHrPermissions.OnboardingRead, CoreHrPermissions.OnboardingManage],
+                [OffboardingPermissions.Read, OffboardingPermissions.Write]))
     };
+
+    private static string[] Union(params IEnumerable<string>[] groups) =>
+        groups.SelectMany(group => group).Distinct(StringComparer.Ordinal).ToArray();
 
     private static Claim[] Build(long userId, long? employeeId, string scope, long[] departments, string[] permissions)
     {

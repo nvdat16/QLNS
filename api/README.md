@@ -22,9 +22,11 @@ Human-readable endpoint documentation: [`API_REFERENCE.md`](API_REFERENCE.md).
 
 ## Current implementation
 
-No operation in this contract is implemented yet; every operation carries `x-implementation-status: proposed`. The source under `src/backend` is a structural skeleton that fixes the project layout (`Qlns.Api` → `Qlns.BusinessLogic` ← `Qlns.DataAccess`) and includes one sample module to show where controller, service, repository and unit tests belong. It is not production code.
+Every operation now carries `x-implementation-status: code-complete`: controller, endpoint authorization policy, business workflow (service + domain), transactional persistence with audit and outbox rows, and unit tests exist under `src/backend` for all 66 operations, organized by `Modules/<Module>/<Feature>` so each OpenAPI tag has an explicit owner (see [src/backend/README.md](../src/backend/README.md)).
 
-All operations in the current contract are target contracts for phased implementation. Backend code is organized by `Modules/<Module>/<Feature>` so each OpenAPI tag has an explicit owner.
+`code-complete` is deliberately not `implemented`: the repository's definition of *implemented* also requires integration/contract tests against PostgreSQL (`tests/Qlns.IntegrationTests`, still to be created) and authorization against the real Identity Provider. Until then the strongest invariants — partial unique indexes and conditional updates — are only exercised by the database itself.
+
+Two schema deltas surfaced while implementing and were folded into `database/schema.sql` v1.1: `offers.currency` / `contracts.currency`, the `interview_panelists` table behind `InterviewWrite.interviewerUserIds`, and `contract_addenda.version` as the addendum ETag (see [database/README.md §2.6](../database/README.md#26-delta-v11--phát-hiện-khi-triển-khai)).
 
 ## Where server-side calculation is mandatory
 

@@ -114,7 +114,6 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 
 - **Mục đích:** Lấy trạng thái hiện tại của application.
 - **Kết quả:** `RecruitmentApplication` và `ETag`.
-- **Ghi chú:** Đây là query được backend hiện tại triển khai.
 
 #### `POST /api/v1/recruitment/applications/{applicationId}/advance`
 
@@ -124,7 +123,6 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Điều kiện:** Không nhảy/lùi stage; vào `tech_interview` cần lịch hợp lệ; vào `offer_letter` cần evaluation đạt policy.
 - **Kết quả:** Application và `ETag` mới.
 - **Tính nguyên tử:** Update application, stage event và audit log trong cùng transaction.
-- **Ghi chú:** Đây là command được backend hiện tại triển khai.
 
 #### `POST /api/v1/recruitment/applications/{applicationId}/{terminalAction}`
 
@@ -146,8 +144,8 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 #### `POST /api/v1/recruitment/interviews`
 
 - **Mục đích:** Xếp lịch phỏng vấn và tạo thông báo/lịch mời.
-- **Body:** `applicationId`, `interviewType`, `startsAt`, `endsAt`, `timezone`, `interviewerUserIds`, `location` hoặc `meetingUrl`.
-- **Kiểm tra:** `endsAt > startsAt`; không trùng interviewer hoặc phòng họp.
+- **Body:** `applicationId`, `interviewType`, `startsAt`, `endsAt`, `timezone` (IANA), `interviewerUserIds` (hội đồng, lưu ở `interview_panelists`; người đầu tiên là lead), `location` hoặc `meetingUrl`.
+- **Kiểm tra:** `endsAt > startsAt`; application đang ở `ai_screening`, `tech_interview` hoặc `executive_round`; không trùng giờ interviewer (`recruitment.interview.interviewer_conflict`) hoặc phòng họp (`recruitment.interview.location_conflict`).
 - **Kết quả:** `201`, `Interview`, `Location`, `ETag`.
 - **Side effect:** Email/calendar invitation được xử lý qua outbox.
 
@@ -217,7 +215,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 #### `POST /api/v1/recruitment/offers/{offerId}/response`
 
 - **Mục đích:** Candidate chấp nhận hoặc từ chối Offer.
-- **Xác thực:** `X-Offer-Token`.
+- **Xác thực:** `X-Offer-Token` — token HMAC do action `send` phát hành và gửi qua outbox; ở môi trường Development có thể lấy bằng `GET /dev/offer-token?offerId=`.
 - **Header:** Bắt buộc `Idempotency-Key`.
 - **Body:** `decision=accept|decline`; decline nên có `reason`.
 - **Kết quả:** `OfferResponseResult`, gồm Offer status và các ID employee/contract/onboarding khi accept.
@@ -365,8 +363,6 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 
 ### 3.6. Probation review
 
-> Trạng thái: `proposed`.
-
 #### `GET /api/v1/employees/{employeeId}/probation-review`
 
 - **Mục đích:** Lấy phiếu đánh giá thử việc của hợp đồng thử việc đang hiệu lực.
@@ -393,8 +389,6 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Lưu ý:** `employees.status` **không** đổi ngay khi phê duyệt; chỉ đổi khi sự kiện được áp dụng vào `effectiveDate`.
 
 ### 3.7. Offboarding
-
-> Trạng thái: `proposed`.
 
 #### `GET /api/v1/offboarding/cases`
 
@@ -531,17 +525,25 @@ Hai endpoint dưới đây là endpoint hạ tầng phục vụ deployment (live
 
 ## 6. Trạng thái triển khai
 
-Contract trên mô tả API mục tiêu. Source backend hiện là **skeleton cấu trúc** (bố cục solution, tách 3 layer, một module mẫu kèm unit test); **chưa operation nào được tính là đã triển khai**. Mọi operation trong `openapi.yaml` đều mang `x-implementation-status: proposed`.
+Mọi operation trong `openapi.yaml` hiện mang `x-implementation-status: code-complete`: đã có controller, authorization policy ở endpoint, business workflow (service + domain), persistence transaction ghi kèm audit và outbox, và unit test cho tầng nghiệp vụ. Source nằm tại `src/backend`, tổ chức theo `Modules/<Module>/<Feature>`; xem [src/backend/README.md](../src/backend/README.md) để biết feature nào chứa operation nào.
 
-### Trạng thái theo nhóm
+### Ý nghĩa các giá trị `x-implementation-status`
 
-| Nhóm | `x-implementation-status` | Điều kiện để triển khai |
-| :--- | :--- | :--- |
-| Recruitment | `proposed` | Chốt IdP/RBAC; sinh EF Core migration |
-| Core HR — Employees, Organization, Onboarding, Events, Documents | `proposed` | Chốt IdP/RBAC; sinh EF Core migration |
-| Core HR — Probation, Offboarding | `proposed` | Chốt template checklist offboarding; công thức quy đổi phép chưa dùng |
-| Contracts | `proposed` | Chốt nhà cung cấp chữ ký số nếu dùng |
+| Giá trị | Ý nghĩa |
+| :--- | :--- |
+| `proposed` | Chỉ có contract. |
+| `code-complete` | Đủ 5/6 phần: controller, policy, workflow, persistence (audit + outbox cùng transaction), unit test. **Chưa có** integration/contract test trên PostgreSQL. |
+| `implemented` | `code-complete` cộng integration/contract test và xác thực với Identity Provider thật. |
+
+### Điều kiện còn thiếu để lên `implemented`
+
+| Nhóm | Còn thiếu |
+| :--- | :--- |
+| Toàn bộ | `tests/Qlns.IntegrationTests` (WebApplicationFactory + Testcontainers) để kiểm chứng partial unique index, conditional update và các truy vấn EF phức tạp (cửa sổ cảnh báo hết hạn, đếm task chặn, subquery user của quản lý); chốt IdP/RBAC; sinh EF Core migration từ `schema.sql` v1.1. |
+| Recruitment | Worker gửi outbox (email/`.ics`, offer token), worker `ExpireDueOffersAsync`; bộ parser CV thật thay `DevelopmentOnlyResumeParser`; scanner thật thay `DevelopmentOnlyMalwareScanner`. |
+| Core HR — Probation, Offboarding | Worker vô hiệu hóa tài khoản đúng `lastWorkingDate` (nhận từ outbox `corehr.offboarding.case_completed`); nguồn cập nhật `finalSettlementStatus` thuộc Payroll (ngoài phạm vi). |
+| Contracts | Worker `ExpireDueContractsAsync` và outbox cảnh báo hết hạn có chống trùng theo mốc; object store thật thay `FileSystemDocumentStorage`. |
 
 ### Nguyên tắc triển khai từng operation
 
-Mỗi operation phải được triển khai đầy đủ cả sáu phần, không tách rời: controller, authorization policy (permission + data scope), business workflow, persistence transaction (kèm audit và outbox trong cùng transaction), và contract/integration test. Một endpoint trả đúng JSON nhưng chưa có kiểm tra quyền phía server hoặc chưa ghi audit **không được tính là đã triển khai**.
+Mỗi operation phải được triển khai đầy đủ cả sáu phần, không tách rời: controller, authorization policy (permission + data scope), business workflow, persistence transaction (kèm audit và outbox trong cùng transaction), unit test và contract/integration test. Một endpoint trả đúng JSON nhưng chưa có kiểm tra quyền phía server hoặc chưa ghi audit **không được tính là đã triển khai**.

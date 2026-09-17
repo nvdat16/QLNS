@@ -2,74 +2,104 @@
 
 Target: .NET 10, ASP.NET Core, Entity Framework Core and PostgreSQL.
 
+**Status:** every one of the 66 operations in [`api/openapi.yaml`](../../api/openapi.yaml) is `code-complete` — controller,
+endpoint authorization policy, business workflow, transactional persistence (audit + outbox in the same transaction) and
+unit tests (1 248 passing). What is still missing before an operation counts as `implemented` is listed in
+[API_REFERENCE §6](../../api/API_REFERENCE.md#6-trạng-thái-triển-khai): integration tests against PostgreSQL, the real
+Identity Provider, EF Core migrations and the background worker host.
+
 ## Modular 3-layer backend
 
 - `Qlns.Api` — Presentation layer: HTTP, authentication/authorization, DTO and Problem Details mapping.
-- `Qlns.BusinessLogic` — Business layer: use-case service, workflow policy and repository contracts. It has no EF Core or ASP.NET dependency.
-- `Qlns.DataAccess` — Data layer: EF Core mappings, PostgreSQL queries, transactions, audit/history persistence.
+- `Qlns.BusinessLogic` — Business layer: use-case services, domain aggregates, workflow policy and repository contracts. It has no EF Core or ASP.NET dependency.
+- `Qlns.DataAccess` — Data layer: EF Core mappings, PostgreSQL queries, transactions, audit/outbox persistence, development adapters.
 
-Each layer groups code by `Modules/<Module>/<Feature>`. `Modules/Recruitment/Applications` is a **sample module** that shows the intended layout; it is skeleton code, not a finished feature. Future code must use the same module names as the OpenAPI tags, and the set of folders is bounded by the delivery scope — the bold leaf functions under Recruitment and Core HR in [`topdown-approach.png`](../../topdown-approach.png):
+Each layer groups code by `Modules/<Module>/<Feature>`; module names follow the OpenAPI tags and the set of folders is bounded by
+the delivery scope (the bold leaf functions under Recruitment and Core HR in [`topdown-approach.png`](../../topdown-approach.png)):
 
 ```text
 Modules/
 ├── Recruitment/
-│   ├── Requisitions/
-│   ├── Intake/
-│   ├── Applications/
-│   ├── Interviews/
-│   ├── Evaluations/
-│   └── Offers/
+│   ├── Requisitions/     REC-01   RequisitionService
+│   ├── Intake/           REC-02   CandidateIntakeService (+ IResumeParser port)
+│   ├── Applications/     REC-03   RecruitmentPipelineService
+│   ├── Interviews/       REC-04   InterviewService
+│   ├── Evaluations/      REC-05   EvaluationService (+ IEvaluationScoringPolicy)
+│   └── Offers/           REC-06   OfferService (+ IOfferResponseTokenService, candidate → employee handoff)
 ├── CoreHr/
-│   ├── Shared/
-│   ├── Employees/
-│   ├── Organization/
-│   ├── Onboarding/
-│   ├── EmployeeEvents/
-│   ├── EmployeeDocuments/
-│   ├── Probation/
-│   └── Offboarding/
-└── Contracts/
-    ├── Contracts/
-    └── Addenda/
+│   ├── Shared/           shared kernel (actor, data scope, exceptions, paging, controller base, audit/outbox factories)
+│   ├── Employees/        EMP-01   EmployeeDirectoryService
+│   ├── Organization/     EMP-02   OrganizationService (departments + hierarchy rules, positions)
+│   ├── Onboarding/       EMP-03   OnboardingTaskService
+│   ├── EmployeeEvents/   EMP-04   EmployeeMovementService (+ ApplyDueEventsAsync for the worker)
+│   ├── EmployeeDocuments/EMP-05   EmployeeDocumentService (+ IDocumentStorage, IMalwareScanner ports)
+│   ├── Probation/        EMP-06   ProbationReviewService
+│   └── Offboarding/      EMP-07   OffboardingCaseService, OffboardingTaskService
+├── Contracts/
+│   ├── Shared/           ContractPermissions / ContractPolicies
+│   ├── Contracts/        CON-01, CON-02   ContractService (+ ExpireDueContractsAsync, ExpiryAlertPolicy)
+│   └── Addenda/          CON-03   ContractAddendumService
+└── Operations/           GET /health/live, GET /health/ready (Qlns.Api only)
 ```
 
-There is no `Reports/` or `Administration/` module: Reports & Analytics and System Administration are out of scope, so this backend exposes no reporting or administration endpoints. Audit logging and the transactional outbox stay as crosscutting mechanisms inside each feature's repository, not as a module of their own. Account and role provisioning belongs to the external identity provider.
+There is no `Reports/` or `Administration/` module and no Organizational Chart endpoint: those functions are out of scope.
+Audit logging and the transactional outbox are crosscutting mechanisms inside each feature's repository
+(`CoreHrAudit.Entry`, `CoreHrOutbox.Message`), not modules of their own. Account and role provisioning belongs to the
+external identity provider.
 
-Do not add empty controllers for target operations. A feature folder is added when its use case, authorization policy, persistence and contract tests are implemented together.
+## The pattern every feature follows
 
-The deployment tiers are React Web, ASP.NET Core API and PostgreSQL. Layers are source-code boundaries inside the application tier; tiers are independently deployed/runtime boundaries.
+`controller → business service → repository`, exactly as the Onboarding feature shows it:
 
-## Sample module
-
-`Modules/Recruitment/Applications` demonstrates the pattern every feature must follow: controller → business service → repository, `If-Match` against lost updates, and one Data Access transaction that writes the business change, its history row and its audit row together. It is a structural sample only; the corresponding OpenAPI operations remain `x-implementation-status: proposed` until the module is completed with migration, authorization against a real identity provider, and integration/contract tests.
-
-## Core HR module
-
-`Modules/CoreHr/` implements requirements EMP-01 … EMP-05 with the same controller → business service → repository pattern as the sample module. Shared plumbing lives in `Modules/CoreHr/Shared` of each layer:
-
-| Layer | Shared piece | Purpose |
+| Layer | Piece | Responsibility |
 |---|---|---|
-| BusinessLogic | `CoreHrActor`, `CoreHrDataScope`, `CoreHrPermissions` | server-established actor, `self` / `department` / `organization` scope, permission constants |
-| BusinessLogic | `CoreHrNotFoundException` (404), `CoreHrForbiddenException` (403), `CoreHrConcurrencyConflictException` (409), `CoreHrBusinessRuleException` (409 + stable `code`), `CoreHrValidationException` (422) | the only exceptions services throw |
-| BusinessLogic | `PageRequest`, `PagedResult<T>` | paging contract shared with `PageMetadata` |
-| DataAccess | `Entities.cs`, `CoreHrEntityConfigurations.cs`, `CoreHrAudit` | EF Core mappings for the Core HR tables and the audit-row factory |
-| Api | `CoreHrControllerBase`, `CoreHrPolicies`, `CoreHrActorResolver` | ETag/If-Match, Problem Details mapping, claim → actor mapping, authorization policies |
+| BusinessLogic | aggregate (`Requisition`, `Offer`, `Contract`, `ProbationReview`, …) | invariants and workflow transitions; every mutation bumps `Version` and `UpdatedAt`; invalid transitions throw `CoreHrBusinessRuleException` with a stable code |
+| BusinessLogic | `<Feature>Service` | data scope (out of scope ⇒ 404), action-level permission (403), `If-Match` version check (409), orchestration |
+| BusinessLogic | `I<Aggregate>Repository`, `<Feature>Permissions` | persistence contract; permission claim constants |
+| DataAccess | `<Aggregate>Repository` | `AsNoTracking` reads filtered by scope in SQL; writes = one transaction: conditional `ExecuteUpdate … WHERE version = expected` → audit row → outbox row → commit; `false` when a concurrent write won |
+| DataAccess | `<Feature>Registration.Add<Module><Feature>()` | composition of the feature, called from `DependencyInjection.AddDataAccess` |
+| Api | `<Feature>Controller : CoreHrControllerBase` | `ExecuteAsync(actor => …)` maps the five kernel exceptions to RFC 9457 Problem Details; ETag/If-Match; `Location` on 201 |
+| Api | `<Feature>Policies.Add<Feature>Policies()` | endpoint policies requiring the coarse `permission` claim, called from `Program.cs` |
 
-| Feature folder | Requirement | Service | Endpoints |
+The shared kernel lives under `Modules/CoreHr/Shared` in every layer and is used by all three modules (the `CoreHr` prefix is
+historical). Token claims consumed by `CoreHrActorResolver`: `qlns_user_id`, `qlns_employee_id`, `data_scope`
+(`self` | `department` | `organization`), `department_id` (repeatable) and `permission` (repeatable). Permission values are the
+`<module>.<feature>.<verb>` constants in each `*Permissions` class, e.g. `recruitment.offer.approve`, `contracts.contract.write`,
+`corehr.probation.decide`.
+
+## Cross-module writes that must stay atomic
+
+Some commands write rows owned by another feature because the requirement demands one transaction. They go through the
+owning feature's entities, never through its API:
+
+| Command | Also writes | Why |
+|---|---|---|
+| `POST /recruitment/offers/{id}/response` (accept) | `employees`, `contracts` (draft probation), `onboarding_tasks`, `applications` → `hired_ready` | REC-06.2 handoff: at most one employee per `source_application_id`; replay returns `replayed: true` |
+| `POST /contracts/{id}/activate` (probation contract) | `probation_reviews` (pending, due 7 days before `end_date`) | EMP-06 step 1 |
+| `POST /contract-addenda/{id}/make-effective` | `employee_events` (approved) when salary/position/department change | CON-03: master data changes only via events |
+| `POST /probation-reviews/{id}/decide` | `employee_events` (approved) and, for `terminated`, a draft `offboarding_cases` row | EMP-06.2 |
+| `POST /offboarding/cases/{id}/complete` | `employee_events` (termination, approved, effective on the last working date) | EMP-07.2 |
+
+`employees.status`, `department_id`, `position_id` and `manager_id` are still written in exactly one place,
+`EmployeeEvent.ApplyTo`, when the Effective-Date Worker applies an approved event.
+
+## Ports and development adapters
+
+| Port (BusinessLogic) | Development adapter (DataAccess) | Configuration | Replace before any shared environment |
 |---|---|---|---|
-| `Employees` | EMP-01 | `EmployeeDirectoryService` | `GET /employees`, `GET /employees/{id}`, `PATCH /employees/{id}/profile` |
-| `Organization` | EMP-02 | `OrganizationService` | `GET /organization/chart`, departments `GET/POST/PUT/DELETE`, positions `GET/POST/PUT` |
-| `Onboarding` | EMP-03 | `OnboardingTaskService` | `GET /onboarding/tasks`, `PUT /onboarding/tasks/{id}`, `POST /onboarding/tasks/{id}/{start|complete|reopen}` |
-| `EmployeeEvents` | EMP-04 | `EmployeeMovementService` | `GET/POST /employees/{id}/events`, `POST /employee-events/{id}/{submit|approve|cancel}`, `ApplyDueEventsAsync` for the effective-date worker |
-| `EmployeeDocuments` | EMP-05 | `EmployeeDocumentService` | `GET/POST /employees/{id}/documents`, `POST /employee-documents/{id}/download-url` |
+| `IDocumentStorage` | `FileSystemDocumentStorage` + `/dev/document-content` | `Documents:StorageRoot`, `Documents:PublicBaseUrl`, `Documents:SigningKey` | private object store with pre-signed URLs |
+| `IMalwareScanner` | `DevelopmentOnlyMalwareScanner` (always clean) | — | real scanner |
+| `IResumeParser` | `DevelopmentOnlyResumeParser` (extracts nothing; recruiter types the data at confirm) | — | CV parsing service |
+| `IOfferResponseTokenService` | `HmacOfferResponseTokenService` + `/dev/offer-token?offerId=` | `Recruitment:OfferTokenSigningKey` (required) | keep, rotate the key |
+| `IEvaluationScoringPolicy` | `EqualWeightScoringPolicy` | — | per-position weights |
 
-Token claims consumed by `CoreHrActorResolver`: `qlns_user_id`, `qlns_employee_id`, `data_scope` (`self` | `department` | `organization`), `department_id` (repeatable) and `permission` (repeatable, values in `CoreHrPermissions`). Endpoint policies check the permission; services check data scope, field policy and action-level permissions (for example `corehr.event.approve`, `corehr.onboarding.reopen`, `corehr.document.read_sensitive`).
+Worker entry points exposed by services (no worker host yet): `EmployeeMovementService.ApplyDueEventsAsync`,
+`OfferService.ExpireDueOffersAsync`, `ContractService.ExpireDueContractsAsync`. Outbox message types written today:
+`recruitment.requisition.published`, `recruitment.application.rejected`, `recruitment.interview.scheduled|rescheduled|cancelled`,
+`recruitment.offer.sent|accepted`, `contracts.contract.approved`, `corehr.probation.review_submitted`,
+`corehr.offboarding.case_completed`.
 
-Employee master data (`status`, `department_id`, `position_id`, `manager_id`) is written in exactly one place, `EmployeeEvent.ApplyTo`, when an approved event reaches its effective date. `PATCH /employees/{id}/profile` accepts only personal fields; any other property in the merge-patch body is rejected with `403`.
-
-Document storage and malware scanning are ports (`IDocumentStorage`, `IMalwareScanner`). The registered adapters — `FileSystemDocumentStorage` and `DevelopmentOnlyMalwareScanner`, configured by the `Documents` section of `appsettings.json` — are development placeholders and must be replaced by the selected object store and scanner before any shared environment.
-
-### Local testing
+## Local testing
 
 Ba mức, từ nhanh nhất tới gần production nhất.
 
@@ -77,7 +107,7 @@ Ba mức, từ nhanh nhất tới gần production nhất.
 
 ```bash
 dotnet test Qlns.sln
-dotnet test Qlns.sln --filter FullyQualifiedName~CoreHr.Onboarding    # một feature
+dotnet test Qlns.sln --filter FullyQualifiedName~Recruitment.Offers    # một feature
 ```
 
 **2. Gọi HTTP thật trên PostgreSQL với token phát triển**
@@ -86,7 +116,7 @@ dotnet test Qlns.sln --filter FullyQualifiedName~CoreHr.Onboarding    # một fe
 # PostgreSQL (port 5433 để không đụng container sẵn có ở 5432)
 docker run -d --name qlns-pg -e POSTGRES_USER=qlns_app -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=qlns -p 5433:5432 postgres:17
-docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/schema.sql
+docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/schema.sql      # v1.1 — 24 bảng
 docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/seed_dev.sql
 
 # API — launchSettings.json đã đặt sẵn Development và http://localhost:5080
@@ -94,42 +124,27 @@ dotnet run --project src/Qlns.Api
 curl "http://localhost:5080/dev/token?persona=hr-manager"
 ```
 
-Persona khả dụng: `hr-manager`, `hr-officer`, `line-manager`, `employee`, `it-admin`.
+Persona khả dụng (khớp `seed_dev.sql` và ma trận vai trò trong `docs/user_stories.md` §5.1): `hr-manager`, `hr-officer`,
+`line-manager` (kiêm Hiring Manager / Interviewer, scope phòng ban 2 và 4), `recruiter`, `employee`, `it-admin`.
+Token phản hồi Offer của ứng viên lấy bằng `GET /dev/offer-token?offerId=` sau khi Offer đã `send`.
 
 > Cổng local là **5080**, không phải 5000 như `servers` trong `api/openapi.yaml`, vì trên macOS cổng 5000 bị AirPlay Receiver chiếm và trả 403 cho mọi request. Đổi cổng tại `Properties/launchSettings.json`, nhớ đổi kèm `Documents:PublicBaseUrl` trong `appsettings.Development.json` để signed URL trỏ đúng.
 
-Ba cách gửi request, dùng cùng dữ liệu seed:
+Công cụ gửi request có sẵn cho Core HR: `CoreHr.http` (REST Client) và `tests/smoke/corehr_smoke.py`. Các module Recruitment,
+Contracts, Probation và Offboarding chưa có collection riêng; dùng `/openapi/v1.json` do `MapOpenApi` sinh ra hoặc Postman import
+`api/openapi.yaml`.
 
-| Công cụ | Tệp | Lệnh |
-|---|---|---|
-| Postman / newman | `tests/postman/QLNS-CoreHR.postman_collection.json` + `QLNS-Local.postman_environment.json` | `./tests/postman/run.sh` |
-| Script Python | `tests/smoke/corehr_smoke.py` | `python3 tests/smoke/corehr_smoke.py http://localhost:5080` |
-| REST Client (VS Code) | `CoreHr.http` | mở tệp, bấm *Send Request* |
+**3. Integration test** — `tests/Qlns.IntegrationTests` chưa tồn tại. `docs/architecture.md` §5.6 coi đây là điều kiện bắt buộc trước khi một operation được tính là `implemented`, vì các invariant mạnh nhất (partial unique index `ux_offers_one_open_per_application`, `ux_contracts_primary_active`, `ux_offboarding_open_case`, `ux_probation_review_contract`; conditional update theo version; các truy vấn EF phức tạp như cửa sổ cảnh báo hết hạn hay đếm task chặn) chỉ có thể kiểm chứng trên PostgreSQL thật. Ngăn xếp đề xuất: `WebApplicationFactory` cộng Testcontainers.
 
-Trong Postman: import cả hai tệp JSON, chọn environment **QLNS · Local (Development)**, chạy thư mục `00 · Lấy token` trước để nạp token vào biến collection, rồi dùng Collection Runner cho toàn bộ. Token, ETag và id được tự động lưu qua test script nên không phải copy tay. Các request upload tài liệu tham chiếu `tests/postman/sample-degree.pdf`; nếu Postman báo thiếu tệp thì chọn lại ở tab *Body → form-data*.
+**Xác thực phát triển.** `Qlns.Api/Development/DevelopmentAuthentication.cs` chỉ thay Identity Provider bằng khóa đối xứng khi môi trường là Development **và** `Authentication:DevelopmentSigningKey` có giá trị. Ngoài Development, các endpoint `/dev/token`, `/dev/document-content` và `/dev/offer-token` không được đăng ký hoặc trả 404.
 
-Bộ collection gồm 68 request với 105 assertion, phủ cả đường thành công lẫn 401, 403, 404, 409, 415, 422.
+## Decisions taken while implementing (not in the contract)
 
-**3. Integration test** — `tests/Qlns.IntegrationTests` chưa tồn tại. `docs/architecture.md` §5.6 coi đây là điều kiện bắt buộc trước slice đầu tiên, vì các invariant mạnh nhất là partial unique index và conditional update nằm ở PostgreSQL. Ngăn xếp đề xuất: `WebApplicationFactory` cộng Testcontainers.
-
-**Xác thực phát triển.** `Qlns.Api/Development/DevelopmentAuthentication.cs` chỉ thay Identity Provider bằng khóa đối xứng khi môi trường là Development **và** `Authentication:DevelopmentSigningKey` có giá trị. Ngoài Development, endpoint `/dev/token` và `/dev/document-content` không được đăng ký.
-
-Probation review (EMP-06) and offboarding (EMP-07) are in scope but not implemented yet: their sprint entry conditions in `docs/user_stories.md` (offboarding checklist template, final-settlement catalogue) are still open and both depend on the Contracts module.
-
-### Code that no longer matches the delivery scope
-
-The scope decision recorded in `README.md` section 2 removed the Organizational Chart function. Three artefacts still implement it and should be removed or re-scoped before the contract and the code are declared consistent:
-
-- `GET /api/v1/organization/chart` in `Modules/CoreHr/Organization/OrganizationController.cs`, whose operation no longer exists in `api/openapi.yaml`.
-- `DepartmentHierarchy.BuildTree` in `Qlns.BusinessLogic/Modules/CoreHr/Organization/`, together with `OrganizationNode` and the chart branch of `OrganizationService`.
-- `DepartmentHierarchyTests.cs`, whose tree-building cases cover only that function. `WouldCreateCycle` and its tests must stay: department hierarchy itself is in scope, and cycle prevention is one of its rules.
-
-After the .NET 10 SDK is installed:
-
-```bash
-dotnet restore backend/Qlns.sln
-dotnet build backend/Qlns.sln --no-restore
-dotnet test backend/Qlns.sln --no-build
-```
-
-Database migrations are intentionally not generated without the selected SDK. [`database/schema.sql`](../../database/schema.sql) is the proposed canonical contract until the first reviewed EF Core migration is created.
+- Schema v1.1 deltas (`offers.currency`, `contracts.currency`, `interview_panelists`, `contract_addenda.version` as ETag) — see [database/README §2.6](../../database/README.md#26-delta-v11--phát-hiện-khi-triển-khai).
+- `Idempotency-Key` is validated (16–128 chars) but idempotency itself comes from natural keys: a completed intake replays its application, an evaluator's locked scorecard is immutable (409), an accepted offer replays the handoff ids.
+- Requisition reject returns the requisition to `draft`; `jobCode` is `REQ-{yyyy}-{id:D5}`.
+- Interview scheduling requires the application to be in `ai_screening`, `tech_interview` or `executive_round` (advancing into `tech_interview` needs a scheduled interview, so the interview comes first).
+- Evaluation unlock inserts a new version copying the scores with the unlock metadata; the evaluator's next submission inserts the following version. `overallScore` is an equal-weight mean rounded to one decimal.
+- Offers expire lazily (a `sent` offer past `expirationDate` is persisted as `expired` when next touched) in addition to the worker method.
+- Contract activation auto-expires a predecessor primary contract whose `endDate` precedes the new `startDate`; a true overlap needs `allowPrimaryOverlap` plus the approve permission and terminates the predecessor. Probation contracts must be ≤ 60 days.
+- Probation review stores the reviewer's recommendation in `outcome` while `in_review`; `decide` may override it. Offboarding `complete` may bypass blocking tasks only with the approve permission and a reason (audited), never the final-settlement check.

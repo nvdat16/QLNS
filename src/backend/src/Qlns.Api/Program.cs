@@ -1,8 +1,17 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Qlns.Api.Development;
+using Qlns.Api.Modules.Contracts.Shared;
+using Qlns.Api.Modules.CoreHr.Offboarding;
+using Qlns.Api.Modules.CoreHr.Probation;
 using Qlns.Api.Modules.CoreHr.Shared;
-using Qlns.BusinessLogic.Modules.Recruitment.Applications;
+using Qlns.Api.Modules.Operations;
+using Qlns.Api.Modules.Recruitment.Applications;
+using Qlns.Api.Modules.Recruitment.Evaluations;
+using Qlns.Api.Modules.Recruitment.Intake;
+using Qlns.Api.Modules.Recruitment.Interviews;
+using Qlns.Api.Modules.Recruitment.Offers;
+using Qlns.Api.Modules.Recruitment.Requisitions;
 using Qlns.DataAccess;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,8 +42,8 @@ builder.Services.AddCors(options =>
         .WithExposedHeaders("ETag"));
 });
 builder.Services.AddSingleton(TimeProvider.System);
-builder.Services.AddScoped<RecruitmentPipelineService>();
 builder.Services.AddDataAccess(builder.Configuration);
+builder.Services.AddHealthProbes();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -78,13 +87,20 @@ builder.Services
         };
     });
 
+// Endpoint-level policies require the coarse permission claim; each business service re-checks the
+// finer action-level permission and the actor's data scope (deny by default, quality goal Q1).
 builder.Services.AddAuthorization(options =>
 {
-    options.AddPolicy("RecruitmentRead", policy =>
-        policy.RequireClaim("permission", "recruitment.application.read"));
-    options.AddPolicy("RecruitmentAdvance", policy =>
-        policy.RequireClaim("permission", "recruitment.application.advance"));
     options.AddCoreHrPolicies();
+    options.AddProbationPolicies();
+    options.AddOffboardingPolicies();
+    options.AddContractPolicies();
+    options.AddRequisitionPolicies();
+    options.AddIntakePolicies();
+    options.AddApplicationPolicies();
+    options.AddInterviewPolicies();
+    options.AddEvaluationPolicies();
+    options.AddOfferPolicies();
 });
 
 var app = builder.Build();
@@ -96,6 +112,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapOpenApi();
 app.MapControllers();
+app.MapHealthProbes();
 if (DevelopmentAuthentication.IsEnabled(app.Environment, app.Configuration))
 {
     app.MapDevelopmentTokenEndpoint();

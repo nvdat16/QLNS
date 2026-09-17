@@ -1,5 +1,6 @@
 namespace Qlns.BusinessLogic.Modules.Recruitment.Applications;
 
+/// <summary>Kanban stage of an application (applications.stage). Six active stages in order, then two terminal ones.</summary>
 public enum ApplicationStage
 {
     SourcedApplied,
@@ -14,6 +15,19 @@ public enum ApplicationStage
 
 public static class ApplicationStageNames
 {
+    /// <summary>The six active stages in pipeline order (REC-03.1); advance moves exactly one step along this list.</summary>
+    public static IReadOnlyList<ApplicationStage> ActiveStages { get; } =
+    [
+        ApplicationStage.SourcedApplied,
+        ApplicationStage.AiScreening,
+        ApplicationStage.TechInterview,
+        ApplicationStage.ExecutiveRound,
+        ApplicationStage.OfferLetter,
+        ApplicationStage.HiredReady
+    ];
+
+    public static bool IsActive(this ApplicationStage stage) => ActiveStages.Contains(stage);
+
     public static string ToContract(this ApplicationStage stage) => stage switch
     {
         ApplicationStage.SourcedApplied => "sourced_applied",

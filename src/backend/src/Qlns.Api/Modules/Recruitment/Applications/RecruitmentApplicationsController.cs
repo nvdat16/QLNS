@@ -1,154 +1,74 @@
-using System.Globalization;
-using System.Security.Claims;
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Qlns.Api.Modules.CoreHr.Shared;
 using Qlns.BusinessLogic.Modules.Recruitment.Applications;
 
 namespace Qlns.Api.Modules.Recruitment.Applications;
 
-[ApiController]
+/// <summary>REC-03.2: read one application, advance it exactly one stage, or end it with reject/withdraw.</summary>
 [Route("api/v1/recruitment/applications")]
-public sealed class RecruitmentApplicationsController(RecruitmentPipelineService service) : ControllerBase
+public sealed class RecruitmentApplicationsController(RecruitmentPipelineService service) : CoreHrControllerBase
 {
     [HttpGet("{applicationId:long:min(1)}", Name = "getRecruitmentApplication")]
-    [Authorize(Policy = "RecruitmentRead")]
-    public async Task<IActionResult> Get(
-        long applicationId,
-        CancellationToken cancellationToken)
+    [Authorize(Policy = ApplicationPolicies.Read)]
+    public Task<IActionResult> Get(long applicationId, CancellationToken cancellationToken) => ExecuteAsync(async actor =>
     {
-        try
-        {
-            var application = await service.GetAsync(applicationId, GetDataScope(), cancellationToken);
-            Response.Headers.ETag = QuoteVersion(application.Version);
-            return Ok(ToResponse(application));
-        }
-        catch (ApplicationNotFoundException exception)
-        {
-            return ProblemResult(404, "common.not_found", "Application not found", exception.Message);
-        }
-    }
+        var application = await service.GetAsync(applicationId, actor, cancellationToken);
+
+        SetETag(application.Version);
+        return Ok(RecruitmentApplicationResponse.From(application));
+    });
 
     [HttpPost("{applicationId:long:min(1)}/advance", Name = "advanceRecruitmentApplication")]
-    [Authorize(Policy = "RecruitmentAdvance")]
-    public async Task<IActionResult> Advance(
+    [Authorize(Policy = ApplicationPolicies.Advance)]
+    public Task<IActionResult> Advance(
         long applicationId,
         [FromHeader(Name = "If-Match")] string? ifMatch,
         [FromBody] AdvanceApplicationRequest request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken) => ExecuteAsync(async actor =>
     {
         if (!TryParseVersion(ifMatch, out var expectedVersion))
         {
-            return ProblemResult(400, "common.invalid_etag", "Invalid If-Match header", "Use a quoted positive numeric ETag, for example \"4\".");
+            return InvalidIfMatch();
         }
 
-        if (!ApplicationStageNames.TryParseContract(request.TargetStage, out var targetStage))
+        if (!ApplicationStageNames.TryParseContract(request.TargetStage, out var targetStage) || !targetStage.IsActive())
         {
-            var validation = new ValidationProblemDetails(new Dictionary<string, string[]>
-            {
-                ["targetStage"] = ["Unknown recruitment stage."]
-            })
-            {
-                Status = 422,
-                Title = "Request validation failed",
-                Type = "https://qlns.example/problems/validation",
-                Instance = HttpContext.Request.Path
-            };
-            validation.Extensions["correlationId"] = HttpContext.TraceIdentifier;
-            return UnprocessableEntity(validation);
+            return ValidationProblemResult("targetStage", "targetStage must be one of sourced_applied, ai_screening, tech_interview, executive_round, offer_letter, hired_ready.");
         }
 
-        if (!long.TryParse(User.FindFirstValue("qlns_user_id"), NumberStyles.None, CultureInfo.InvariantCulture, out var actorUserId))
-        {
-            return ProblemResult(403, "common.actor_not_mapped", "Actor is not mapped", "The authenticated identity has no internal QLNS user mapping.");
-        }
+        var application = await service.AdvanceAsync(
+            new AdvanceApplicationCommand(applicationId, targetStage, expectedVersion, request.Reason, actor),
+            cancellationToken);
 
-        var correlationId = HttpContext.TraceIdentifier;
+        SetETag(application.Version);
+        return Ok(RecruitmentApplicationResponse.From(application));
+    });
 
-        try
-        {
-            var application = await service.AdvanceAsync(
-                new AdvanceApplicationCommand(
-                    applicationId,
-                    targetStage,
-                    expectedVersion,
-                    actorUserId,
-                    GetDataScope(),
-                    correlationId,
-                    request.Reason),
-                cancellationToken);
-
-            Response.Headers.ETag = QuoteVersion(application.Version);
-            return Ok(ToResponse(application));
-        }
-        catch (ApplicationNotFoundException exception)
-        {
-            return ProblemResult(404, "common.not_found", "Application not found", exception.Message);
-        }
-        catch (ConcurrencyConflictException exception)
-        {
-            return ProblemResult(409, "common.concurrency_conflict", "The application changed concurrently", exception.Message);
-        }
-        catch (BusinessRuleException exception)
-        {
-            return ProblemResult(409, exception.Code, "Invalid recruitment stage transition", exception.Message);
-        }
-    }
-
-    private ObjectResult ProblemResult(int status, string code, string title, string detail)
+    [HttpPost("{applicationId:long:min(1)}/{terminalAction:regex(^(reject|withdraw)$)}", Name = "terminateRecruitmentApplication")]
+    [Authorize(Policy = ApplicationPolicies.Terminate)]
+    public Task<IActionResult> Terminate(
+        long applicationId,
+        string terminalAction,
+        [FromHeader(Name = "If-Match")] string? ifMatch,
+        [FromBody] ReasonRequest request,
+        CancellationToken cancellationToken) => ExecuteAsync(async actor =>
     {
-        var problem = new ProblemDetails
+        if (!TryParseVersion(ifMatch, out var expectedVersion))
         {
-            Status = status,
-            Title = title,
-            Detail = detail,
-            Type = $"https://qlns.example/problems/{code.Replace('.', '-')}",
-            Instance = HttpContext.Request.Path
-        };
-        problem.Extensions["code"] = code;
-        problem.Extensions["correlationId"] = HttpContext.TraceIdentifier;
-        return StatusCode(status, problem);
-    }
+            return InvalidIfMatch();
+        }
 
-    private static RecruitmentApplicationResponse ToResponse(RecruitmentApplication application) => new(
-        application.Id,
-        application.CandidateId,
-        application.JobPostingId,
-        application.Stage.ToContract(),
-        application.Version,
-        application.UpdatedAt);
+        if (!ApplicationTerminalActionNames.TryParseContract(terminalAction, out var action))
+        {
+            return ValidationProblemResult("terminalAction", "terminalAction must be reject or withdraw.");
+        }
 
-    private static bool TryParseVersion(string? value, out long version)
-    {
-        version = 0;
-        return value is { Length: >= 3 } &&
-            value[0] == '"' && value[^1] == '"' &&
-            long.TryParse(value[1..^1], NumberStyles.None, CultureInfo.InvariantCulture, out version) &&
-            version > 0;
-    }
+        var application = await service.TerminateAsync(
+            new TerminateApplicationCommand(applicationId, action, expectedVersion, request.Reason, actor),
+            cancellationToken);
 
-    private static string QuoteVersion(long version) => $"\"{version.ToString(CultureInfo.InvariantCulture)}\"";
-
-    private RecruitmentDataScope GetDataScope()
-    {
-        var organizationWide = User.HasClaim("data_scope", "organization");
-        var departmentIds = User.FindAll("department_id")
-            .Select(claim => long.TryParse(claim.Value, NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0)
-            .Where(id => id > 0)
-            .ToHashSet();
-
-        return new RecruitmentDataScope(organizationWide, departmentIds);
-    }
+        SetETag(application.Version);
+        return Ok(RecruitmentApplicationResponse.From(application));
+    });
 }
-
-public sealed record AdvanceApplicationRequest(
-    [Required, MaxLength(40)] string TargetStage,
-    [MaxLength(1000)] string? Reason);
-
-public sealed record RecruitmentApplicationResponse(
-    long Id,
-    long CandidateId,
-    long JobPostingId,
-    string Stage,
-    long Version,
-    DateTimeOffset UpdatedAt);

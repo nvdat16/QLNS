@@ -246,6 +246,11 @@ CREATE TABLE employees (
     date_of_birth date,
     gender varchar(30),
     office_location varchar(255),
+    -- Personal fields required by SRS EMP-01 and PersonalProfilePatch in api/openapi.yaml.
+    -- Restricted data: encrypt at rest, mask in UI, never include in default exports.
+    permanent_address text,
+    temporary_address text,
+    emergency_contact jsonb,
     manager_id bigint REFERENCES employees(id),
     department_id bigint NOT NULL REFERENCES departments(id),
     position_id bigint NOT NULL REFERENCES positions(id),
@@ -358,6 +363,8 @@ CREATE TABLE employee_events (
     before_data jsonb NOT NULL,
     after_data jsonb NOT NULL,
     reason text NOT NULL,
+    -- Applied events are immutable; a correction points at the event it compensates (EmployeeEventWrite.compensatesEventId).
+    compensates_event_id bigint REFERENCES employee_events(id),
     created_by bigint NOT NULL REFERENCES users(id),
     approved_by bigint REFERENCES users(id),
     approved_at timestamptz,
@@ -369,8 +376,11 @@ CREATE TABLE employee_events (
     CONSTRAINT ck_employee_event_type CHECK (event_type IN (
         'probation_confirmation', 'probation_extension', 'promotion', 'demotion', 'transfer',
         'salary_adjustment', 'suspension', 'return_to_work', 'termination', 'correction'
-    ))
+    )),
+    CONSTRAINT ck_employee_event_not_self_compensation CHECK (compensates_event_id IS NULL OR compensates_event_id <> id)
 );
+
+CREATE INDEX ix_employee_events_due ON employee_events(effective_date, status) WHERE status = 'approved';
 
 CREATE TABLE application_stage_events (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

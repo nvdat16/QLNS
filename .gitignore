@@ -12,3 +12,4 @@ dist
 TestResults/
 coverage/
 /docs/deferred
+.qlns-documents/

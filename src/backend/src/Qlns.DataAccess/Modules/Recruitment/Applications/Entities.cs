@@ -14,6 +14,7 @@ public sealed class JobPostingEntity
 {
     public long Id { get; set; }
     public long DepartmentId { get; set; }
+    public string Status { get; set; } = null!;
 }
 
 public sealed class InterviewEntity

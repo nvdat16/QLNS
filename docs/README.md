@@ -21,6 +21,7 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules | Proposed · Authoritative |
 | [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ, cùng Reporting/Administration | Proposed · Supporting |
 | [Sequence Diagrams](sequence_diagrams.md) | 6 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
+| [Class Diagrams](class_diagrams.md) | Domain model 23 class theo module, design class diagram của vertical slice đã có code, và pattern 3-layer cho module còn lại | Proposed · Supporting |
 | [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |
 | [API Contract](../api/README.md) | OpenAPI 3.0.3, 87 operation trên 70 path, kèm `x-implementation-status` từng operation | Design artifact |
@@ -66,8 +67,9 @@ Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác
 1. [Architecture — arc42 + C4](architecture.md)
 2. [Constraints](architecture.md#2-constraints)
 3. [C4 building blocks](architecture.md#5-building-block-view)
-4. [Architecture decisions](architecture.md#9-architecture-decisions-adr-index)
-5. [Risks and technical debt](architecture.md#11-risks-and-technical-debt)
+4. [Class diagrams](class_diagrams.md)
+5. [Architecture decisions](architecture.md#9-architecture-decisions-adr-index)
+6. [Risks and technical debt](architecture.md#11-risks-and-technical-debt)
 
 ### Developer starting implementation
 
@@ -77,6 +79,7 @@ Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác
 4. [Crosscutting concepts](architecture.md#8-crosscutting-concepts)
 5. [Architecture fitness functions](architecture.md#12-architecture-fitness-functions)
 6. [Database design](../database/database_design.md)
+7. [Class diagrams](class_diagrams.md)
 
 ### Security / Operations reviewer
 

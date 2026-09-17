@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Qlns.Api.Development;
+using Qlns.Api.Modules.CoreHr.Shared;
 using Qlns.BusinessLogic.Modules.Recruitment.Applications;
 using Qlns.DataAccess;
 
@@ -38,9 +40,18 @@ builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = builder.Configuration["Authentication:Authority"];
-        options.Audience = builder.Configuration["Authentication:Audience"];
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        if (DevelopmentAuthentication.IsEnabled(builder.Environment, builder.Configuration))
+        {
+            // Local development without an Identity Provider: symmetric key + GET /dev/token.
+            DevelopmentAuthentication.ConfigureJwtBearer(options, builder.Configuration);
+        }
+        else
+        {
+            options.Authority = builder.Configuration["Authentication:Authority"];
+            options.Audience = builder.Configuration["Authentication:Audience"];
+            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        }
+
         options.Events = new JwtBearerEvents
         {
             OnChallenge = async context =>
@@ -73,6 +84,7 @@ builder.Services.AddAuthorization(options =>
         policy.RequireClaim("permission", "recruitment.application.read"));
     options.AddPolicy("RecruitmentAdvance", policy =>
         policy.RequireClaim("permission", "recruitment.application.advance"));
+    options.AddCoreHrPolicies();
 });
 
 var app = builder.Build();
@@ -84,6 +96,10 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapOpenApi();
 app.MapControllers();
+if (DevelopmentAuthentication.IsEnabled(app.Environment, app.Configuration))
+{
+    app.MapDevelopmentTokenEndpoint();
+}
 
 app.Run();
 

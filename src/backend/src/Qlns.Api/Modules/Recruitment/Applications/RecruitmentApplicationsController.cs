@@ -142,8 +142,8 @@ public sealed class RecruitmentApplicationsController(RecruitmentPipelineService
 }
 
 public sealed record AdvanceApplicationRequest(
-    [property: Required, MaxLength(40)] string TargetStage,
-    [property: MaxLength(1000)] string? Reason);
+    [Required, MaxLength(40)] string TargetStage,
+    [MaxLength(1000)] string? Reason);
 
 public sealed record RecruitmentApplicationResponse(
     long Id,

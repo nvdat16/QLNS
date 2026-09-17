@@ -1,0 +1,194 @@
+# QLNS Core HR — request collection for the VS Code "REST Client" extension (or JetBrains HTTP Client).
+# Prerequisites: PostgreSQL from database/schema.sql + database/seed_dev.sql, API started with
+#   dotnet run --project src/Qlns.Api   # listens on http://localhost:5080
+# Tokens come from the development-only endpoint /dev/token (personas: hr-manager, hr-officer, line-manager, employee, it-admin).
+
+@host = http://localhost:5080
+
+### Token — HR Manager (organization scope, all Core HR permissions)
+# @name hr
+GET {{host}}/dev/token?persona=hr-manager
+
+### Token — Employee (self scope)
+# @name emp
+GET {{host}}/dev/token?persona=employee
+
+### Token — Line Manager (department scope: 2, 4)
+# @name lm
+GET {{host}}/dev/token?persona=line-manager
+
+@hr = {{hr.response.body.$.token}}
+@emp = {{emp.response.body.$.token}}
+@lm = {{lm.response.body.$.token}}
+
+############################ EMP-01 Employees ############################
+
+### List directory
+GET {{host}}/api/v1/employees?page=1&pageSize=20&sort=name
+Authorization: Bearer {{hr}}
+
+### Search + filter
+GET {{host}}/api/v1/employees?search=Nguy&departmentId=4&status=probation
+Authorization: Bearer {{hr}}
+
+### Detail — self (full fields) — note the ETag header
+# @name empDetail
+GET {{host}}/api/v1/employees/4
+Authorization: Bearer {{emp}}
+
+### Detail — colleague seen by line manager (sensitive fields masked)
+GET {{host}}/api/v1/employees/4
+Authorization: Bearer {{lm}}
+
+### Update own personal profile (merge-patch, If-Match = ETag from the detail call)
+PATCH {{host}}/api/v1/employees/4/profile
+Authorization: Bearer {{emp}}
+Content-Type: application/merge-patch+json
+If-Match: {{empDetail.response.headers.ETag}}
+
+{ "phone": "0912345678", "temporaryAddress": "12 Láng Hạ, Hà Nội", "emergencyContact": { "name": "Nguyễn Thị B", "phone": "0987654321" } }
+
+### Attempt to change a work field -> 403 corehr.employee.field_forbidden
+PATCH {{host}}/api/v1/employees/4/profile
+Authorization: Bearer {{emp}}
+Content-Type: application/merge-patch+json
+If-Match: "1"
+
+{ "departmentId": 2 }
+
+############################ EMP-02 Organization ############################
+
+### Organization chart
+GET {{host}}/api/v1/organization/chart?depth=5
+Authorization: Bearer {{emp}}
+
+### Departments / positions
+GET {{host}}/api/v1/organization/departments
+Authorization: Bearer {{hr}}
+
+###
+GET {{host}}/api/v1/organization/positions
+Authorization: Bearer {{hr}}
+
+### Create department
+# @name newDept
+POST {{host}}/api/v1/organization/departments
+Authorization: Bearer {{hr}}
+Content-Type: application/json
+
+{ "code": "DATA", "name": "Đội Data", "parentDepartmentId": 2, "costCenter": "CC-120" }
+
+### Replace department (If-Match required)
+PUT {{host}}/api/v1/organization/departments/{{newDept.response.body.$.id}}
+Authorization: Bearer {{hr}}
+Content-Type: application/json
+If-Match: {{newDept.response.headers.ETag}}
+
+{ "code": "DATA", "name": "Đội Data & AI", "parentDepartmentId": 2 }
+
+### Delete department in use -> 409 corehr.department.in_use
+DELETE {{host}}/api/v1/organization/departments/4
+Authorization: Bearer {{hr}}
+If-Match: "1"
+
+### Create position
+POST {{host}}/api/v1/organization/positions
+Authorization: Bearer {{hr}}
+Content-Type: application/json
+
+{ "code": "DATA-ENG", "name": "Data Engineer", "level": "IC-3" }
+
+############################ EMP-03 Onboarding ############################
+
+### Overdue tasks
+GET {{host}}/api/v1/onboarding/tasks?overdue=true
+Authorization: Bearer {{hr}}
+
+### Tasks of one employee
+GET {{host}}/api/v1/onboarding/tasks?employeeId=4
+Authorization: Bearer {{hr}}
+
+### start -> complete -> reopen (bump If-Match each step)
+POST {{host}}/api/v1/onboarding/tasks/3/start
+Authorization: Bearer {{hr}}
+If-Match: "1"
+
+###
+POST {{host}}/api/v1/onboarding/tasks/3/complete
+Authorization: Bearer {{hr}}
+If-Match: "2"
+
+### Reopen requires corehr.onboarding.reopen + a reason
+POST {{host}}/api/v1/onboarding/tasks/3/reopen
+Authorization: Bearer {{hr}}
+Content-Type: application/json
+If-Match: "3"
+
+{ "reason": "Thẻ in sai tên" }
+
+### Update assignment
+PUT {{host}}/api/v1/onboarding/tasks/5
+Authorization: Bearer {{hr}}
+Content-Type: application/json
+If-Match: "1"
+
+{ "taskName": "Bố trí buddy/mentor", "assignedToUserId": 3, "dueAt": "2026-09-20T03:00:00Z" }
+
+############################ EMP-04 Employee events ############################
+
+### Create a draft promotion
+# @name ev
+POST {{host}}/api/v1/employees/4/events
+Authorization: Bearer {{hr}}
+Content-Type: application/json
+
+{ "eventType": "promotion", "effectiveDate": "2026-12-01", "beforeData": { "positionId": 3 }, "afterData": { "positionId": 2 }, "reason": "Thăng chức theo đánh giá Q3" }
+
+### submit -> approve (approve needs corehr.event.approve; line-manager gets 403)
+POST {{host}}/api/v1/employee-events/{{ev.response.body.$.id}}/submit
+Authorization: Bearer {{hr}}
+If-Match: "1"
+
+###
+POST {{host}}/api/v1/employee-events/{{ev.response.body.$.id}}/approve
+Authorization: Bearer {{hr}}
+If-Match: "2"
+
+### Cancel requires a reason; applied events are immutable (409 corehr.event.immutable)
+POST {{host}}/api/v1/employee-events/{{ev.response.body.$.id}}/cancel
+Authorization: Bearer {{hr}}
+Content-Type: application/json
+If-Match: "3"
+
+{ "reason": "Hủy theo yêu cầu Giám đốc" }
+
+### History
+GET {{host}}/api/v1/employees/4/events
+Authorization: Bearer {{emp}}
+
+############################ EMP-05 Employee documents ############################
+
+### Upload (multipart). Allowed: application/pdf, image/jpeg, image/png, max 10 MiB.
+# @name doc
+POST {{host}}/api/v1/employees/4/documents
+Authorization: Bearer {{hr}}
+Content-Type: multipart/form-data; boundary=----qlns
+
+------qlns
+Content-Disposition: form-data; name="documentType"
+
+degree
+------qlns
+Content-Disposition: form-data; name="file"; filename="bang-tot-nghiep.pdf"
+Content-Type: application/pdf
+
+< ./README.md
+------qlns--
+
+### List (employee sees own standard/personal docs, never disciplinary_record)
+GET {{host}}/api/v1/employees/4/documents
+Authorization: Bearer {{emp}}
+
+### Signed download URL, valid 15 minutes
+POST {{host}}/api/v1/employee-documents/{{doc.response.body.$.id}}/download-url
+Authorization: Bearer {{emp}}

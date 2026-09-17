@@ -26,6 +26,7 @@ public sealed class JobPostingEntityConfiguration : IEntityTypeConfiguration<Job
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.DepartmentId).HasColumnName("department_id");
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(40);
     }
 }
 

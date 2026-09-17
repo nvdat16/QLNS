@@ -5,17 +5,17 @@
 > **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Source backend hiện chỉ là skeleton cấu trúc; EF Core migration pipeline và PostgreSQL runtime chưa được cấu hình/xác minh. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các luồng nghiệp vụ đã hoạt động.
 
 > [!IMPORTANT]
-> Chỉ [`schema.sql`](schema.sql) là canonical — **23 bảng**, bao phủ hai phân hệ trong phạm vi: Core HR (gồm Contracts) và Recruitment. DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql` và `postgres_db.sql` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng.
+> Chỉ [`schema.sql`](schema.sql) là canonical — **24 bảng** (baseline v1.1), bao phủ hai phân hệ trong phạm vi: Core HR (gồm Contracts) và Recruitment. DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql` và `postgres_db.sql` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng.
 
 > [!NOTE]
-> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Việc thu hẹp phạm vi **không đổi DDL**: số bảng canonical vẫn là **23**, vì phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu.
+> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Việc thu hẹp phạm vi **không đổi DDL**: phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu. Bảng thứ 24 (`interview_panelists`) và các cột `currency` được bổ sung ở v1.1 khi triển khai code — xem [mục 2.6](#26-delta-v11--phát-hiện-khi-triển-khai).
 
 ---
 
 ## 📌 Mục Lục
 
 - [1. Sơ Đồ Thực Thể Quan Hệ (ERD)](#1-sơ-đồ-thực-thể-quan-hệ-erd)
-- [2. Danh Sách 23 Bảng Canonical](#2-danh-sách-23-bảng-canonical)
+- [2. Danh Sách 24 Bảng Canonical](#2-danh-sách-24-bảng-canonical)
 - [3. Danh Mục Tệp Lược Đồ Dữ Liệu](#3-danh-mục-tệp-lược-đồ-dữ-liệu)
 - [4. Kiểm Tra Thiết Kế Schema](#4-kiểm-tra-thiết-kế-schema-tùy-chọn)
 - [🔗 Quay lại README Tổng Quan](../README.md)
@@ -24,16 +24,16 @@
 
 ## 1. Sơ Đồ Thực Thể Quan Hệ (ERD)
 
-Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd), render trực tiếp từ canonical 23 bảng.
+Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd), render từ canonical 23 bảng của v1; bảng `interview_panelists` (v1.1) chưa được vẽ.
 
 > [!NOTE]
 > Sơ đồ DBML cũ (`dbml.txt` và ảnh `dbml.png`, theo mô hình 14 bảng) đã được xóa khỏi repository vì không khớp canonical schema. Đừng dựng lại nó song song với Mermaid ERD: hai nguồn sơ đồ sẽ lệch nhau.
 
 ---
 
-## 2. Danh Sách 23 Bảng Canonical
+## 2. Danh Sách 24 Bảng Canonical
 
-Canonical v1 (`schema.sql`) gồm 23 bảng thuộc năm nhóm. Cột **Trạng thái** cho biết mức độ sẵn sàng triển khai, không phải mức độ tồn tại của file SQL.
+Canonical v1.1 (`schema.sql`) gồm 24 bảng thuộc năm nhóm. Cột **Trạng thái** cho biết mức độ sẵn sàng triển khai, không phải mức độ tồn tại của file SQL.
 
 ### 2.1. Core HR — Organization & Profile
 
@@ -58,8 +58,8 @@ Canonical v1 (`schema.sql`) gồm 23 bảng thuộc năm nhóm. Cột **Trạng 
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 10 | **`contracts`** | Hợp đồng lao động: loại, mức lương, ngày hiệu lực/hết hạn, trạng thái, bản ký số hóa. | Proposed |
-| 11 | **`contract_addenda`** | Phụ lục hợp đồng với before/after terms, phiên bản và lịch sử phê duyệt. | Proposed |
+| 10 | **`contracts`** | Hợp đồng lao động: loại, mức lương và `currency` (v1.1), ngày hiệu lực/hết hạn, trạng thái, bản ký số hóa. | Implemented |
+| 11 | **`contract_addenda`** | Phụ lục hợp đồng với before/after terms và lịch sử phê duyệt. `version` là phiên bản đồng thời (ETag) từ v1.1; phụ lục được định danh bằng `addendum_number`. | Implemented |
 
 ### 2.4. Recruitment (ATS)
 
@@ -70,9 +70,10 @@ Canonical v1 (`schema.sql`) gồm 23 bảng thuộc năm nhóm. Cột **Trạng 
 | 14 | **`resumes`** | Tệp CV kèm vòng đời intake (`intake_id`, `intake_status`), trạng thái quét mã độc, dữ liệu bóc tách và độ tin cậy. Tạo trước khi có `candidates`. | Proposed |
 | 15 | **`applications`** | Đơn ứng tuyển liên kết ứng viên với tin tuyển dụng và giai đoạn pipeline. | Proposed |
 | 16 | **`application_stage_events`** | Lịch sử chuyển giai đoạn, chống ghi đè bằng `application_version`. | Proposed |
-| 17 | **`interviews`** | Lịch phỏng vấn kèm múi giờ, người phỏng vấn và trạng thái. | Proposed |
+| 17 | **`interviews`** | Lịch phỏng vấn kèm múi giờ, người phỏng vấn chính (`interviewer_user_id`) và trạng thái. | Implemented |
+| 17b | **`interview_panelists`** *(v1.1)* | Hội đồng phỏng vấn — một dòng cho mỗi `interviewerUserIds` của `InterviewWrite`; `interviewer_user_id` của `interviews` luôn có mặt trong bảng này. | Implemented |
 | 18 | **`evaluations`** | Scorecard chấm điểm với thang 0–5 bước 0.5 và cơ chế unlock có lý do. | Proposed |
-| 19 | **`offers`** | Thư mời nhận việc; index partial đảm bảo mỗi đơn chỉ có một offer đang mở. | Proposed |
+| 19 | **`offers`** | Thư mời nhận việc; index partial đảm bảo mỗi đơn chỉ có một offer đang mở. Cột `currency` (v1.1) khớp `OfferWrite.currency`. | Implemented |
 
 ### 2.5. Platform — định danh, audit, outbox
 
@@ -85,6 +86,17 @@ Bốn bảng này **vẫn thuộc canonical schema**. Chúng mang dữ liệu đ
 | 22 | **`audit_logs`** | Nhật ký hành động với before/after và `correlation_id`. **Cơ chế bắt buộc**: ghi cùng transaction với thay đổi nghiệp vụ. Không có endpoint tra cứu trong đợt này. | Proposed |
 | 23 | **`outbox_messages`** | Transactional outbox cho email và lịch. **Cơ chế bắt buộc**: ghi cùng transaction nghiệp vụ. Không có endpoint xem/retry delivery trong đợt này. | Proposed |
 
+### 2.6. Delta v1.1 — phát hiện khi triển khai
+
+Bốn khác biệt giữa contract OpenAPI và DDL v1 chỉ lộ ra khi viết code. Chúng được sửa trong chính `schema.sql` (script tạo mới) thay vì thêm `ALTER` rời, và phải được mang sang EF Core migration đầu tiên:
+
+| Delta | Lý do |
+|---|---|
+| `offers.currency char(3) NOT NULL DEFAULT 'VND'` | `OfferWrite.currency` có trong contract nhưng không có cột lưu. |
+| `contracts.currency char(3) NOT NULL DEFAULT 'VND'` | `ContractWrite.currency` tương tự. |
+| Bảng mới `interview_panelists(interview_id, user_id)` | `InterviewWrite.interviewerUserIds` là mảng; `interviews.interviewer_user_id` chỉ lưu một người. Người đầu tiên của hội đồng được ghi vào `interviewer_user_id` làm lead; `evaluations` chấm theo từng panelist. |
+| `contract_addenda.version bigint` là **phiên bản đồng thời**, bỏ `ux_contract_addendum_version (contract_id, version)` | Contract dùng `version` làm ETag/`If-Match` cho phụ lục; một unique theo `(contract_id, version)` sẽ va chạm khi hai phụ lục cùng hợp đồng được sửa. Thứ tự/định danh phụ lục dựa vào `addendum_number` (UNIQUE) và trạng thái `superseded`. |
+
 ---
 
 ## 3. Danh Mục Tệp Lược Đồ Dữ Liệu
@@ -95,10 +107,10 @@ Bốn bảng này **vẫn thuộc canonical schema**. Chúng mang dữ liệu đ
 | Tệp | Mô Tả Chi Tiết | Liên Kết |
 | :--- | :--- | :--- |
 | **`database_design.md`** | Tài liệu đặc tả kỹ thuật chi tiết từng trường, kiểu dữ liệu, ràng buộc khóa chính/khóa ngoại và Mermaid ERD. | [Xem database_design.md](./database_design.md) |
-| **`schema.sql`** | **Canonical schema contract v1 — 23 bảng.** Nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. | [Xem schema.sql](./schema.sql) |
+| **`schema.sql`** | **Canonical schema contract v1.1 — 24 bảng.** Nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. | [Xem schema.sql](./schema.sql) |
 | **`init.sql`** | ⚠️ **DEPRECATED.** Script seed/DDL cũ, chưa có bảng định danh/phân quyền, audit, outbox và các bảng lifecycle. | [Xem init.sql](./init.sql) |
 | **`postgres_db.sql`** | ⚠️ **DEPRECATED.** DDL legacy; các bảng chấm công/nghỉ phép ở đây nằm ngoài phạm vi và không khớp bản thiết kế deferred. | [Xem postgres_db.sql](./postgres_db.sql) |
-| **`seed_dev.sql`** | Dữ liệu mẫu **chỉ dùng cho môi trường phát triển**: 6 user, 6 phòng ban, 6 chức danh, 7 nhân viên, 5 task onboarding. Không thuộc hợp đồng schema và không được chạy trên môi trường dùng chung. | [Xem seed_dev.sql](./seed_dev.sql) |
+| **`seed_dev.sql`** | Dữ liệu mẫu **chỉ dùng cho môi trường phát triển**: 7 user, 6 phòng ban, 6 chức danh, 7 nhân viên, 5 task onboarding, 2 requisition, 2 ứng viên/đơn ứng tuyển, 1 phỏng vấn đã chấm, 3 hợp đồng và 1 phiếu thử việc. Không thuộc hợp đồng schema và không được chạy trên môi trường dùng chung. | [Xem seed_dev.sql](./seed_dev.sql) |
 
 ---
 

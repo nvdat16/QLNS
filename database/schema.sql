@@ -1,5 +1,8 @@
--- QLNS canonical PostgreSQL schema — baseline v1
--- Scope: Core HR (incl. Contracts) and Recruitment — 23 tables.
+-- QLNS canonical PostgreSQL schema — baseline v1.1
+-- Scope: Core HR (incl. Contracts) and Recruitment — 24 tables.
+-- v1.1 (implementation deltas, see database/README.md §2.6): offers.currency, contracts.currency,
+-- interview_panelists (interview panel), contract_addenda.version reinterpreted as the optimistic
+-- concurrency version (ETag) — the sibling-ordering unique constraint was dropped.
 -- Delivery scope follows the bold leaf functions under Recruitment and Core HR in
 -- topdown-approach.png; see section 2 of README.md. Out of scope for this delivery:
 -- Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart
@@ -186,6 +189,16 @@ CREATE TABLE interviews (
 CREATE INDEX ix_interviews_application_status ON interviews(application_id, status);
 CREATE INDEX ix_interviews_interviewer_time ON interviews(interviewer_user_id, starts_at, ends_at);
 
+-- Interview panel (InterviewWrite.interviewerUserIds). interviews.interviewer_user_id stays the lead
+-- interviewer and is always also present in this table; evaluations are keyed by panelist.
+CREATE TABLE interview_panelists (
+    interview_id bigint NOT NULL REFERENCES interviews(id) ON DELETE CASCADE,
+    user_id bigint NOT NULL REFERENCES users(id),
+    PRIMARY KEY (interview_id, user_id)
+);
+
+CREATE INDEX ix_interview_panelists_user ON interview_panelists(user_id);
+
 CREATE TABLE evaluations (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     interview_id bigint NOT NULL REFERENCES interviews(id),
@@ -219,6 +232,7 @@ CREATE TABLE offers (
     base_salary numeric(15,2) NOT NULL,
     bonus_amount numeric(15,2),
     allowance_amount numeric(15,2),
+    currency char(3) NOT NULL DEFAULT 'VND',
     employment_type varchar(50) NOT NULL,
     start_date date NOT NULL,
     expiration_date date NOT NULL,
@@ -288,6 +302,7 @@ CREATE TABLE contracts (
     start_date date NOT NULL,
     end_date date,
     salary numeric(15,2) NOT NULL,
+    currency char(3) NOT NULL DEFAULT 'VND',
     notice_period_days integer,
     status varchar(30) NOT NULL DEFAULT 'draft',
     is_primary boolean NOT NULL DEFAULT true,
@@ -311,7 +326,9 @@ CREATE TABLE contract_addenda (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     contract_id bigint NOT NULL REFERENCES contracts(id),
     addendum_number varchar(100) NOT NULL UNIQUE,
-    version integer NOT NULL DEFAULT 1,
+    -- Optimistic concurrency version (ETag / If-Match), like every other mutable table.
+    -- Addenda are identified by addendum_number; a replacement addendum supersedes the old one.
+    version bigint NOT NULL DEFAULT 1,
     status varchar(30) NOT NULL DEFAULT 'draft',
     effective_date date NOT NULL,
     before_terms jsonb NOT NULL,
@@ -324,7 +341,6 @@ CREATE TABLE contract_addenda (
     signed_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT ux_contract_addendum_version UNIQUE (contract_id, version),
     CONSTRAINT ck_contract_addendum_status CHECK (status IN ('draft', 'pending_approval', 'approved', 'effective', 'superseded', 'cancelled'))
 );
 

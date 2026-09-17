@@ -13,3 +13,4 @@ TestResults/
 coverage/
 /docs/deferred
 .qlns-documents/
+.claude/worktrees/

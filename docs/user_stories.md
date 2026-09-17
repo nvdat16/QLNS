@@ -10,6 +10,20 @@
 
 ---
 
+## Phạm vi của đợt giao hàng này
+
+Phạm vi được chốt theo bản đồ phân rã chức năng `topdown-approach.png` và mục 2 của [README](../README.md): **chỉ các chức năng lá được in đậm dưới hai trụ cột Recruitment và Core HR** (Employee Profiles, Organization Management, Contract Management, Employee Lifecycle) nằm trong đợt này. Toàn bộ story dưới đây thuộc đúng tập chức năng đó.
+
+Những phần **không** thuộc phạm vi và vì vậy không có story trong tài liệu này:
+
+- **Headcount & Budget Validation** — Requisition vẫn có luồng phê duyệt, nhưng hệ thống không tự kiểm tra định biên hay ngân sách lương; quyết định thuộc HR Manager. `target_headcount`, `salary_min`, `salary_max` chỉ là dữ liệu khai báo.
+- **Recruitment Channel Management** — Publish/Update/Close tin tuyển dụng vẫn còn, nhưng chỉ trên một kênh careers mặc định; không có việc chọn và quản lý nhiều kênh đăng tin.
+- **Organizational Chart** — không có màn hình sơ đồ cây tổ chức. Phân cấp phòng ban (`parent_department_id`), quan hệ cha con và ràng buộc xóa phòng ban vẫn trong phạm vi (xem `EMP-02.1`); chỉ phần trình bày dạng cây bị loại.
+- **Suspension & Return to Work** — không có nghiệp vụ tạm hoãn và trở lại làm việc. Trạng thái `suspended` cùng các `employee_events.event_type` tương ứng được giữ trong schema ở dạng *reserved*, không endpoint nào đặt được trong đợt này.
+- **System Administration, Reports & Analytics, Performance Management, Compensation & Benefits, Attendance & Leave Management** — toàn bộ các trụ cột này ngoài phạm vi. Việc cấp tài khoản và vai trò do Identity Provider bên ngoài đảm nhiệm; ghi audit log và transactional outbox vẫn là yêu cầu xuyên suốt, chỉ các API quản trị/tra cứu là không có.
+
+---
+
 ## Trạng thái theo phân hệ
 
 | Phân hệ | Mã story | Trạng thái |
@@ -17,6 +31,7 @@
 | **Recruitment (ATS)** | `REC-01` … `REC-06` — 10 story | Proposed |
 | **Core HR — Profile, Organization, Lifecycle** | `EMP-01` … `EMP-07` — 10 story | Proposed |
 | **Core HR — Contracts** | `CON-01` … `CON-03` — 4 story | Proposed |
+| **Tổng cộng** | **24 story** | Proposed |
 
 ---
 
@@ -32,7 +47,7 @@
   - [REC-06: Đề nghị Tuyển dụng & Bàn giao Onboarding](#rec-06-đề-nghị-tuyển-dụng--bàn-giao-onboarding)
 - [3. Phân Hệ Core HR — Hồ Sơ & Vòng Đời Nhân Sự](#3-phân-hệ-core-hr--hồ-sơ--vòng-đời-nhân-sự)
   - [EMP-01: Danh bạ & Hồ sơ Định danh Nhân viên](#emp-01-danh-bạ--hồ-sơ-định-danh-nhân-viên)
-  - [EMP-02: Cơ cấu Tổ chức & Sơ đồ Phòng ban](#emp-02-cơ-cấu-tổ-chức--sơ-đồ-phòng-ban)
+  - [EMP-02: Cơ cấu Tổ chức, Chức danh & Phân công Nhân viên](#emp-02-cơ-cấu-tổ-chức-chức-danh--phân-công-nhân-viên)
   - [EMP-03: Quy trình Tiếp nhận Nhân viên Mới (Onboarding)](#emp-03-quy-trình-tiếp-nhận-nhân-viên-mới-onboarding)
   - [EMP-04: Biến động Nhân sự & Quản lý Sự kiện Công tác](#emp-04-biến-động-nhân-sự--quản-lý-sự-kiện-công-tác)
   - [EMP-05: Quản lý Hồ sơ Tài liệu Điện tử An toàn](#emp-05-quản-lý-hồ-sơ-tài-liệu-điện-tử-an-toàn)
@@ -80,7 +95,7 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
     - **Given** người dùng để trống Số lượng tuyển hoặc nhập `target_headcount <= 0` hoặc `salary_min > salary_max`,
     - **When** người dùng nhấn lưu hoặc gửi duyệt,
     - **Then** hệ thống chặn lưu, viền đỏ các trường lỗi và hiển thị thông điệp cảnh báo rõ ràng.
-- **Ràng buộc kỹ thuật**: Lưu vết `created_by` là user hiện tại; bảng dữ liệu đích `job_postings`.
+- **Ràng buộc kỹ thuật**: Lưu vết `created_by` là user hiện tại; bảng dữ liệu đích `job_postings`. `target_headcount`, `salary_min`, `salary_max` là **dữ liệu khai báo** phục vụ người phê duyệt đọc và đối chiếu; hệ thống chỉ kiểm tra tính hợp lệ của giá trị (`target_headcount > 0`, `salary_min <= salary_max`), không đối chiếu với định biên hay ngân sách nào.
 
 ---
 
@@ -88,23 +103,24 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 - **Mô tả**:
   > **Là một** HR Manager,  
   > **Tôi muốn** xét duyệt các đề xuất tuyển dụng đang chờ và chuyển cho Recruiter kích hoạt đăng tin,  
-  > **Để** kiểm soát định biên nhân sự và ngân sách chi trả trước khi công khai ra thị trường.
+  > **Để** mỗi vị trí chỉ được công khai ra thị trường sau khi người có thẩm quyền đồng ý, và quyết định đó được lưu vết rõ ràng.
 - **Tiền điều kiện**: Bản ghi đề xuất ở trạng thái `pending_approval`; người dùng có vai trò `ROLE_HR_MGR`.
+- **Ghi chú phạm vi**: Phê duyệt là **quyết định nghiệp vụ của HR Manager**. Hệ thống không tự kiểm tra định biên hay ngân sách lương; nó chỉ trình bày dữ liệu đề xuất, ghi nhận quyết định và lý do.
 - **Tiêu chí nghiệm thu (Acceptance Criteria)**:
   - **Kịch bản 1: Phê duyệt đề xuất thành công**
     - **Given** đề xuất đang ở trạng thái `pending_approval`,
     - **When** HR Manager nhấn "Phê duyệt (Approve)",
     - **Then** trạng thái chuyển thành `approved`, hệ thống ghi nhận `approved_by` và gửi thông báo cho Recruiter phụ trách.
   - **Kịch bản 2: Từ chối đề xuất kèm lý do bắt buộc**
-    - **Given** HR Manager xem xét đề xuất nhưng ngân sách không đáp ứng,
+    - **Given** HR Manager xem xét đề xuất và quyết định không mở tuyển dụng vị trí này,
     - **When** nhấn "Từ chối (Reject)" nhưng không nhập lý do từ chối,
     - **Then** hệ thống chặn hành động và yêu cầu: *"Bắt buộc nhập lý do từ chối"*.
     - **When** đã nhập lý do và xác nhận từ chối,
     - **Then** trạng thái chuyển về `rejected` (hoặc trả lại `draft`), kèm lý do được lưu trong audit log.
   - **Kịch bản 3: Đăng tin tuyển dụng (Publishing)**
     - **Given** đề xuất đã ở trạng thái `approved`,
-    - **When** Recruiter cấu hình kênh tuyển dụng và nhấn "Đăng tin (Publish)",
-    - **Then** trạng thái chuyển sang `active`, tin hiển thị trên Careers Portal và cho phép tiếp nhận hồ sơ.
+    - **When** Recruiter nhấn "Đăng tin (Publish)",
+    - **Then** trạng thái chuyển sang `active`, tin hiển thị trên **kênh careers mặc định** của công ty và cho phép tiếp nhận hồ sơ; không có bước chọn hay cấu hình kênh đăng tin.
 
 ---
 
@@ -171,7 +187,7 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 - **Tiêu chí nghiệm thu (Acceptance Criteria)**:
   - **Kịch bản 1: Chuyển tiến một bước (Happy Path)**
     - **Given** ứng viên đang ở stage `applied` và đã có kết quả sơ loại đạt,
-    - **When** Recruiter thực hiện lệnh Advance (`POST /api/recruitment/applications/{id}/advance`),
+    - **When** Recruiter thực hiện lệnh Advance (`POST /api/v1/recruitment/applications/{applicationId}/advance`),
     - **Then** ứng viên được chuyển sang stage `screening`, hệ thống ghi nhận thời điểm chuyển, người thực hiện và tăng trường `version` để chống ghi đè đồng thời.
   - **Kịch bản 2: Chặn nhảy cóc giai đoạn bất hợp lệ**
     - **Given** ứng viên đang ở stage `applied`,
@@ -317,22 +333,40 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 
 ---
 
-### EMP-02: Cơ cấu Tổ chức & Sơ đồ Phòng ban
+### EMP-02: Cơ cấu Tổ chức, Chức danh & Phân công Nhân viên
 
-#### [EMP-02.1] Xem Sơ đồ Cơ cấu Tổ chức Cây Phân cấp (Organizational Chart View)
+#### [EMP-02.1] Quản lý Cơ cấu Tổ chức, Chức danh & Phân công Nhân viên (Organization Management)
 - **Mô tả**:
-  > **Là một** Nhân viên hoặc Quản lý,  
-  > **Tôi muốn** xem sơ đồ hình cây của toàn bộ công ty từ Ban Giám Đốc xuống các Khối, Phòng ban và Đội nhóm,  
-  > **Để** hiểu rõ cấu trúc tổ chức và mối quan hệ báo cáo công việc.
+  > **Là một** HR Manager (có HR Officer hỗ trợ khai báo),  
+  > **Tôi muốn** khai báo và duy trì danh mục phòng ban theo phân cấp cha – con, danh mục chức danh kèm cấp bậc, rồi gán nhân viên vào phòng ban, chức danh và người quản lý trực tiếp,  
+  > **Để** mọi dữ liệu nhân sự, hợp đồng và tuyển dụng đều tham chiếu tới một cơ cấu tổ chức duy nhất, nhất quán và có phạm vi dữ liệu rõ ràng.
+- **Tiền điều kiện**: Người dùng có vai trò `ROLE_HR_MGR` (khai báo danh mục) hoặc `ROLE_HR_OFFICER` (cập nhật phân công trong phạm vi dữ liệu được cấp).
 - **Tiêu chí nghiệm thu (Acceptance Criteria)**:
-  - **Kịch bản 1: Hiển thị sơ đồ cây chuẩn xác**
-    - **Given** hệ thống đã thiết lập các mối quan hệ `parent_department_id` trong bảng `departments`,
-    - **When** người dùng mở màn hình Sơ đồ tổ chức,
-    - **Then** hệ thống hiển thị cây phân cấp trực quan, mỗi nút thể hiện tên phòng ban, trưởng bộ phận, và tổng số lượng nhân sự trực thuộc (Headcount).
+  - **Kịch bản 1: Khai báo phòng ban trong phân cấp tổ chức**
+    - **Given** HR Manager nhập mã phòng ban, tên, phòng ban cấp trên (`parent_department_id`) và cost center,
+    - **When** lưu bản ghi,
+    - **Then** hệ thống tạo bản ghi trong `departments` với mã duy nhất trong toàn hệ thống và liên kết đúng phòng ban cấp trên; để trống phòng ban cấp trên nghĩa là đơn vị cấp cao nhất.
   - **Kịch bản 2: Bảo đảm toàn vẹn khi quản lý phòng ban**
-    - **Given** một phòng ban đang có nhân viên trực thuộc hoặc tin tuyển dụng đang mở,
+    - **Given** một phòng ban đang có nhân viên trực thuộc, phòng ban con hoặc tin tuyển dụng đang mở,
     - **When** người quản trị cố gắng thực hiện hành động xóa phòng ban này,
-    - **Then** hệ thống từ chối xóa và hiển thị thông báo yêu cầu điều chuyển toàn bộ nhân viên và đóng tin tuyển dụng trước.
+    - **Then** hệ thống từ chối xóa với `409 Conflict` và hiển thị thông báo yêu cầu điều chuyển toàn bộ nhân viên, xử lý phòng ban con và đóng tin tuyển dụng trước.
+  - **Kịch bản 3: Chặn phân cấp vòng lặp**
+    - **Given** phòng ban A đang là cấp trên (trực tiếp hoặc gián tiếp) của phòng ban B,
+    - **When** người dùng đặt `parent_department_id` của A trở thành B,
+    - **Then** hệ thống từ chối và báo lỗi vi phạm quy tắc chống vòng lặp; phân cấp phòng ban luôn là một cấu trúc không có chu trình.
+  - **Kịch bản 4: Khai báo chức danh và cấp bậc**
+    - **Given** HR Manager khai báo chức danh mới kèm mã, tên và cấp bậc (`level`),
+    - **When** lưu bản ghi,
+    - **Then** chức danh được tạo trong `positions` với mã duy nhất và sẵn sàng để gán cho nhân viên, hợp đồng và đề xuất tuyển dụng; đổi tên chức danh không làm mất liên kết của các bản ghi đang tham chiếu.
+  - **Kịch bản 5: Phân công nhân viên và thiết lập reporting line**
+    - **Given** một nhân viên cần được gán vào phòng ban, chức danh và người quản lý trực tiếp,
+    - **When** HR cập nhật phân công qua quyết định biến động nhân sự có ngày hiệu lực (xem `[EMP-04.1]`),
+    - **Then** hồ sơ nhân viên tham chiếu đúng `department_id`, `position_id` và `manager_id`; người quản lý trực tiếp không được là chính nhân viên đó và chuỗi reporting line không được tạo thành vòng lặp.
+  - **Kịch bản 6: Phạm vi dữ liệu dựa trên cơ cấu tổ chức**
+    - **Given** một người dùng có `data_scope_type = 'department'`,
+    - **When** người dùng tra cứu danh sách nhân viên hoặc danh mục tổ chức,
+    - **Then** hệ thống chỉ trả về phòng ban của người dùng và các phòng ban con của nó; dữ liệu ngoài phạm vi bị lọc ở phía server.
+- **Ràng buộc kỹ thuật**: `departments` (`parent_department_id`, mã duy nhất, ràng buộc chống vòng lặp và ràng buộc xóa), `positions`, `employees`; mọi thay đổi danh mục đều dùng optimistic concurrency qua `If-Match`/ETag và được ghi audit log trong cùng transaction. Đợt này **không** có màn hình hay endpoint trình bày cây tổ chức.
 
 ---
 
@@ -460,7 +494,7 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
   > **Là một** HR Officer,
   > **Tôi muốn** tạo hồ sơ thôi việc với ngày làm việc cuối và người nhận bàn giao, rồi để hệ thống sinh sẵn danh mục việc cần làm,
   > **Để** không bỏ sót việc thu hồi tài sản, khóa tài khoản và chốt công nợ khi nhân viên rời công ty.
-- **Tiền điều kiện**: Nhân viên ở trạng thái `active`, `probation` hoặc `suspended`; người dùng có vai trò `ROLE_HR_OFFICER` hoặc `ROLE_HR_MGR`.
+- **Tiền điều kiện**: Nhân viên ở trạng thái `active` hoặc `probation`; người dùng có vai trò `ROLE_HR_OFFICER` hoặc `ROLE_HR_MGR`.
 - **Tiêu chí nghiệm thu (Acceptance Criteria)**:
   - **Kịch bản 1: Tạo case và sinh checklist thành công**
     - **Given** HR Officer nhập `separation_type`, `last_working_date`, người nhận bàn giao và lý do,
@@ -611,34 +645,37 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 
 ### 5.1. Bảng phân quyền Role-to-Story
 
-| Mã User Story | Tiêu đề tóm tắt | Employee | Recruiter | Interviewer / Hiring Mgr | Line Manager | HR Officer | HR Manager | Super Admin |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **REC-01.1** | Tạo đề xuất tuyển dụng | — | — | **Tạo/Sửa** | — | — | Xem | Quản trị |
-| **REC-01.2** | Duyệt & Đăng tin tuyển | — | **Đăng tin** | — | — | — | **Phê duyệt** | Quản trị |
-| **REC-02.1** | Tiếp nhận CV & Quét an toàn | Nộp CV | **Upload** | — | — | — | Xem | Giám sát |
-| **REC-02.2** | Nhận diện trùng lặp & AI parse | — | **Kiểm tra** | — | — | — | Xem | — |
-| **REC-03.1** | Xem bảng Kanban ATS | — | **Toàn quyền** | Xem vòng phỏng vấn | — | — | Xem | — |
-| **REC-03.2** | Chuyển giai đoạn Kanban | — | **Thực hiện** | — | — | — | Giám sát | — |
-| **REC-04.1** | Xếp lịch phỏng vấn | Xem lịch | **Tạo lịch** | Tham gia | — | — | Giám sát | — |
-| **REC-05.1** | Chấm điểm Scorecard | — | Xem tổng hợp | **Chấm điểm** | — | — | Quản lý | — |
-| **REC-06.1** | Tạo & Duyệt Offer Letter | Phản hồi | **Soạn thảo** | Xem | — | — | **Phê duyệt** | — |
-| **REC-06.2** | Tự động chuyển Onboarding | — | — | — | — | **Tiếp nhận** | Giám sát | — |
-| **EMP-01.1** | Tra cứu danh bạ nhân sự | Xem cơ bản | — | Xem phòng ban | Xem phạm vi | **Toàn quyền** | **Toàn quyền** | Quản trị |
-| **EMP-01.2** | Cập nhật hồ sơ cá nhân | **Cập nhật** | — | — | — | Kiểm tra | Phê duyệt | — |
-| **EMP-02.1** | Xem sơ đồ tổ chức | Xem | Xem | Xem | Xem | Xem | Xem/Sửa | Quản trị |
-| **EMP-03.1** | Theo dõi việc Onboarding | Nhận việc | — | Nhận việc | Nhận việc | **Điều phối** | Giám sát | — |
-| **EMP-04.1** | Khởi tạo & Duyệt biến động | Xem của mình | — | Đề xuất | Đề xuất | Soạn thảo | **Phê duyệt** | Quản trị |
-| **EMP-05.1** | Lưu trữ hồ sơ điện tử | Xem của mình | — | — | — | **Quản lý** | **Quản lý** | Quản trị |
-| **EMP-06.1** | Đánh giá kết quả thử việc | Xem của mình | — | — | **Đánh giá** | Điều phối | Giám sát | — |
-| **EMP-06.2** | Quyết định hết thử việc | Nhận kết quả | — | — | Đề xuất | Soạn thảo | **Phê duyệt** | — |
-| **EMP-07.1** | Khởi tạo hồ sơ thôi việc | Xem của mình | — | — | Xác nhận bàn giao | **Soạn thảo** | **Phê duyệt** | — |
-| **EMP-07.2** | Hoàn tất bàn giao & đóng case | Thực hiện bàn giao | — | — | Xác nhận | **Đóng case** | Duyệt ngoại lệ | Quản trị tài khoản |
-| **CON-01.1** | Soạn thảo hợp đồng | — | — | — | — | **Soạn thảo** | Phê duyệt | — |
-| **CON-01.2** | Ký kết & Kích hoạt HĐ | Xem/Ký | — | — | — | **Thực hiện** | Giám sát | — |
-| **CON-02.1** | Cảnh báo hạn hợp đồng | — | — | Nhận thông báo | Nhận thông báo | **Xử lý** | Giám sát | — |
-| **CON-03.1** | Quản lý phụ lục hợp đồng | Xem của mình | — | — | — | **Soạn thảo** | **Phê duyệt** | — |
+| Mã User Story | Tiêu đề tóm tắt | Employee | Recruiter | Interviewer / Hiring Mgr | Line Manager | HR Officer | HR Manager |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **REC-01.1** | Tạo đề xuất tuyển dụng | — | — | **Tạo/Sửa** | — | — | Xem |
+| **REC-01.2** | Duyệt & Đăng tin tuyển | — | **Đăng tin** | — | — | — | **Phê duyệt** |
+| **REC-02.1** | Tiếp nhận CV & Quét an toàn | Nộp CV | **Upload** | — | — | — | Xem |
+| **REC-02.2** | Nhận diện trùng lặp & AI parse | — | **Kiểm tra** | — | — | — | Xem |
+| **REC-03.1** | Xem bảng Kanban ATS | — | **Toàn quyền** | Xem vòng phỏng vấn | — | — | Xem |
+| **REC-03.2** | Chuyển giai đoạn Kanban | — | **Thực hiện** | — | — | — | Giám sát |
+| **REC-04.1** | Xếp lịch phỏng vấn | Xem lịch | **Tạo lịch** | Tham gia | — | — | Giám sát |
+| **REC-05.1** | Chấm điểm Scorecard | — | Xem tổng hợp | **Chấm điểm** | — | — | Quản lý |
+| **REC-06.1** | Tạo & Duyệt Offer Letter | Phản hồi | **Soạn thảo** | Xem | — | — | **Phê duyệt** |
+| **REC-06.2** | Tự động chuyển Onboarding | — | — | — | — | **Tiếp nhận** | Giám sát |
+| **EMP-01.1** | Tra cứu danh bạ nhân sự | Xem cơ bản | — | Xem phòng ban | Xem phạm vi | **Toàn quyền** | **Toàn quyền** |
+| **EMP-01.2** | Cập nhật hồ sơ cá nhân | **Cập nhật** | — | — | — | Kiểm tra | Phê duyệt |
+| **EMP-02.1** | Quản lý cơ cấu tổ chức, chức danh & phân công | Xem phạm vi | Xem | Xem | Xem phạm vi | **Khai báo/Phân công** | **Toàn quyền** |
+| **EMP-03.1** | Theo dõi việc Onboarding | Nhận việc | — | Nhận việc | Nhận việc | **Điều phối** | Giám sát |
+| **EMP-04.1** | Khởi tạo & Duyệt biến động | Xem của mình | — | Đề xuất | Đề xuất | Soạn thảo | **Phê duyệt** |
+| **EMP-05.1** | Lưu trữ hồ sơ điện tử | Xem của mình | — | — | — | **Quản lý** | **Quản lý** |
+| **EMP-06.1** | Đánh giá kết quả thử việc | Xem của mình | — | — | **Đánh giá** | Điều phối | Giám sát |
+| **EMP-06.2** | Quyết định hết thử việc | Nhận kết quả | — | — | Đề xuất | Soạn thảo | **Phê duyệt** |
+| **EMP-07.1** | Khởi tạo hồ sơ thôi việc | Xem của mình | — | — | Xác nhận bàn giao | **Soạn thảo** | **Phê duyệt** |
+| **EMP-07.2** | Hoàn tất bàn giao & đóng case | Thực hiện bàn giao | — | — | Xác nhận | **Đóng case** | Duyệt ngoại lệ |
+| **CON-01.1** | Soạn thảo hợp đồng | — | — | — | — | **Soạn thảo** | Phê duyệt |
+| **CON-01.2** | Ký kết & Kích hoạt HĐ | Xem/Ký | — | — | — | **Thực hiện** | Giám sát |
+| **CON-02.1** | Cảnh báo hạn hợp đồng | — | — | Nhận thông báo | Nhận thông báo | **Xử lý** | Giám sát |
+| **CON-03.1** | Quản lý phụ lục hợp đồng | Xem của mình | — | — | — | **Soạn thảo** | **Phê duyệt** |
 
 Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_scope_type`. Nhãn "Xem phạm vi" và "Xem đội nhóm" tương ứng `data_scope_type = 'department'`; "Xem của mình" tương ứng `'self'`.
+
+> [!NOTE]
+> **Vai trò Super Admin không sở hữu story nào trong đợt này.** Toàn bộ chức năng System Administration (quản lý tài khoản, vai trò và phạm vi dữ liệu, cấu hình workflow/thông báo/integration, tra cứu audit trail) nằm ngoài phạm vi; việc cấp tài khoản và gán vai trò do Identity Provider bên ngoài đảm nhiệm. Vì vậy bảng trên không còn cột `Super Admin`. Việc kiểm tra permission và data scope phía server vẫn là yêu cầu bắt buộc của mọi story, và audit log vẫn được ghi trong cùng transaction với thay đổi nghiệp vụ — chỉ các API quản trị và tra cứu là không có trong đợt này.
 
 ---
 
@@ -663,7 +700,7 @@ Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_sco
 | User Story ID | Use Case ID | Bảng Cơ sở Dữ liệu (`schema.sql`) | API Endpoints (`openapi.yaml`) |
 | :--- | :--- | :--- | :--- |
 | **EMP-01.1/.2** | `UC_SEARCH`, `UC_VIEW`, `UC_SELF_CHANGE` | `employees`, `departments`, `positions` | `GET /api/v1/employees`, `GET /api/v1/employees/{employeeId}`, `PATCH /api/v1/employees/{employeeId}/profile` |
-| **EMP-02.1** | `UC_ORG`, `UC_ORG_MGMT` | `departments`, `positions`, `employees` | `GET /api/v1/organization/chart`, `GET\|POST /api/v1/organization/departments`, `GET\|POST /api/v1/organization/positions` |
+| **EMP-02.1** | `UC_ORG_MGMT` | `departments`, `positions`, `employees` | `GET\|POST /api/v1/organization/departments`, `PUT\|DELETE /api/v1/organization/departments/{departmentId}`, `GET\|POST /api/v1/organization/positions`, `PUT /api/v1/organization/positions/{positionId}` |
 | **EMP-03.1** | `UC_ONBOARD`, `UC_TASK` | `onboarding_tasks`, `employees` | `GET /api/v1/onboarding/tasks`, `POST /api/v1/onboarding/tasks/{taskId}/{action}` |
 | **EMP-04.1** | `UC_MOVEMENT`, `UC_MOVEMENT_DECIDE` | `employee_events`, `employees` | `POST /api/v1/employees/{employeeId}/events`, `POST /api/v1/employee-events/{eventId}/{action}` |
 | **EMP-05.1** | `UC_DOCUMENT`, `UC_DOWNLOAD` | `employee_documents`, `employees` | `POST /api/v1/employees/{employeeId}/documents`, `POST /api/v1/employee-documents/{documentId}/download-url` |
@@ -679,5 +716,5 @@ Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_sco
 
 | Nhóm story | Điều kiện bắt buộc |
 | :--- | :--- |
-| `REC-*`, `EMP-01`…`EMP-05`, `CON-*` | Chốt Identity Provider và RBAC; sinh EF Core migration đầu tiên từ canonical schema. |
-| `EMP-06`, `EMP-07` | Chốt template checklist offboarding theo đơn vị; chốt danh mục khoản thanh toán khi chấm dứt (thuộc Payroll, hiện ngoài phạm vi). |
+| `REC-*`, `EMP-01`…`EMP-05`, `CON-*` | Chốt Identity Provider bên ngoài và mô hình RBAC/data scope (API quản lý tài khoản và vai trò nằm ngoài phạm vi); sinh EF Core migration đầu tiên từ canonical schema. |
+| `EMP-06`, `EMP-07` | Chốt template checklist offboarding theo đơn vị; chốt danh mục khoản thanh toán khi chấm dứt — việc tính và chi trả thuộc Compensation & Benefits nên nằm ngoài phạm vi, phần trong phạm vi chỉ là trạng thái chốt công nợ trên hồ sơ thôi việc. |

@@ -3,12 +3,19 @@ info:
   title: QLNS API
   version: 1.0.0
   description: >-
-    Contract-first API for the two modules selected for first delivery —
-    Core HR (including Contracts) and Recruitment — plus Reports and Administration.
-    Attendance & Leave is out of scope; its contract is parked under
-    docs/deferred/attendance_leave/openapi_attendance_leave.yaml.
+    Contract-first API for the delivery scope agreed on the functional decomposition
+    map (topdown-approach.png): the functions printed in bold under Recruitment and
+    under Core HR, where Core HR includes Contract Management and the employee
+    lifecycle. Everything else on the map is out of scope for this delivery —
+    System Administration, Reports & Analytics, Performance Management,
+    Compensation & Benefits and Attendance & Leave — together with the four
+    non-bold functions inside the two selected pillars: Headcount & Budget
+    Validation, Recruitment Channel Management, Organizational Chart, and
+    Suspension & Return to Work. See README.md section 2 for the scope table.
     Workflow changes use explicit commands, ETag/If-Match concurrency control,
     server-side authorization, audit logging and transactional outbox delivery.
+    Audit logging and outbox delivery remain crosscutting mechanisms; the
+    administration endpoints that would expose or configure them are out of scope.
 servers:
   - url: http://localhost:5000
     description: Local ASP.NET Core development server
@@ -28,15 +35,8 @@ tags:
   - { name: Employee Documents }
   - { name: Contracts }
   - { name: Contract Addenda }
-  - { name: Reports }
-  - { name: Report Exports }
   - { name: Probation }
   - { name: Offboarding }
-  - { name: Administration Users }
-  - { name: Administration Authorization }
-  - { name: Administration Audit }
-  - { name: Administration Deliveries }
-  - { name: Administration Integrations }
   - { name: Operations }
 
 paths:
@@ -119,7 +119,10 @@ paths:
       operationId: transitionRecruitmentRequisition
       x-implementation-status: proposed
       summary: Submit, approve, reject, publish, close or cancel a requisition
-      description: Reject requires a reason; publish requires at least one channel.
+      description: >-
+        Reject requires a reason. Publishing makes the posting visible on the single
+        built-in careers channel; multi-channel distribution (Recruitment Channel
+        Management) is out of scope for this delivery.
       x-requirement: REC-01.2
       parameters:
         - $ref: '#/components/parameters/RequisitionId'
@@ -530,21 +533,6 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
         '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/organization/chart:
-    get:
-      tags: [Organization]
-      operationId: getOrganizationChart
-      x-implementation-status: proposed
-      summary: Get hierarchical departments with managers and headcount
-      x-requirement: EMP-02.1
-      parameters:
-        - { name: rootDepartmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: depth, in: query, schema: { type: integer, minimum: 1, maximum: 10, default: 10 } }
-      responses:
-        '200': { description: Organization tree, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/OrganizationNode' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
 
   /api/v1/organization/departments:
     get:
@@ -1010,94 +998,6 @@ paths:
         '409': { $ref: '#/components/responses/Conflict' }
         '415': { $ref: '#/components/responses/UnsupportedMediaType' }
 
-  /api/v1/reports/headcount:
-    get:
-      tags: [Reports]
-      operationId: getHeadcountReport
-      summary: Get authorized headcount and workforce KPIs
-      description: Every metric includes its formula identifier and the read-model refresh time.
-      x-requirement: REP-01
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/ReportFrom'
-        - $ref: '#/components/parameters/ReportTo'
-        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: positionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: location, in: query, schema: { type: string, maxLength: 255 } }
-      responses:
-        '200': { description: Headcount report, content: { application/json: { schema: { $ref: '#/components/schemas/HeadcountReport' } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/reports/recruitment:
-    get:
-      tags: [Reports]
-      operationId: getRecruitmentReport
-      summary: Get recruitment funnel, velocity, source and offer KPIs
-      x-requirement: REP-02
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/ReportFrom'
-        - $ref: '#/components/parameters/ReportTo'
-        - { name: departmentId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: positionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: location, in: query, schema: { type: string, maxLength: 255 } }
-        - { name: requisitionId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-      responses:
-        '200': { description: Recruitment report, content: { application/json: { schema: { $ref: '#/components/schemas/RecruitmentReport' } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/reports/exports:
-    post:
-      tags: [Report Exports]
-      operationId: createReportExport
-      summary: Create an audited asynchronous report export
-      description: Exports are data-scope filtered, field-allowlisted and watermarked by the server.
-      x-requirement: REP-01, REP-02, SYS-04
-      x-implementation-status: proposed
-      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/CreateReportExportRequest' } } } }
-      responses:
-        '202':
-          description: Export job accepted
-          headers: { Location: { $ref: '#/components/headers/Location' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/ReportExport' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/reports/exports/{exportId}:
-    get:
-      tags: [Report Exports]
-      operationId: getReportExport
-      summary: Get report export status
-      x-requirement: SYS-04
-      x-implementation-status: proposed
-      parameters: [{ $ref: '#/components/parameters/ExportId' }]
-      responses:
-        '200': { description: Export status, content: { application/json: { schema: { $ref: '#/components/schemas/ReportExport' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/v1/reports/exports/{exportId}/download-url:
-    post:
-      tags: [Report Exports]
-      operationId: createReportExportDownloadUrl
-      summary: Create a short-lived authorized URL for a completed export
-      x-requirement: SYS-04
-      x-implementation-status: proposed
-      parameters: [{ $ref: '#/components/parameters/ExportId' }]
-      responses:
-        '200': { description: Signed download, content: { application/json: { schema: { $ref: '#/components/schemas/SignedDownload' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
   /api/v1/employees/{employeeId}/probation-review:
     parameters: [{ $ref: '#/components/parameters/EmployeeId' }]
     get:
@@ -1238,7 +1138,8 @@ paths:
       summary: Approve, start, complete or cancel an offboarding case
       description: >-
         Completing is refused while any blocking task is unfinished or the final settlement is
-        not paid or waived, and cancels approved leave requests that start after the last working date.
+        not paid or waived. Cancelling approved leave that starts after the last working date is
+        deferred with the Attendance & Leave module and is not part of this delivery.
       x-requirement: EMP-07.2
       x-implementation-status: proposed
       parameters:
@@ -1296,271 +1197,15 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
-  /api/v1/administration/users:
-    get:
-      tags: [Administration Users]
-      operationId: listAdministrationUsers
-      summary: Search local actor mappings without exposing IdP credentials
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - $ref: '#/components/parameters/Search'
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/UserStatus' } }
-      responses:
-        '200': { description: Paged users, content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUserPage' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-    post:
-      tags: [Administration Users]
-      operationId: createAdministrationUserMapping
-      summary: Map an existing IdP subject to a local QLNS actor
-      description: Authentication and password lifecycle remain owned by the identity provider.
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUserWrite' } } } }
-      responses:
-        '201':
-          description: User mapping created
-          headers: { Location: { $ref: '#/components/headers/Location' }, ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUser' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/administration/users/{userId}:
-    get:
-      tags: [Administration Users]
-      operationId: getAdministrationUser
-      summary: Get a local actor mapping and role grants
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      parameters: [{ $ref: '#/components/parameters/UserId' }]
-      responses:
-        '200':
-          description: User mapping
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUser' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/v1/administration/users/{userId}/{action}:
-    post:
-      tags: [Administration Users]
-      operationId: transitionAdministrationUser
-      summary: Enable, disable or synchronize a local actor mapping
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - { name: action, in: path, required: true, schema: { type: string, enum: [enable, disable, synchronize] } }
-        - $ref: '#/components/parameters/IfMatch'
-      requestBody: { required: false, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
-      responses:
-        '200':
-          description: User mapping updated
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/AdministrationUser' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/administration/roles:
-    get:
-      tags: [Administration Authorization]
-      operationId: listRoles
-      summary: List assignable roles and permission descriptions
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      responses:
-        '200': { description: Role catalog, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/RoleDefinition' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/administration/users/{userId}/role-grants:
-    get:
-      tags: [Administration Authorization]
-      operationId: listUserRoleGrants
-      summary: List role and data-scope grants for one user
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      parameters: [{ $ref: '#/components/parameters/UserId' }]
-      responses:
-        '200': { description: Role grants, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/RoleGrant' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-    post:
-      tags: [Administration Authorization]
-      operationId: grantUserRole
-      summary: Grant a role with an explicit data scope
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/RoleGrantWrite' } } } }
-      responses:
-        '201': { description: Role granted, content: { application/json: { schema: { $ref: '#/components/schemas/RoleGrant' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/administration/users/{userId}/role-grants/{roleCode}:
-    delete:
-      tags: [Administration Authorization]
-      operationId: revokeUserRole
-      summary: Revoke one exact role and data-scope grant
-      x-requirement: SYS-01
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/UserId'
-        - { name: roleCode, in: path, required: true, schema: { type: string, maxLength: 80 } }
-        - { name: dataScopeType, in: query, required: true, schema: { $ref: '#/components/schemas/DataScopeType' } }
-        - { name: dataScopeId, in: query, required: true, schema: { type: integer, format: int64, minimum: 0 } }
-      responses:
-        '204': { description: Role grant revoked }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/administration/audit-logs:
-    get:
-      tags: [Administration Audit]
-      operationId: listAuditLogs
-      summary: Search immutable audit records within the auditor's mandate
-      x-requirement: SYS-03
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - { name: actorUserId, in: query, schema: { type: integer, format: int64, minimum: 1 } }
-        - { name: action, in: query, schema: { type: string, maxLength: 120 } }
-        - { name: entityType, in: query, schema: { type: string, maxLength: 100 } }
-        - { name: entityId, in: query, schema: { type: string, maxLength: 100 } }
-        - { name: result, in: query, schema: { $ref: '#/components/schemas/AuditResult' } }
-        - { name: from, in: query, schema: { type: string, format: date-time } }
-        - { name: to, in: query, schema: { type: string, format: date-time } }
-      responses:
-        '200': { description: Paged redacted audit records, content: { application/json: { schema: { $ref: '#/components/schemas/AuditLogPage' } } } }
-        '400': { $ref: '#/components/responses/BadRequest' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/administration/audit-logs/{auditLogId}:
-    get:
-      tags: [Administration Audit]
-      operationId: getAuditLog
-      summary: Get one redacted audit record
-      x-requirement: SYS-03
-      x-implementation-status: proposed
-      parameters: [{ $ref: '#/components/parameters/AuditLogId' }]
-      responses:
-        '200': { description: Audit record, content: { application/json: { schema: { $ref: '#/components/schemas/AuditLog' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
-  /api/v1/administration/deliveries:
-    get:
-      tags: [Administration Deliveries]
-      operationId: listDeliveries
-      summary: Search provider delivery and retry state
-      x-requirement: SYS-02
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - { name: status, in: query, schema: { $ref: '#/components/schemas/DeliveryStatus' } }
-        - { name: messageType, in: query, schema: { type: string, maxLength: 200 } }
-        - { name: aggregateType, in: query, schema: { type: string, maxLength: 100 } }
-        - { name: aggregateId, in: query, schema: { type: string, maxLength: 100 } }
-      responses:
-        '200': { description: Paged delivery records, content: { application/json: { schema: { $ref: '#/components/schemas/DeliveryPage' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/administration/deliveries/{deliveryId}/retry:
-    post:
-      tags: [Administration Deliveries]
-      operationId: retryDelivery
-      summary: Schedule a failed or dead-letter delivery for bounded retry
-      x-requirement: SYS-02
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/DeliveryId'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/ReasonRequest' } } } }
-      responses:
-        '202': { description: Retry scheduled, content: { application/json: { schema: { $ref: '#/components/schemas/Delivery' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-
-  /api/v1/administration/integrations:
-    get:
-      tags: [Administration Integrations]
-      operationId: listIntegrations
-      summary: List integration configuration without returning secrets
-      x-requirement: SYS-04
-      x-implementation-status: proposed
-      responses:
-        '200': { description: Integrations, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/IntegrationConfiguration' } } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-
-  /api/v1/administration/integrations/{integrationKey}:
-    put:
-      tags: [Administration Integrations]
-      operationId: replaceIntegrationConfiguration
-      summary: Replace non-secret settings and optionally rotate a write-only secret
-      x-requirement: SYS-04
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/IntegrationKey'
-        - $ref: '#/components/parameters/IfMatch'
-      requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/IntegrationConfigurationWrite' } } } }
-      responses:
-        '200':
-          description: Integration updated without returning secret material
-          headers: { ETag: { $ref: '#/components/headers/ETag' } }
-          content: { application/json: { schema: { $ref: '#/components/schemas/IntegrationConfiguration' } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/UnprocessableEntity' }
-
-  /api/v1/administration/integrations/{integrationKey}/test:
-    post:
-      tags: [Administration Integrations]
-      operationId: testIntegration
-      summary: Test an integration without persisting business changes
-      x-requirement: SYS-04
-      x-implementation-status: proposed
-      parameters:
-        - $ref: '#/components/parameters/IntegrationKey'
-        - $ref: '#/components/parameters/IdempotencyKey'
-      responses:
-        '202': { description: Test accepted, content: { application/json: { schema: { $ref: '#/components/schemas/IntegrationTestResult' } } } }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '404': { $ref: '#/components/responses/NotFound' }
-
   /health/live:
     get:
       tags: [Operations]
       operationId: getLiveness
       summary: Return process liveness without dependency or secret details
-      x-requirement: SYS-04
+      description: >-
+        Platform probe required by the deployment view in docs/architecture.md, not a business
+        function on the functional decomposition map. It has no requirement identifier because
+        System Administration is out of scope for this delivery.
       x-implementation-status: proposed
       security: []
       responses:
@@ -1571,7 +1216,10 @@ paths:
       tags: [Operations]
       operationId: getReadiness
       summary: Return aggregate readiness without exposing dependency details
-      x-requirement: SYS-04
+      description: >-
+        Platform probe required by the deployment view in docs/architecture.md, not a business
+        function on the functional decomposition map. It has no requirement identifier because
+        System Administration is out of scope for this delivery.
       x-implementation-status: proposed
       security: []
       responses:
@@ -1602,15 +1250,8 @@ components:
     DocumentId: { name: documentId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     ContractId: { name: contractId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     AddendumId: { name: addendumId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    ExportId: { name: exportId, in: path, required: true, schema: { type: string, format: uuid } }
     ReviewId: { name: reviewId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     CaseId: { name: caseId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    UserId: { name: userId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    AuditLogId: { name: auditLogId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
-    DeliveryId: { name: deliveryId, in: path, required: true, schema: { type: string, format: uuid } }
-    IntegrationKey: { name: integrationKey, in: path, required: true, schema: { type: string, pattern: '^[a-z][a-z0-9_-]{1,79}$' } }
-    ReportFrom: { name: from, in: query, required: true, schema: { type: string, format: date } }
-    ReportTo: { name: to, in: query, required: true, schema: { type: string, format: date } }
   headers:
     ETag: { description: Quoted numeric resource version., schema: { type: string, example: '"5"' } }
     Location: { description: Created resource URI., schema: { type: string, format: uri-reference } }
@@ -1665,7 +1306,8 @@ components:
     RequisitionAction:
       type: object
       additionalProperties: false
-      properties: { reason: { type: string, minLength: 1, maxLength: 1000, nullable: true }, channels: { type: array, minItems: 1, uniqueItems: true, items: { type: string, enum: [careers_portal, linkedin, topcv] } } }
+      description: Channel selection was removed with Recruitment Channel Management; publishing takes no channel list.
+      properties: { reason: { type: string, minLength: 1, maxLength: 1000, nullable: true } }
     RequisitionPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Requisition' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
 
     CandidateInput:
@@ -1731,7 +1373,12 @@ components:
     OfferResponseResult: { type: object, required: [offerId, status, replayed], properties: { offerId: { type: integer, format: int64 }, status: { type: string, enum: [accepted, declined] }, employeeId: { type: integer, format: int64, nullable: true }, initialContractId: { type: integer, format: int64, nullable: true }, onboardingTaskIds: { type: array, items: { type: integer, format: int64 } }, replayed: { type: boolean } } }
     OfferPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Offer' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
 
-    EmployeeStatus: { type: string, enum: [probation, active, suspended, terminated] }
+    EmployeeStatus:
+      type: string
+      enum: [probation, active, suspended, terminated]
+      description: >-
+        suspended is reserved and unreachable in this delivery: Suspension & Return to Work
+        is out of scope, so no operation sets it. Clients must still accept the value.
     EmployeeSummary:
       type: object
       required: [id, employeeCode, firstName, lastName, workEmail, departmentId, positionId, status]
@@ -1746,8 +1393,6 @@ components:
     PositionWrite: { type: object, required: [code, name], properties: { code: { type: string, maxLength: 50 }, name: { type: string, maxLength: 255 }, level: { type: string, maxLength: 50, nullable: true }, description: { type: string, maxLength: 5000, nullable: true } } }
     Position:
       allOf: [{ $ref: '#/components/schemas/PositionWrite' }, { type: object, required: [id, version], properties: { id: { type: integer, format: int64 }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } } }]
-    OrganizationNode:
-      allOf: [{ $ref: '#/components/schemas/Department' }, { type: object, required: [children], properties: { children: { type: array, items: { $ref: '#/components/schemas/OrganizationNode' } } } }]
 
     OnboardingTaskStatus: { type: string, enum: [pending, in_progress, completed] }
     OnboardingTaskWrite: { type: object, additionalProperties: false, required: [taskName], properties: { taskName: { type: string, maxLength: 255 }, description: { type: string, maxLength: 5000, nullable: true }, assignedToUserId: { type: integer, format: int64, minimum: 1, nullable: true }, dueAt: { type: string, format: date-time, nullable: true } } }
@@ -1778,41 +1423,6 @@ components:
     ContractAddendum:
       allOf: [{ $ref: '#/components/schemas/ContractAddendumWrite' }, { type: object, required: [id, contractId, status, version, createdBy], properties: { id: { type: integer, format: int64 }, contractId: { type: integer, format: int64 }, status: { type: string, enum: [draft, pending_approval, approved, effective, superseded, cancelled] }, version: { type: integer, minimum: 1 }, createdBy: { type: integer, format: int64 }, approvedBy: { type: integer, format: int64, nullable: true }, approvedAt: { type: string, format: date-time, nullable: true }, signedAt: { type: string, format: date-time, nullable: true }, signedDocumentAvailable: { type: boolean } } }]
 
-    ReportFilter:
-      type: object
-      required: [from, to]
-      properties: { from: { type: string, format: date }, to: { type: string, format: date }, departmentId: { type: integer, format: int64, nullable: true }, positionId: { type: integer, format: int64, nullable: true }, location: { type: string, nullable: true } }
-    ReportMetric:
-      type: object
-      required: [key, label, value, formula]
-      properties: { key: { type: string }, label: { type: string }, value: { type: number }, unit: { type: string, enum: [count, percent, days, currency] }, formula: { type: string, description: Stable formula identifier rather than executable expression. } }
-    DistributionPoint:
-      type: object
-      required: [key, label, value]
-      properties: { key: { type: string }, label: { type: string }, value: { type: number }, percent: { type: number, minimum: 0, maximum: 100, nullable: true } }
-    HeadcountReport:
-      type: object
-      required: [filter, metrics, byDepartment, byContractType, refreshedAt, policyVersion]
-      properties: { filter: { $ref: '#/components/schemas/ReportFilter' }, metrics: { type: array, items: { $ref: '#/components/schemas/ReportMetric' } }, byDepartment: { type: array, items: { $ref: '#/components/schemas/DistributionPoint' } }, byContractType: { type: array, items: { $ref: '#/components/schemas/DistributionPoint' } }, refreshedAt: { type: string, format: date-time }, policyVersion: { type: string } }
-    FunnelPoint:
-      type: object
-      required: [stage, enteredCount, conversionRate]
-      properties: { stage: { $ref: '#/components/schemas/RecruitmentStage' }, enteredCount: { type: integer, minimum: 0 }, conversionRate: { type: number, minimum: 0, maximum: 100 } }
-    RecruitmentReport:
-      type: object
-      required: [filter, funnel, metrics, bySource, refreshedAt, policyVersion]
-      properties: { filter: { $ref: '#/components/schemas/ReportFilter' }, funnel: { type: array, items: { $ref: '#/components/schemas/FunnelPoint' } }, metrics: { type: array, items: { $ref: '#/components/schemas/ReportMetric' } }, bySource: { type: array, items: { $ref: '#/components/schemas/DistributionPoint' } }, refreshedAt: { type: string, format: date-time }, policyVersion: { type: string } }
-    ReportType: { type: string, enum: [headcount, recruitment] }
-    ExportFormat: { type: string, enum: [csv, xlsx, pdf] }
-    CreateReportExportRequest:
-      type: object
-      additionalProperties: false
-      required: [reportType, format, filter]
-      properties: { reportType: { $ref: '#/components/schemas/ReportType' }, format: { $ref: '#/components/schemas/ExportFormat' }, filter: { $ref: '#/components/schemas/ReportFilter' } }
-    ReportExport:
-      type: object
-      required: [id, reportType, format, status, requestedAt, expiresAt]
-      properties: { id: { type: string, format: uuid }, reportType: { $ref: '#/components/schemas/ReportType' }, format: { $ref: '#/components/schemas/ExportFormat' }, status: { type: string, enum: [queued, processing, completed, failed, expired] }, requestedAt: { type: string, format: date-time }, completedAt: { type: string, format: date-time, nullable: true }, expiresAt: { type: string, format: date-time }, failureCode: { type: string, nullable: true } }
 
     DecisionRequest: { type: object, additionalProperties: false, properties: { reason: { type: string, maxLength: 1000, nullable: true } } }
     ProbationReviewStatus: { type: string, enum: [pending, in_review, decided, cancelled] }
@@ -1848,50 +1458,6 @@ components:
       required: [id, offboardingCaseId, templateKey, category, taskName, status, blocksLastWorkingDay, version]
       properties: { id: { type: integer, format: int64 }, offboardingCaseId: { type: integer, format: int64 }, templateKey: { type: string }, category: { $ref: '#/components/schemas/OffboardingTaskCategory' }, taskName: { type: string }, description: { type: string, nullable: true }, assignedToUserId: { type: integer, format: int64, nullable: true }, dueAt: { type: string, format: date-time, nullable: true }, blocksLastWorkingDay: { type: boolean }, status: { type: string, enum: [pending, in_progress, completed] }, completedAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 } }
 
-    UserStatus: { type: string, enum: [active, disabled] }
-    DataScopeType: { type: string, enum: [self, department, organization] }
-    AdministrationUserWrite:
-      type: object
-      required: [externalSubject, email, displayName]
-      properties: { externalSubject: { type: string, maxLength: 255 }, email: { type: string, format: email, maxLength: 320 }, displayName: { type: string, maxLength: 255 } }
-    AdministrationUser:
-      allOf: [{ $ref: '#/components/schemas/AdministrationUserWrite' }, { type: object, required: [id, status, roleGrants, version, createdAt, updatedAt], properties: { id: { type: integer, format: int64 }, status: { $ref: '#/components/schemas/UserStatus' }, roleGrants: { type: array, items: { $ref: '#/components/schemas/RoleGrant' } }, version: { type: integer, format: int64 }, createdAt: { type: string, format: date-time }, updatedAt: { type: string, format: date-time } } }]
-    AdministrationUserPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/AdministrationUser' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-    RoleDefinition:
-      type: object
-      required: [code, name, permissions, allowedDataScopes]
-      properties: { code: { type: string }, name: { type: string }, description: { type: string, nullable: true }, permissions: { type: array, items: { type: string } }, allowedDataScopes: { type: array, items: { $ref: '#/components/schemas/DataScopeType' } } }
-    RoleGrantWrite:
-      type: object
-      required: [roleCode, dataScopeType, dataScopeId]
-      properties: { roleCode: { type: string, maxLength: 80 }, dataScopeType: { $ref: '#/components/schemas/DataScopeType' }, dataScopeId: { type: integer, format: int64, minimum: 0 } }
-    RoleGrant:
-      allOf: [{ $ref: '#/components/schemas/RoleGrantWrite' }, { type: object, required: [grantedAt], properties: { grantedAt: { type: string, format: date-time }, grantedBy: { type: integer, format: int64, nullable: true } } }]
-    AuditResult: { type: string, enum: [succeeded, rejected, failed] }
-    AuditLog:
-      type: object
-      required: [id, action, entityType, entityId, result, correlationId, occurredAt]
-      properties: { id: { type: integer, format: int64 }, actorUserId: { type: integer, format: int64, nullable: true }, action: { type: string }, entityType: { type: string }, entityId: { type: string }, beforeData: { type: object, additionalProperties: true, nullable: true, description: Redacted and field-allowlisted. }, afterData: { type: object, additionalProperties: true, nullable: true, description: Redacted and field-allowlisted. }, result: { $ref: '#/components/schemas/AuditResult' }, correlationId: { type: string }, occurredAt: { type: string, format: date-time } }
-    AuditLogPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/AuditLog' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-    DeliveryStatus: { type: string, enum: [pending, processing, delivered, retry_scheduled, failed, dead_letter] }
-    Delivery:
-      type: object
-      required: [id, messageType, aggregateType, aggregateId, status, occurredAt, availableAt, attempts]
-      properties: { id: { type: string, format: uuid }, messageType: { type: string }, aggregateType: { type: string }, aggregateId: { type: string }, status: { $ref: '#/components/schemas/DeliveryStatus' }, occurredAt: { type: string, format: date-time }, availableAt: { type: string, format: date-time }, processedAt: { type: string, format: date-time, nullable: true }, attempts: { type: integer, minimum: 0 }, lastErrorCode: { type: string, nullable: true } }
-    DeliveryPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/Delivery' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
-    IntegrationConfigurationWrite:
-      type: object
-      additionalProperties: false
-      required: [enabled, settings]
-      properties: { enabled: { type: boolean }, settings: { type: object, additionalProperties: true }, rotatedSecret: { type: string, minLength: 16, writeOnly: true, nullable: true } }
-    IntegrationConfiguration:
-      type: object
-      required: [key, provider, enabled, secretConfigured, settings, version, updatedAt]
-      properties: { key: { type: string }, provider: { type: string }, enabled: { type: boolean }, secretConfigured: { type: boolean }, settings: { type: object, additionalProperties: true }, lastSuccessfulAt: { type: string, format: date-time, nullable: true }, version: { type: integer, format: int64 }, updatedAt: { type: string, format: date-time } }
-    IntegrationTestResult:
-      type: object
-      required: [id, integrationKey, status, startedAt]
-      properties: { id: { type: string, format: uuid }, integrationKey: { type: string }, status: { type: string, enum: [queued, running, succeeded, failed] }, startedAt: { type: string, format: date-time }, completedAt: { type: string, format: date-time, nullable: true }, resultCode: { type: string, nullable: true } }
     HealthStatus:
       type: object
       additionalProperties: false

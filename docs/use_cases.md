@@ -12,26 +12,25 @@
 
 ## 1. Use Case Tổng Quát
 
-Sơ đồ dưới đây thể hiện các actor và nhóm chức năng quản lý chính trong toàn bộ QLNS. Các phần tiếp theo phân rã từng nhóm thành use case chi tiết.
+Sơ đồ dưới đây thể hiện các actor và nhóm chức năng quản lý **thuộc phạm vi giao hàng** của QLNS: hai trụ cột Recruitment và Core HR (gồm Contract Management) theo `topdown-approach.png`, mục 2 của [README.md](../README.md). Các phần tiếp theo phân rã từng nhóm thành use case chi tiết.
 
 
 ```mermaid
 flowchart LR
-    Admin([Super Admin])
     HRMgr([HR Director / Manager])
     Recruiter([Recruiter])
     Interviewer([Hiring Manager / Interviewer])
     HROfficer([HR Officer])
+    LineMgr([Line Manager])
     User([Employee / Candidate])
 
     subgraph HRMS["QLNS / HRMS"]
-        Jobs[Create & publish job requisitions]
+        Jobs[Create, approve & publish job requisitions]
         ATS[Screen CVs & manage ATS pipeline]
         Interviews[Schedule interviews & submit scorecards]
-        Offers[Approve offers & onboarding]
-        Records[Manage employee records & contracts]
-        Reports[View workforce reports]
-        Access[Manage accounts & RBAC]
+        Offers[Approve offers & hand off to onboarding]
+        Records[Manage employee records, org data & contracts]
+        Lifecycle[Run probation, mobility & offboarding]
     end
 
     Recruiter --> Jobs
@@ -39,15 +38,19 @@ flowchart LR
     Recruiter --> Interviews
     Interviewer --> Jobs
     Interviewer --> Interviews
+    HRMgr --> Jobs
     HRMgr --> Offers
     HRMgr --> Records
-    HRMgr --> Reports
+    HRMgr --> Lifecycle
     HROfficer --> Records
+    HROfficer --> Lifecycle
+    LineMgr --> Lifecycle
     User --> ATS
     User --> Records
-    Admin --> Access
-    Admin --> Reports
+    User --> Lifecycle
 ```
+
+Phạm vi đợt này không có use case báo cáo, phân tích, quản trị tài khoản, cấp/thu hồi vai trò và phạm vi dữ liệu, cấu hình hệ thống hay tra cứu nhật ký kiểm toán; cũng không có use case xem cây tổ chức trực quan và tạm hoãn/trở lại làm việc. Ghi nhật ký kiểm toán và gửi thông báo qua outbox vẫn là hành vi bắt buộc của mọi use case nghiệp vụ, chỉ các màn hình và API quản trị tương ứng là ngoài phạm vi. Vai trò **Super Admin / System Administrator** vì vậy không có use case nghiệp vụ nào trong đợt giao hàng hiện tại; actor này chỉ còn xuất hiện ở mục 5 với use case hạ tầng.
 
 ---
 
@@ -60,7 +63,7 @@ flowchart LR
     Recruiter(["👤 Recruiter"])
     HRManager(["👤 HR Manager"])
     Interviewer(["👤 Người phỏng vấn"])
-    JobBoard["Hệ thống ngoài<br/>Job Board"]
+    Careers["Hệ thống ngoài<br/>Cổng Careers (kênh mặc định)"]
     Communication["Hệ thống ngoài<br/>Email / Calendar"]
 
     subgraph QLNS_ATS["QLNS — Quản lý Tuyển dụng"]
@@ -68,7 +71,7 @@ flowchart LR
         UC_REQ_DRAFT(["Tạo requisition nháp<br/>[REC-01.1]"])
         UC_REQ_SUBMIT(["Gửi requisition phê duyệt<br/>[REC-01.2]"])
         UC_REQ_DECIDE(["Phê duyệt / Từ chối requisition<br/>[REC-01.3]"])
-        UC_PUBLISH(["Đăng tin tuyển dụng<br/>[REC-01.4]"])
+        UC_PUBLISH(["Đăng / Cập nhật / Đóng tin tuyển dụng<br/>[REC-01.4]"])
         UC_APPROVED_CHECK(["Kiểm tra requisition đã Approved"])
         UC_UPLOAD(["Nộp / Upload CV an toàn<br/>[REC-02.1]"])
         UC_SCAN(["Kiểm tra file và malware"])
@@ -114,7 +117,7 @@ flowchart LR
     Recruiter --> UC_OFFER
     HRManager --> UC_OFFER
     Candidate --> UC_ACCEPT
-    UC_PUBLISH --> JobBoard
+    UC_PUBLISH --> Careers
     UC_INTERVIEW --> Communication
     UC_REJECT --> Communication
     UC_OFFER --> Communication
@@ -122,7 +125,8 @@ flowchart LR
 
 ### Ranh giới nghiệp vụ chính
 
-- Requisition chỉ được đăng sau khi HR Manager phê duyệt.
+- Requisition chỉ được đăng sau khi HR Manager phê duyệt; phê duyệt là quyết định của người có thẩm quyền, hệ thống không tự kiểm tra định biên hay quỹ lương.
+- Tin tuyển dụng chỉ phát hành trên một cổng careers mặc định; việc chọn và quản lý nhiều kênh đăng tin không thuộc phạm vi.
 - Application chỉ tiến đúng một stage; nhảy/lùi stage và ghi đè version cũ bị từ chối.
 - Vào vòng phỏng vấn cần lịch hợp lệ; vào Offer cần đánh giá đủ điều kiện.
 - Candidate-to-employee handoff phải idempotent, không tạo trùng nhân viên, hợp đồng hoặc checklist.
@@ -143,8 +147,7 @@ flowchart LR
         UC_SEARCH(["Tìm kiếm / Lọc danh bạ<br/>[EMP-01.1]"])
         UC_VIEW(["Xem hồ sơ theo phạm vi<br/>[EMP-01.2]"])
         UC_SELF_CHANGE(["Đề nghị sửa thông tin cá nhân"])
-        UC_ORG(["Xem cơ cấu tổ chức<br/>[EMP-02.1]"])
-        UC_ORG_MGMT(["Quản lý phòng ban / vị trí"])
+        UC_ORG_MGMT(["Quản lý phòng ban, chức danh, phân công và reporting line<br/>[EMP-02.1]"])
         UC_ONBOARD(["Theo dõi onboarding checklist<br/>[EMP-03.1]"])
         UC_TASK(["Nhận và hoàn thành onboarding task"])
         UC_MOVEMENT(["Tạo đề xuất biến động nhân sự<br/>[EMP-04.1]"])
@@ -184,7 +187,6 @@ flowchart LR
 
     Employee --> UC_VIEW
     Employee --> UC_SELF_CHANGE
-    Employee --> UC_ORG
     HROfficer --> UC_SEARCH
     HROfficer --> UC_VIEW
     HROfficer --> UC_ONBOARD
@@ -192,7 +194,6 @@ flowchart LR
     HROfficer --> UC_DOCUMENT
     HRManager --> UC_MOVEMENT_DECIDE
     HRManager --> UC_ORG_MGMT
-    LineManager --> UC_ORG
     LineManager --> UC_ONBOARD
     LineManager --> UC_PROBATION
     HRManager --> UC_PROBATION_DECIDE
@@ -211,6 +212,7 @@ flowchart LR
 
 - Nhân viên chỉ xem/sửa trường được phép của chính mình; HR vẫn bị giới hạn bởi data scope và field allowlist.
 - Phòng ban, chức danh, trạng thái và quản lý trực tiếp không được sửa thẳng trên hồ sơ; phải qua employee event.
+- Phân cấp phòng ban cha – con, ràng buộc chống chu trình và ràng buộc xóa phòng ban vẫn được kiểm soát ở tầng dữ liệu, nhưng không có use case hiển thị cây tổ chức.
 - Event đã áp dụng không bị xóa/sửa lịch sử; thay đổi ngược dùng compensating event.
 - Tài liệu luôn private, được kiểm tra an toàn và chỉ tải qua quyền truy cập có thời hạn.
 - Mỗi hợp đồng thử việc có đúng một phiếu đánh giá; kết quả chỉ vào hồ sơ qua employee event đã phê duyệt.
@@ -275,78 +277,44 @@ flowchart LR
 - Phụ lục không sửa nội dung hợp đồng gốc và phải giữ before/after, phê duyệt, chữ ký, phiên bản.
 - Lỗi gửi cảnh báo không rollback trạng thái hợp đồng; delivery được retry hữu hạn.
 
-## 5. Báo cáo, quản trị và dịch vụ dùng chung
+## 5. Theo dõi vận hành hệ thống
+
+Đợt giao hàng này không có use case báo cáo, phân tích hay quản trị hệ thống. Phần còn lại duy nhất là theo dõi tình trạng hoạt động của dịch vụ — đây là hạ tầng phục vụ triển khai và giám sát, không phải chức năng nghiệp vụ trên bản đồ chức năng.
 
 ```mermaid
 flowchart LR
-    HRManager(["👤 HR Manager"])
-    Recruiter(["👤 Recruiter"])
     Admin(["👤 System Administrator"])
-    Auditor(["👤 Auditor"])
-    Worker(["⚙️ Background Worker"])
-    IdP["Hệ thống ngoài<br/>Identity Provider"]
-    Provider["Hệ thống ngoài<br/>Email / Calendar / Job Board"]
+    Monitor["Hệ thống ngoài<br/>Monitoring / Load Balancer"]
 
-    subgraph QLNS_SHARED["QLNS — Reporting & Administration"]
+    subgraph QLNS_OPS["QLNS — Operations"]
         direction TB
-        UC_HEADCOUNT(["Xem dashboard quân số<br/>[REP-01]"])
-        UC_FUNNEL(["Xem recruitment funnel<br/>[REP-02]"])
-        UC_FILTER(["Lọc theo thời gian / đơn vị / vị trí"])
-        UC_EXPORT(["Xuất CSV / Excel / PDF"])
-        UC_PROTECT(["Mask field / Watermark / Data scope"])
-        UC_ACCOUNT(["Ánh xạ tài khoản từ IdP<br/>[SYS-01]"])
-        UC_ROLE(["Cấp / Thu hồi role và data scope<br/>[SYS-01]"])
-        UC_AUDIT(["Tra cứu audit log<br/>[SYS-03]"])
-        UC_DELIVERY(["Theo dõi / Retry delivery<br/>[SYS-02]"])
-        UC_INTEGRATION(["Quản lý cấu hình tích hợp<br/>[SYS-04]"])
         UC_HEALTH(["Theo dõi health / readiness"])
-
-        UC_HEADCOUNT -. "<<include>>" .-> UC_FILTER
-        UC_FUNNEL -. "<<include>>" .-> UC_FILTER
-        UC_EXPORT -. "<<extend>>" .-> UC_HEADCOUNT
-        UC_EXPORT -. "<<extend>>" .-> UC_FUNNEL
-        UC_EXPORT -. "<<include>>" .-> UC_PROTECT
-        UC_ROLE -. "<<include>>" .-> UC_AUDIT
-        UC_DELIVERY -. "<<include>>" .-> UC_AUDIT
-        UC_INTEGRATION -. "<<include>>" .-> UC_AUDIT
     end
 
-    HRManager --> UC_HEADCOUNT
-    HRManager --> UC_FUNNEL
-    HRManager --> UC_EXPORT
-    Recruiter --> UC_FUNNEL
-    Admin --> UC_ACCOUNT
-    Admin --> UC_ROLE
-    Admin --> UC_DELIVERY
-    Admin --> UC_INTEGRATION
     Admin --> UC_HEALTH
-    Auditor --> UC_AUDIT
-    IdP --> UC_ACCOUNT
-    Worker --> UC_DELIVERY
-    UC_DELIVERY --> Provider
-    UC_INTEGRATION --> Provider
+    Monitor --> UC_HEALTH
 ```
 
 ### Ranh giới nghiệp vụ chính
 
-- KPI phải công bố công thức, thời điểm làm mới và filter đang áp dụng.
-- Báo cáo và tổng số không được làm lộ dữ liệu ngoài data scope.
-- Export dữ liệu nhạy cảm cần permission riêng, watermark và audit.
-- QLNS lưu ánh xạ actor/role/data scope; IdP chịu trách nhiệm xác thực danh tính và phát token.
+- `GET /health/live` và `GET /health/ready` là endpoint hạ tầng, không trả dữ liệu nghiệp vụ và không yêu cầu quyền nghiệp vụ.
+- Đây là use case duy nhất của actor System Administrator trong đợt này; quản lý tài khoản, vai trò, phạm vi dữ liệu, cấu hình tích hợp/thông báo và tra cứu nhật ký kiểm toán đều ngoài phạm vi. Việc cấp và thu hồi tài khoản do Identity Provider bên ngoài đảm nhiệm, cấu hình nằm trong `appsettings`.
+- Ghi nhật ký kiểm toán trong cùng transaction với thay đổi nghiệp vụ và gửi thông báo qua transactional outbox **vẫn bắt buộc** với mọi use case ở các mục 2, 3 và 4; chỉ màn hình và API tra cứu/retry tương ứng là ngoài phạm vi.
 
 ## 6. Ma trận actor — nhóm chức năng
 
-| Actor | Tuyển dụng | Core HR | Hợp đồng | Báo cáo / Quản trị |
-|---|---|---|---|---|
-| Candidate | Nộp CV, phản hồi Offer | — | — | — |
-| Employee | — | Hồ sơ cá nhân, sơ đồ tổ chức, bàn giao khi thôi việc | Xem/ký hợp đồng | — |
-| Hiring/Line Manager | Requisition, phỏng vấn | Cơ cấu đội ngũ, onboarding, đánh giá thử việc, xác nhận bàn giao | — | Báo cáo theo scope |
-| Recruiter | Pipeline, lịch, scorecard, Offer | — | — | Recruitment analytics |
-| HR Officer / C&B | Hỗ trợ tiếp nhận | Hồ sơ, onboarding, biến động, tài liệu, khởi tạo & đóng case thôi việc | Soạn hợp đồng/phụ lục | Export theo quyền |
-| HR Manager | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc | Phê duyệt hợp đồng/phụ lục | Dashboard toàn quyền HR |
-| System Admin | — | Không mặc định xem dữ liệu HR; vô hiệu hóa tài khoản khi thôi việc | — | Account, role, integration, health |
-| Auditor | — | — | — | Audit read-only theo mandate |
+| Actor | Tuyển dụng | Core HR | Hợp đồng |
+|---|---|---|---|
+| Candidate | Nộp CV, phản hồi Offer | — | — |
+| Employee | — | Hồ sơ cá nhân, thông tin phòng ban và quản lý trực tiếp, bàn giao khi thôi việc | Xem/ký hợp đồng |
+| Hiring/Line Manager | Requisition, phỏng vấn | Cơ cấu đội ngũ, onboarding, đánh giá thử việc, xác nhận bàn giao | — |
+| Recruiter | Pipeline, lịch, scorecard, Offer | — | — |
+| HR Officer / C&B | Hỗ trợ tiếp nhận | Hồ sơ, onboarding, biến động, tài liệu, khởi tạo & đóng case thôi việc | Soạn hợp đồng/phụ lục |
+| HR Manager | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc, quản lý phòng ban/chức danh | Phê duyệt hợp đồng/phụ lục |
+| System Administrator | — | Vô hiệu hóa tài khoản đúng ngày làm việc cuối; không mặc định xem dữ liệu HR | — |
+
+Ma trận chỉ còn ba nhóm chức năng vì đó là toàn bộ phạm vi giao hàng. Cột báo cáo và quản trị hệ thống đã được bỏ: các chức năng đó thuộc trụ cột Reports & Analytics và System Administration, nằm ngoài phạm vi đợt này. Vì vậy actor **Super Admin / System Administrator** chỉ còn use case hạ tầng ở mục 5, và vai trò **Auditor** không có use case nào trong đợt này — nhật ký kiểm toán vẫn được ghi đầy đủ, nhưng không có màn hình hay API tra cứu.
 
 Chấm công / nghỉ phép không còn là một cột ở đây vì nhóm chức năng đó nằm ngoài phạm vi triển khai; use case của nó được giữ tại [deferred/attendance_leave/use_cases_att.md](deferred/attendance_leave/use_cases_att.md).
 
-System Admin không mặc nhiên có quyền đọc hồ sơ, lương hoặc hợp đồng; quyền vận hành và quyền dữ liệu nghiệp vụ phải tách biệt.
+System Administrator không mặc nhiên có quyền đọc hồ sơ, lương hoặc hợp đồng; quyền vận hành và quyền dữ liệu nghiệp vụ phải tách biệt.

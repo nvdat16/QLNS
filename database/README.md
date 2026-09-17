@@ -5,13 +5,16 @@
 > **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Source backend hiện chỉ là skeleton cấu trúc; EF Core migration pipeline và PostgreSQL runtime chưa được cấu hình/xác minh. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các luồng nghiệp vụ đã hoạt động.
 
 > [!IMPORTANT]
-> Chỉ [`schema.sql`](schema.sql) là canonical — **23 bảng**, bao phủ hai phân hệ triển khai trước: Core HR (gồm Contracts) và Recruitment. DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql`, `postgres_db.sql` và `dbml.txt` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng. `dbml.png` render từ `dbml.txt` nên cũng là sơ đồ cũ.
+> Chỉ [`schema.sql`](schema.sql) là canonical — **23 bảng**, bao phủ hai phân hệ trong phạm vi: Core HR (gồm Contracts) và Recruitment. DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql` và `postgres_db.sql` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng.
+
+> [!NOTE]
+> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Việc thu hẹp phạm vi **không đổi DDL**: số bảng canonical vẫn là **23**, vì phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu.
 
 ---
 
 ## 📌 Mục Lục
 
-- [1. Sơ Đồ Thực Thể Quan Hệ (Visual DBML & ERD)](#1-sơ-đồ-thực-thể-quan-hệ-visual-dbml--erd)
+- [1. Sơ Đồ Thực Thể Quan Hệ (ERD)](#1-sơ-đồ-thực-thể-quan-hệ-erd)
 - [2. Danh Sách 23 Bảng Canonical](#2-danh-sách-23-bảng-canonical)
 - [3. Danh Mục Tệp Lược Đồ Dữ Liệu](#3-danh-mục-tệp-lược-đồ-dữ-liệu)
 - [4. Kiểm Tra Thiết Kế Schema](#4-kiểm-tra-thiết-kế-schema-tùy-chọn)
@@ -19,14 +22,12 @@
 
 ---
 
-## 1. Sơ Đồ Thực Thể Quan Hệ (Visual DBML & ERD)
+## 1. Sơ Đồ Thực Thể Quan Hệ (ERD)
 
-### 📷 Sơ đồ Cấu trúc Bảng & Khóa ngoại (DBML Schema Diagram)
+Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd), render trực tiếp từ canonical 23 bảng.
 
-> [!WARNING]
-> Ảnh dưới đây render từ `dbml.txt` theo mô hình **14 bảng cũ** và chưa phản ánh canonical 23 bảng. Nguồn ERD hiện hành là Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd).
-
-![Sơ đồ Cấu trúc Bảng DBML](dbml.png)
+> [!NOTE]
+> Sơ đồ DBML cũ (`dbml.txt` và ảnh `dbml.png`, theo mô hình 14 bảng) đã được xóa khỏi repository vì không khớp canonical schema. Đừng dựng lại nó song song với Mermaid ERD: hai nguồn sơ đồ sẽ lệch nhau.
 
 ---
 
@@ -38,16 +39,16 @@ Canonical v1 (`schema.sql`) gồm 23 bảng thuộc năm nhóm. Cột **Trạng 
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 1 | **`departments`** | Danh mục phòng ban, có `parent_department_id` cho cây tổ chức nhiều cấp và `cost_center`. | Proposed |
+| 1 | **`departments`** | Danh mục phòng ban, có `parent_department_id` cho phân cấp nhiều tầng và `cost_center`. *Departments & Organizational Hierarchy* trong phạm vi nên quan hệ cha con, quy tắc chống vòng lặp và ràng buộc khi xóa được giữ; chỉ màn hình/endpoint *Organizational Chart* nằm ngoài phạm vi. | Proposed |
 | 2 | **`positions`** | Danh mục chức danh, vị trí công việc và cấp bậc. | Proposed |
-| 3 | **`employees`** | Bảng nhân viên trung tâm: định danh, liên hệ, phòng ban, chức vụ, `manager_id`, trạng thái công tác. `work_email` nullable tới khi kích hoạt; `source_application_id` unique là khóa idempotency của handoff. | Proposed · target of REC-06.2 |
+| 3 | **`employees`** | Bảng nhân viên trung tâm: định danh, liên hệ, phòng ban, chức vụ, `manager_id`, trạng thái công tác. `work_email` nullable tới khi kích hoạt; `source_application_id` unique là khóa idempotency của handoff. `status = 'suspended'` là **giá trị reserved, ngoài phạm vi** đợt này — không endpoint nào đặt được. | Proposed · target of REC-06.2 |
 
 ### 2.2. Core HR — Employee Lifecycle
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
 | 4 | **`onboarding_tasks`** | Checklist tiếp nhận nhân sự mới, sinh từ template theo đơn vị/vị trí. | Proposed |
-| 5 | **`employee_events`** | Lịch sử biến động nhân sự với before/after JSON và luồng phê duyệt. | Proposed |
+| 5 | **`employee_events`** | Lịch sử biến động nhân sự với before/after JSON và luồng phê duyệt. `event_type` là `'suspension'` hoặc `'return_to_work'` là **giá trị reserved, ngoài phạm vi** đợt này — không endpoint nào đặt được. | Proposed |
 | 6 | **`employee_documents`** | Hồ sơ, bằng cấp, chứng chỉ; lưu `object_key` private kèm thời hạn lưu trữ. | Proposed |
 | 7 | **`probation_reviews`** | Đánh giá và xác nhận hết thử việc (`confirmed`/`extended`/`terminated`). | Proposed |
 | 8 | **`offboarding_cases`** | Hồ sơ thôi việc: loại chấm dứt, ngày làm việc cuối, người nhận bàn giao, chốt công nợ. | Proposed |
@@ -73,29 +74,31 @@ Canonical v1 (`schema.sql`) gồm 23 bảng thuộc năm nhóm. Cột **Trạng 
 | 18 | **`evaluations`** | Scorecard chấm điểm với thang 0–5 bước 0.5 và cơ chế unlock có lý do. | Proposed |
 | 19 | **`offers`** | Thư mời nhận việc; index partial đảm bảo mỗi đơn chỉ có một offer đang mở. | Proposed |
 
-### 2.5. Platform — Identity, Audit, Integration
+### 2.5. Platform — định danh, audit, outbox
+
+Bốn bảng này **vẫn thuộc canonical schema**. Chúng mang dữ liệu định danh và hai cơ chế xuyên suốt bắt buộc, chứ không phải một phân hệ nghiệp vụ. Đợt giao hàng này **không có API quản trị** cho chúng: không endpoint quản lý user/role/role-grant, không endpoint tra cứu audit log, không endpoint xem và retry delivery. Việc cấp tài khoản và vai trò do **Identity Provider bên ngoài** đảm nhiệm.
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 20 | **`users`** | Danh tính ứng dụng liên kết IdP qua `external_subject`. | Proposed |
-| 21 | **`user_roles`** | Gán vai trò kèm data scope (`self`/`department`/`organization`). | Proposed |
-| 22 | **`audit_logs`** | Nhật ký hành động với before/after và `correlation_id`. | Proposed |
-| 23 | **`outbox_messages`** | Transactional outbox cho email, notification và integration. | Proposed |
+| 20 | **`users`** | Dữ liệu định danh của ứng dụng, liên kết IdP qua `external_subject`. Không có API quản lý tài khoản trong đợt này. | Proposed |
+| 21 | **`user_roles`** | Gán vai trò kèm data scope (`self`/`department`/`organization`) — nguồn cho việc kiểm tra quyền phía server, vẫn bắt buộc trên mọi request. Không có API cấp vai trò trong đợt này. | Proposed |
+| 22 | **`audit_logs`** | Nhật ký hành động với before/after và `correlation_id`. **Cơ chế bắt buộc**: ghi cùng transaction với thay đổi nghiệp vụ. Không có endpoint tra cứu trong đợt này. | Proposed |
+| 23 | **`outbox_messages`** | Transactional outbox cho email và lịch. **Cơ chế bắt buộc**: ghi cùng transaction nghiệp vụ. Không có endpoint xem/retry delivery trong đợt này. | Proposed |
 
 ---
 
 ## 3. Danh Mục Tệp Lược Đồ Dữ Liệu
 
 > [!IMPORTANT]
-> [`schema.sql`](schema.sql) là **canonical schema contract cho baseline v1**. `init.sql`, `postgres_db.sql` và `dbml.txt` là artifact prototype/legacy để đối chiếu và không được dùng làm nguồn tạo migration mới. Khi backend có EF Core migration được phê duyệt, migration trở thành nguồn triển khai và `schema.sql` phải được kiểm tra drift trong CI.
+> [`schema.sql`](schema.sql) là **canonical schema contract cho baseline v1**. `init.sql` và `postgres_db.sql` là artifact prototype/legacy để đối chiếu và không được dùng làm nguồn tạo migration mới. Khi backend có EF Core migration được phê duyệt, migration trở thành nguồn triển khai và `schema.sql` phải được kiểm tra drift trong CI.
 
 | Tệp | Mô Tả Chi Tiết | Liên Kết |
 | :--- | :--- | :--- |
 | **`database_design.md`** | Tài liệu đặc tả kỹ thuật chi tiết từng trường, kiểu dữ liệu, ràng buộc khóa chính/khóa ngoại và Mermaid ERD. | [Xem database_design.md](./database_design.md) |
 | **`schema.sql`** | **Canonical schema contract v1 — 23 bảng.** Nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. | [Xem schema.sql](./schema.sql) |
-| **`init.sql`** | ⚠️ **DEPRECATED.** Script seed/DDL cũ, chưa có identity/RBAC, audit, outbox và các bảng lifecycle. | [Xem init.sql](./init.sql) |
+| **`init.sql`** | ⚠️ **DEPRECATED.** Script seed/DDL cũ, chưa có bảng định danh/phân quyền, audit, outbox và các bảng lifecycle. | [Xem init.sql](./init.sql) |
 | **`postgres_db.sql`** | ⚠️ **DEPRECATED.** DDL legacy; các bảng chấm công/nghỉ phép ở đây nằm ngoài phạm vi và không khớp bản thiết kế deferred. | [Xem postgres_db.sql](./postgres_db.sql) |
-| **`dbml.txt`** | ⚠️ **DEPRECATED.** Nguồn render `dbml.png` theo mô hình 14 bảng cũ, không khớp canonical. | [Xem dbml.txt](./dbml.txt) |
+| **`seed_dev.sql`** | Dữ liệu mẫu **chỉ dùng cho môi trường phát triển**: 6 user, 6 phòng ban, 6 chức danh, 7 nhân viên, 5 task onboarding. Không thuộc hợp đồng schema và không được chạy trên môi trường dùng chung. | [Xem seed_dev.sql](./seed_dev.sql) |
 
 ---
 

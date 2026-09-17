@@ -15,6 +15,7 @@
 - Phương thức được ghi ở đây là **Proposed** (suy ra từ business rule trong [functional_specifications.md](functional_specifications.md)), **trừ** `RecruitmentApplication` và các class trong §6 — những class đó phản ánh code đang tồn tại.
 - Diagram chỉ vẽ những enum được tham chiếu nhiều nhất. Danh sách **đầy đủ** enum, giá trị và nguồn constraint nằm ở [§8](#8-enumeration-tổng-hợp).
 - Trường audit `createdAt` / `updatedAt` bị lược khỏi diagram cho gọn; mọi class map tới bảng có `created_at`/`updated_at` đều có chúng.
+- **Phạm vi:** mô hình này phủ các chức năng lá in đậm dưới Recruitment và Core HR trên `topdown-approach.png` — xem [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected). Một số giá trị enum vẫn tồn tại trong canonical schema nhưng là **reserved** vì nghiệp vụ tương ứng ngoài phạm vi; chúng được đánh dấu tại [§8](#8-enumeration-tổng-hợp).
 
 ---
 
@@ -104,6 +105,8 @@ classDiagram
 **Invariant và ràng buộc:**
 
 - **`Employee`** — status, departmentId, positionId và managerId KHÔNG được sửa trực tiếp; chúng chỉ đổi qua EmployeeEvent đã approved (§2). Ràng buộc DB: employee_code unique, source_application_id unique, manager_id != id, status='active' bắt buộc có workEmail.
+- **`EmployeeStatus.suspended`** — giá trị **reserved**: `ck_employee_status` trong canonical schema vẫn nhận nó, nhưng nghiệp vụ Suspension & Return to Work nằm ngoài phạm vi giao hàng, nên không command nào đặt được status này trong đợt này. Vòng trạng thái thực tế là `probation` → `active` → `terminated`.
+- **`Department`** — quan hệ cha con (`parentDepartmentId`), quy tắc chống vòng lặp và ràng buộc xóa phòng ban vẫn trong phạm vi; chỉ màn hình/endpoint trình bày dạng cây tổ chức là ngoài phạm vi, nên `ancestors()` chỉ dùng cho kiểm tra vòng lặp và data scope, không phục vụ API cây.
 - **`EmployeeDocument`** — Unique (employeeId, documentType, version): sửa tài liệu là tạo version mới, không ghi đè.
 
 | Class | Bảng canonical | Trạng thái |
@@ -274,6 +277,7 @@ classDiagram
 **Invariant và ràng buộc:**
 
 - **`EmployeeEvent`** — Chỉ event ở status='approved' mới được apply, và apply đúng effectiveDate. applyTo() là nơi duy nhất ghi status/department/position/manager của Employee.
+- **`EmployeeEventType.suspension` / `EmployeeEventType.return_to_work`** — giá trị **reserved**: chúng vẫn nằm trong `ck_employee_event_type` của canonical schema, nhưng **không luồng nào trong đợt này sinh ra chúng** vì Suspension & Return to Work ngoài phạm vi. Không có quy tắc đối xứng "mỗi suspension phải có return_to_work" để kiểm tra. Tiền điều kiện của offboarding vì vậy là nhân viên đang `active` hoặc `probation`.
 - **`ProbationReview`** — Unique theo contractId: mỗi hợp đồng thử việc có tối đa một review. status='decided' bắt buộc có outcome, decidedBy, decidedAt và effectiveDate.
 - **`OffboardingCase`** — Partial unique index: mỗi employee chỉ có một case đang mở (draft/pending_approval/approved/in_progress). handoverToEmployeeId != employeeId. Final settlement thuộc Payroll — ngoài phạm vi.
 
@@ -635,6 +639,8 @@ classDiagram
 
 `User` là **actor** của hệ thống, khác với `Employee` là **hồ sơ nhân sự**. Quan hệ 0..1–0..1: ứng viên chưa có user, nhân viên có thể chưa được cấp tài khoản, và interviewer có thể là user không phải employee.
 
+Dữ liệu định danh (`User`, `UserRole`) và audit (`AuditLog`, `OutboxMessage`) **vẫn thuộc mô hình** vì authorization, audit và outbox là cơ chế xuyên suốt bắt buộc của mọi command. Nhưng **không có API quản trị trong đợt này**: việc tạo, khóa tài khoản và cấp vai trò/data scope do Identity Provider bên ngoài đảm nhiệm; `audit_logs` và `outbox_messages` chỉ được ghi trong cùng transaction với thay đổi nghiệp vụ và được Worker đọc, không có endpoint tra cứu hay retry. Vì vậy các class ở đây chỉ có phương thức phục vụ kiểm tra quyền và ghi nhận, không có phương thức quản trị.
+
 ```mermaid
 classDiagram
     direction TB
@@ -646,9 +652,8 @@ classDiagram
         +string displayName
         +UserStatus status
         +long version
-        +disable() void
-        +grantRole(string roleCode, DataScope) UserRole
-        +revokeRole(string roleCode, DataScope) void
+        +isActive() bool
+        +hasRole(string roleCode) bool
     }
 
     class UserRole {
@@ -713,7 +718,8 @@ classDiagram
 
 **Invariant và ràng buộc:**
 
-- **`UserRole`** — PK (userId, roleCode, dataScopeType, dataScopeId). Constraint: dataScopeType='department' cần dataScopeId > 0; 'self'/'organization' cần dataScopeId = 0.
+- **`User`** — không phải aggregate được hệ thống này tạo/sửa: bản ghi được đồng bộ từ Identity Provider (`externalSubject` là khóa liên kết). `status` và `email` là hình chiếu của provider, dùng cho authorization và hiển thị actor trong audit.
+- **`UserRole`** — PK (userId, roleCode, dataScopeType, dataScopeId). Constraint: dataScopeType='department' cần dataScopeId > 0; 'self'/'organization' cần dataScopeId = 0. `covers()` là điểm dùng duy nhất trong đợt này — đọc để áp data scope cho query/command; việc cấp và thu hồi role không có endpoint.
 - **`AuditLog`** — Ghi trong CÙNG transaction với thay đổi nghiệp vụ. result='rejected' dùng cho command bị từ chối bởi authorization/business rule — cũng phải được ghi.
 - **`OutboxMessage`** — Side effect ra hệ thống ngoài không gọi trực tiếp trong transaction: ghi outbox rồi Worker gửi sau commit.
 
@@ -1076,7 +1082,7 @@ Quy tắc bắt buộc khi thêm module mới:
 3. **Repository contract thuộc Business Layer**; Data Access implement nó. Không đảo chiều.
 4. **Mọi command ghi dữ liệu** phải đi qua `IUnitOfWork`, và ghi audit (`IAuditWriter`) trong cùng transaction; side effect ra ngoài đi qua `IOutboxWriter`.
 5. **Concurrency bằng conditional update theo `version`**, kiểm tra rowcount — không đọc-rồi-ghi trong bộ nhớ.
-6. **Reporting chỉ đọc read model đã áp dụng data scope**, không tái sử dụng repository ghi.
+6. **Mọi query đọc phải áp data scope của actor trong repository**, không lọc ở controller hay component UI.
 
 ---
 
@@ -1086,8 +1092,8 @@ Mọi giá trị dưới đây lấy từ `CHECK` constraint trong [`schema.sql`
 
 | Enum | Bảng · cột | Giá trị | Nguồn |
 |---|---|---|---|
-| `EmployeeStatus` | `employees.status` | `probation`, `active`, `suspended`, `terminated` | `ck_employee_status` |
-| `EmployeeEventType` | `employee_events.event_type` | `probation_confirmation`, `probation_extension`, `promotion`, `demotion`, `transfer`, `salary_adjustment`, `suspension`, `return_to_work`, `termination`, `correction` | `ck_employee_event_type` |
+| `EmployeeStatus` | `employees.status` | `probation`, `active`, `suspended` ⁽ʳ⁾, `terminated` | `ck_employee_status` |
+| `EmployeeEventType` | `employee_events.event_type` | `probation_confirmation`, `probation_extension`, `promotion`, `demotion`, `transfer`, `salary_adjustment`, `suspension` ⁽ʳ⁾, `return_to_work` ⁽ʳ⁾, `termination`, `correction` | `ck_employee_event_type` |
 | `EmployeeEventStatus` | `employee_events.status` | `draft`, `pending_approval`, `approved`, `applied`, `cancelled` | `ck_employee_event_status` |
 | `TaskStatus` | `onboarding_tasks.status`, `offboarding_tasks.status` | `pending`, `in_progress`, `completed` | `ck_onboarding_status`, `ck_offboarding_task_status` |
 | `TaskCategory` | `offboarding_tasks.category` | `it`, `admin`, `hr`, `manager`, `finance` | `ck_offboarding_task_category` |
@@ -1106,9 +1112,17 @@ Mọi giá trị dưới đây lấy từ `CHECK` constraint trong [`schema.sql`
 | `InterviewStatus` | `interviews.status` | `scheduled`, `completed`, `cancelled`, `no_show` | `ck_interview_status` |
 | `Recommendation` | `evaluations.recommendation` | `strong_hire`, `hire`, `hold`, `no_hire`, `strong_no_hire` | `ck_evaluation_recommendation` |
 | `OfferStatus` | `offers.status` | `draft`, `approved`, `sent`, `accepted`, `declined`, `expired`, `cancelled` | `ck_offer_status` |
-| `UserStatus` | `users.status` | `active`, `disabled` | `ck_users_status` |
-| `DataScopeType` | `user_roles.data_scope_type` | `self`, `department`, `organization` | `ck_user_roles_scope` |
-| `AuditResult` | `audit_logs.result` | `succeeded`, `rejected`, `failed` | `ck_audit_result` |
+| `UserStatus` ⁽ⁱ⁾ | `users.status` | `active`, `disabled` | `ck_users_status` |
+| `DataScopeType` ⁽ⁱ⁾ | `user_roles.data_scope_type` | `self`, `department`, `organization` | `ck_user_roles_scope` |
+| `AuditResult` ⁽ⁱ⁾ | `audit_logs.result` | `succeeded`, `rejected`, `failed` | `ck_audit_result` |
+
+⁽ʳ⁾ **Reserved** — giá trị vẫn nằm trong `CHECK` constraint của canonical schema nhưng nghiệp vụ Suspension & Return to Work
+ngoài phạm vi giao hàng, nên không command hay job nào đặt/sinh ra chúng trong đợt này: `EmployeeStatus.suspended`,
+`EmployeeEventType.suspension`, `EmployeeEventType.return_to_work`.
+
+⁽ⁱ⁾ **Nội bộ** — enum chỉ dùng trong database và trong tầng business logic; các schema tương ứng đã được bỏ khỏi
+[`openapi.yaml`](../api/openapi.yaml) cùng với các endpoint quản trị, nên giá trị này **không còn xuất hiện trên API**:
+`UserStatus`, `DataScopeType`, `AuditResult`. Chúng vẫn bắt buộc vì authorization, data scope và audit là cơ chế xuyên suốt (§5).
 
 **Chưa bị constraint khóa giá trị** — hiện là `varchar` tự do, cần chốt nghiệp vụ trước khi sinh migration: `contracts.contract_type`, `job_postings.employment_type`, `offers.employment_type`, `interviews.interview_type`, `employee_documents.document_type`, `employees.gender`, `applications.source`.
 
@@ -1123,9 +1137,10 @@ Mọi giá trị dưới đây lấy từ `CHECK` constraint trong [`schema.sql`
 |---|---|---|
 | §1–§3 Core HR | [`schema.sql`](../database/schema.sql), [database_design.md](../database/database_design.md) | [sequence_diagrams.md](sequence_diagrams.md) |
 | §4 Recruitment | [`schema.sql`](../database/schema.sql), [openapi.yaml](../api/openapi.yaml) | [sequence 1–3](sequence_diagrams.md) |
-| §5 Identity/Audit | [`schema.sql`](../database/schema.sql), [architecture.md §8](architecture.md#8-crosscutting-concepts) | — |
+| §5 Identity/Audit | [`schema.sql`](../database/schema.sql), [architecture.md §8](architecture.md#8-crosscutting-concepts), [architecture.md §5.5](architecture.md#55-business-modules-and-data-ownership) | [architecture.md §6.5](architecture.md#65-external-notification-after-transaction) |
 | §5.1 Handoff | [architecture.md §5.5](architecture.md#55-business-modules-and-data-ownership) | [architecture.md §6.4](architecture.md#64-candidate-to-employee-handoff) |
 | §6 Advance slice | source `src/backend/` | [architecture.md §6.3](architecture.md#63-advance-recruitment-stage--success-and-conflict) |
 | §7 Pattern | [architecture.md §5.6](architecture.md#56-target-code-structure) | — |
+| §8 Enumeration | [`schema.sql`](../database/schema.sql) `CHECK` constraint; giá trị reserved và nội bộ theo [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected) | — |
 
 Thay đổi feature phải cập nhật đồng thời tài liệu này, SRS, architecture và API/schema — xem [Documentation Rules](README.md#5-documentation-rules).

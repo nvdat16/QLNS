@@ -7,7 +7,7 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 > [!IMPORTANT]
 > Repository có **UI/UX prototype**, canonical database/OpenAPI contract và **skeleton source** React/.NET 10 (cấu trúc dự án 3-tier/3-layer và một module mẫu, chưa phải code chính thức). Migration runtime, tích hợp PostgreSQL/IdP và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là source hiện có; không suy diễn thành production-ready.
 
-> **Phạm vi triển khai trước:** hai phân hệ được chọn theo bản đồ chức năng — **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**. Attendance & Leave đã có thiết kế nhưng được **tách ra ngoài phạm vi** và giữ tại [deferred/attendance_leave/](deferred/attendance_leave/README.md). Payroll, Performance và Learning chưa thuộc baseline thiết kế.
+> **Phạm vi giao hàng:** hai phân hệ được chọn theo bản đồ chức năng [`topdown-approach.png`](../topdown-approach.png) — **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**. Quy ước đọc bản đồ: **chỉ các chức năng lá in đậm dưới hai phân hệ này thuộc phạm vi**; mọi thứ khác ngoài phạm vi, kể cả bốn chức năng lá không in đậm nằm ngay trong hai phân hệ đó. Nguồn chuẩn về phạm vi là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected); chi tiết ở [mục 4](#4-functional-coverage) dưới đây.
 
 ---
 
@@ -19,12 +19,12 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 | [Deferred — Attendance & Leave](deferred/attendance_leave/README.md) | Toàn bộ thiết kế của phân hệ đã tách khỏi phạm vi: SRS, 13 story, use case, 3 sequence, DDL 13 bảng, OpenAPI fragment, Open Decisions | **Out of scope · Parked** |
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules | Proposed · Authoritative |
-| [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ, cùng Reporting/Administration | Proposed · Supporting |
+| [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ trong phạm vi: Core HR và Recruitment | Proposed · Supporting |
 | [Sequence Diagrams](sequence_diagrams.md) | 6 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
 | [Class Diagrams](class_diagrams.md) | Domain model 23 class theo module, design class diagram của vertical slice đã có code, và pattern 3-layer cho module còn lại | Proposed · Supporting |
 | [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |
-| [API Contract](../api/README.md) | OpenAPI 3.0.3, 87 operation trên 70 path, kèm `x-implementation-status` từng operation | Design artifact |
+| [API Contract](../api/README.md) | OpenAPI 3.0.3, 66 operation trên 51 path, kèm `x-implementation-status` từng operation | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
 
 Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
@@ -41,15 +41,18 @@ Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
 
 | Area | Existing artifacts | Not implemented | Chặn bởi |
 |---|---|---|---|
-| Core HR — Profile & Organization | UI prototype; canonical schema; OpenAPI; user story có AC | API, authorization, workflow, persistence runtime | IdP/RBAC, migration |
-| Core HR — Lifecycle (onboarding, biến động, thử việc, thôi việc) | UI prototype (onboarding); canonical schema; OpenAPI; user story có AC | toàn bộ implementation; sequence cho offboarding chưa vẽ | IdP/RBAC, migration, template checklist |
-| Core HR — Contracts | UI prototype; canonical schema; OpenAPI; user story có AC | toàn bộ implementation | IdP/RBAC, migration |
-| Recruitment ATS | UI prototype; canonical schema/OpenAPI; skeleton source (module mẫu) | toàn bộ implementation | IdP/RBAC, migration, PostgreSQL runtime |
+| Core HR — Profile & Organization | UI prototype; canonical schema; OpenAPI; user story có AC | API, authorization, workflow, persistence runtime | IdP, migration |
+| Core HR — Lifecycle (onboarding, biến động, thử việc, thôi việc) | UI prototype (onboarding); canonical schema; OpenAPI; user story có AC | toàn bộ implementation; sequence cho offboarding chưa vẽ | IdP, migration, template checklist |
+| Core HR — Contracts | UI prototype; canonical schema; OpenAPI; user story có AC | toàn bộ implementation | IdP, migration |
+| Recruitment ATS | UI prototype; canonical schema/OpenAPI; skeleton source (module mẫu) | toàn bộ implementation | IdP, migration, PostgreSQL runtime |
 | Attendance & Leave | UI prototype; thiết kế đầy đủ đã tách sang `deferred/` | — | **Ngoài phạm vi** — không triển khai |
-| Identity / RBAC / Audit | vai trò và policy được đặc tả; `users`, `user_roles`, `audit_logs` trong canonical schema | IdP, server-side enforcement, audit storage runtime | chọn IdP |
-| Deployment / Operations | topology mục tiêu trong tài liệu kiến trúc | container image, Docker Compose, CI/CD, monitoring, backup runtime | ADR hạ tầng |
+| Identity & data scope | vai trò, permission và data scope được đặc tả; `users`, `user_roles` là **dữ liệu định danh canonical** mà authorization đọc | IdP, server-side enforcement runtime | chọn IdP |
+| Audit & outbox (crosscutting) | `audit_logs` và `outbox_messages` là **cơ chế bắt buộc** của mọi command, ghi cùng transaction nghiệp vụ; đã có trong canonical schema | persistence và outbox dispatcher runtime | migration, email/calendar provider |
+| Deployment / Operations | topology mục tiêu trong tài liệu kiến trúc; hai probe `/health/live`, `/health/ready` trong hợp đồng (tag `Operations`, thuộc deployment view chứ không phải chức năng nghiệp vụ) | container image, Docker Compose, CI/CD, monitoring, backup runtime | ADR hạ tầng |
 
-Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác mô phỏng. Chúng không phải frontend application và không được dùng làm bằng chứng rằng business rule đã hoạt động.
+Không có API quản trị tài khoản, vai trò, audit log, delivery hay integration trong đợt này: việc cấp tài khoản và vai trò do **Identity Provider bên ngoài** đảm nhiệm, cấu hình integration/notification/approval nằm trong `appsettings` (không UI, không API). Điều đó **không** làm giảm yêu cầu kiểm tra permission và data scope phía server trên mọi request — quality goal Q1 không đổi.
+
+Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác mô phỏng. Chúng không phải frontend application và không được dùng làm bằng chứng rằng business rule đã hoạt động. Một số prototype (ví dụ Workforce Dashboard) mô tả chức năng **ngoài phạm vi** và chỉ được giữ làm tham chiếu thiết kế.
 
 ---
 
@@ -93,17 +96,28 @@ Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác
 
 ## 4. Functional Coverage
 
-Đặc tả bao phủ hai phân hệ triển khai trước:
+Đặc tả bao phủ hai phân hệ trong phạm vi, tương ứng **34 chức năng lá in đậm** trên [`topdown-approach.png`](../topdown-approach.png):
 
-1. **Core HR** — employee master data, organization, onboarding, employee events, documents, probation review, offboarding & handover, và nhánh con Contracts (lifecycle, cảnh báo hết hạn, phụ lục).
-2. **Recruitment ATS** — requisition, CV intake, candidate pipeline, interview, scorecard, offer và onboarding handoff.
+1. **Core HR — 16 chức năng lá** — employee profiles (thông tin cá nhân/liên hệ, thông tin công tác, employee documents, profile updates); organization management (phòng ban & cây phân cấp, positions & job levels, phân công & reporting line); Contract Management (drafting & approval, signing & effective date, phụ lục & gia hạn, hết hạn & chấm dứt, contract documents); employee lifecycle (preboarding & onboarding checklist, probation review & confirmation, promotion & internal transfer, offboarding & handover).
+2. **Recruitment ATS — 18 chức năng lá** — job requisition (tạo/sửa, phê duyệt, theo dõi trạng thái); job posting (publish/update/close); candidate management (hồ sơ ứng viên & resume ingestion, application management, screening & matching, recruitment pipeline, rejection/withdrawal); interview management (vòng phỏng vấn & panel, scheduling & invitation, scorecard & feedback, hiring decision); offer management (drafting & compensation approval, offer sending, acceptance/signing/decline); onboarding handoff (chuyển dữ liệu ứng viên đã nhận việc, liên kết application với employee record).
 
-Cùng hai nhóm hỗ trợ: **HR Analytics** (headcount, recruitment funnel) và **System Administration** (tài khoản, RBAC, audit, integration).
+### Ngoài phạm vi
+
+**Bốn chức năng lá không in đậm, nằm ngay trong hai phân hệ được chọn:**
+
+| Chức năng | Thuộc | Hệ quả |
+|---|---|---|
+| **Headcount & Budget Validation** | Recruitment · Job Requisition | Requisition vẫn có luồng phê duyệt, nhưng **không** có bước hệ thống tự kiểm tra định biên và ngân sách lương; HR Manager quyết định thủ công. `target_headcount`, `salary_min`, `salary_max` chỉ là dữ liệu khai báo, không phải cơ chế kiểm soát. |
+| **Recruitment Channel Management** | Recruitment · Job Posting | Publish/Update/Close vẫn trong phạm vi; chọn và quản lý nhiều kênh đăng tin thì không. Chỉ còn một kênh careers mặc định, không so sánh hiệu quả kênh. |
+| **Organizational Chart** | Core HR · Organization Management | Bỏ **màn hình và endpoint cây tổ chức**. *Departments & Organizational Hierarchy* vẫn **trong** phạm vi, nên `departments.parent_department_id`, quan hệ cha con, quy tắc chống vòng lặp và ràng buộc khi xóa phòng ban đều được giữ. Chỉ phần trình bày dạng cây bị loại. |
+| **Suspension & Return to Work** | Core HR · Employee Lifecycle | Bỏ nghiệp vụ tạm hoãn và trở lại làm việc. `employees.status = 'suspended'` và `employee_events.event_type IN ('suspension','return_to_work')` được giữ trong canonical schema như **giá trị reserved, không endpoint nào đặt được** trong đợt này. Tiền điều kiện của offboarding là nhân viên đang `active` hoặc `probation`. |
+
+**Các trụ cột còn lại của bản đồ:** Attendance & Leave Management (xem note bên dưới), Reports & Analytics, System Administration, Performance Management, Compensation & Benefits.
 
 > [!NOTE]
 > **Attendance & Leave** đã được thiết kế đầy đủ (SRS, 13 story, DDL 13 bảng, 24 endpoint, 3 sequence, danh sách quyết định HR/Legal) nhưng **không thuộc phạm vi triển khai**. Toàn bộ được giữ nguyên tại [deferred/attendance_leave/](deferred/attendance_leave/README.md) để có thể ghép lại khi phạm vi mở rộng. Không tham chiếu tới nó từ tài liệu authoritative.
 
-Payroll, Performance và Learning chưa thuộc baseline thiết kế chính.
+Performance Management và Compensation & Benefits (gồm payroll) chưa thuộc baseline thiết kế chính.
 
 ---
 
@@ -125,7 +139,7 @@ Payroll, Performance và Learning chưa thuộc baseline thiết kế chính.
 Trước khi bắt đầu frontend/backend, tối thiểu cần:
 
 - Chấp thuận stack frontend/backend và phiên bản bằng ADR.
-- Chốt Identity Provider, authentication flow, RBAC và data-scope policy.
+- Chốt Identity Provider và authentication flow: việc cấp tài khoản và vai trò do IdP bên ngoài đảm nhiệm, QLNS chỉ tiêu thụ kết quả. Chốt bảng permission và data-scope policy mà server phải kiểm tra trên mọi request.
 - Review canonical schema **23 bảng** và sinh EF Core migration đầu tiên có version.
 - Chốt API convention, error model, pagination và concurrency strategy. ✅ đã có trong `api/README.md`.
 - Chọn vertical slice đầu tiên cùng acceptance test end-to-end.

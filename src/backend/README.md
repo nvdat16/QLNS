@@ -8,7 +8,7 @@ Target: .NET 10, ASP.NET Core, Entity Framework Core and PostgreSQL.
 - `Qlns.BusinessLogic` — Business layer: use-case service, workflow policy and repository contracts. It has no EF Core or ASP.NET dependency.
 - `Qlns.DataAccess` — Data layer: EF Core mappings, PostgreSQL queries, transactions, audit/history persistence.
 
-Each layer groups code by `Modules/<Module>/<Feature>`. `Modules/Recruitment/Applications` is a **sample module** that shows the intended layout; it is skeleton code, not a finished feature. Future code must use the same module names as the OpenAPI tags:
+Each layer groups code by `Modules/<Module>/<Feature>`. `Modules/Recruitment/Applications` is a **sample module** that shows the intended layout; it is skeleton code, not a finished feature. Future code must use the same module names as the OpenAPI tags, and the set of folders is bounded by the delivery scope — the bold leaf functions under Recruitment and Core HR in [`topdown-approach.png`](../../topdown-approach.png):
 
 ```text
 Modules/
@@ -20,31 +20,20 @@ Modules/
 │   ├── Evaluations/
 │   └── Offers/
 ├── CoreHr/
+│   ├── Shared/
 │   ├── Employees/
 │   ├── Organization/
 │   ├── Onboarding/
 │   ├── EmployeeEvents/
-│   └── EmployeeDocuments/
-├── Contracts/
-│   ├── Contracts/
-│   └── Addenda/
-├── Reports/
-│   ├── Headcount/
-│   ├── Recruitment/
-│   └── Exports/
-│   ├── Shifts/
-│   ├── Events/
-│   ├── Timesheets/
-│   └── Corrections/
-│   ├── Balances/
-│   └── Requests/
-└── Administration/
-    ├── Users/
-    ├── Authorization/
-    ├── Audit/
-    ├── Deliveries/
-    └── Integrations/
+│   ├── EmployeeDocuments/
+│   ├── Probation/
+│   └── Offboarding/
+└── Contracts/
+    ├── Contracts/
+    └── Addenda/
 ```
+
+There is no `Reports/` or `Administration/` module: Reports & Analytics and System Administration are out of scope, so this backend exposes no reporting or administration endpoints. Audit logging and the transactional outbox stay as crosscutting mechanisms inside each feature's repository, not as a module of their own. Account and role provisioning belongs to the external identity provider.
 
 Do not add empty controllers for target operations. A feature folder is added when its use case, authorization policy, persistence and contract tests are implemented together.
 
@@ -125,7 +114,15 @@ Bộ collection gồm 68 request với 105 assertion, phủ cả đường thàn
 
 **Xác thực phát triển.** `Qlns.Api/Development/DevelopmentAuthentication.cs` chỉ thay Identity Provider bằng khóa đối xứng khi môi trường là Development **và** `Authentication:DevelopmentSigningKey` có giá trị. Ngoài Development, endpoint `/dev/token` và `/dev/document-content` không được đăng ký.
 
-Probation review (EMP-06) and offboarding (EMP-07) are not implemented yet: their sprint entry conditions in `docs/user_stories.md` §5.3 (offboarding checklist template, final-settlement catalogue) are still open and both depend on the Contracts module.
+Probation review (EMP-06) and offboarding (EMP-07) are in scope but not implemented yet: their sprint entry conditions in `docs/user_stories.md` (offboarding checklist template, final-settlement catalogue) are still open and both depend on the Contracts module.
+
+### Code that no longer matches the delivery scope
+
+The scope decision recorded in `README.md` section 2 removed the Organizational Chart function. Three artefacts still implement it and should be removed or re-scoped before the contract and the code are declared consistent:
+
+- `GET /api/v1/organization/chart` in `Modules/CoreHr/Organization/OrganizationController.cs`, whose operation no longer exists in `api/openapi.yaml`.
+- `DepartmentHierarchy.BuildTree` in `Qlns.BusinessLogic/Modules/CoreHr/Organization/`, together with `OrganizationNode` and the chart branch of `OrganizationService`.
+- `DepartmentHierarchyTests.cs`, whose tree-building cases cover only that function. `WouldCreateCycle` and its tests must stay: department hierarchy itself is in scope, and cycle prevention is one of its rules.
 
 After the .NET 10 SDK is installed:
 

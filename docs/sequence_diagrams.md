@@ -2,6 +2,8 @@
 
 > **Trạng thái:** Proposed runtime design. Các sequence tuân theo 3-tier và 3-layer: React Web → ASP.NET Core Presentation → Business Logic → Data Access/EF Core → PostgreSQL.
 >
+> **Phạm vi:** các sequence dưới đây chỉ mô tả những chức năng lá được in đậm dưới hai trụ cột **Recruitment** và **Core HR** trên bản đồ `topdown-approach.png` (xem mục 2 của [README](../README.md)). Không có sequence cho kiểm tra định biên/ngân sách khi phê duyệt requisition, quản lý nhiều kênh đăng tin, sơ đồ cây tổ chức, tạm hoãn/trở lại làm việc, báo cáo & phân tích hay quản trị hệ thống — tất cả đều ngoài phạm vi.
+>
 > Ba sequence của phân hệ Attendance & Leave (đơn nghỉ, chấm công, khóa kỳ công) đã được tách ra ngoài phạm vi và giữ tại [deferred/attendance_leave/sequence_diagrams_att.md](deferred/attendance_leave/sequence_diagrams_att.md).
 
 ## Quy ước
@@ -15,7 +17,7 @@
 
 ## 1. Requisition — tạo, phê duyệt và đăng tuyển
 
-**User Stories:** `REC-01.1` → `REC-01.4` · **Trạng thái:** Proposed.
+**User Stories:** `REC-01.1`, `REC-01.2` · **Trạng thái:** Proposed.
 
 ```mermaid
 sequenceDiagram
@@ -29,12 +31,12 @@ sequenceDiagram
     participant Repo as RequisitionRepository
     participant DB as PostgreSQL
     participant W as Background Worker
-    participant JB as Job Board
+    participant CP as Trang tuyển dụng careers mặc định
 
     HM->>UI: Nhập và lưu requisition
     UI->>C: POST /api/v1/recruitment/requisitions
     C->>S: CreateDraft(actor, command)
-    S->>S: Kiểm tra quyền, headcount và salary range
+    S->>S: Kiểm tra quyền và ràng buộc dữ liệu đầu vào
     S->>Repo: Insert draft + audit
     Repo->>DB: BEGIN<br/>INSERT requisition, audit<br/>COMMIT
     DB-->>Repo: Committed requisition
@@ -54,14 +56,14 @@ sequenceDiagram
     S->>Repo: pending_approval → approved + audit
     Repo->>DB: Conditional UPDATE<br/>COMMIT
 
-    R->>UI: Chọn kênh và đăng tuyển
+    R->>UI: Đăng tuyển
     UI->>C: POST /{id}/publish + If-Match
-    C->>S: Publish(actor, id, channels)
+    C->>S: Publish(actor, id, version)
     S->>Repo: approved → active_recruiting + outbox + audit
     Repo->>DB: BEGIN<br/>UPDATE + INSERT outbox/audit<br/>COMMIT
     W->>DB: Claim publication message
-    W->>JB: Publish with idempotency key
-    JB-->>W: Provider posting ID
+    W->>CP: Hiển thị tin với idempotency key
+    CP-->>W: Posting reference
     W->>DB: Mark delivery completed
 ```
 
@@ -261,6 +263,9 @@ sequenceDiagram
 
 **User Stories:** `CON-01.1`, `CON-02.1`, `CON-03.1` · **Trạng thái:** Proposed.
 
+> [!NOTE]
+> Việc ký được thực hiện ngoài hệ thống rồi tải bản đã ký lên qua `POST /api/v1/contracts/{contractId}/signed-document`. Hợp đồng API không có callback hay webhook từ nhà cung cấp chữ ký số: nhà cung cấp e-signature chưa được chốt và tích hợp đó nằm ngoài phạm vi đợt này.
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -273,7 +278,7 @@ sequenceDiagram
     participant Repo as ContractRepository
     participant DB as PostgreSQL
     participant W as Background Worker
-    participant Sign as E-signature Provider
+    participant Store as Private Object Storage
 
     Officer->>UI: Soạn hợp đồng hoặc phụ lục
     UI->>C: POST /api/v1/contracts
@@ -284,16 +289,23 @@ sequenceDiagram
     Manager->>UI: Phê duyệt
     UI->>C: POST /contracts/{id}/approve + If-Match
     C->>S: Approve(actor, id, version)
-    S->>Repo: approved + outbox signature request + audit
+    S->>Repo: approved + outbox notification + audit
     Repo->>DB: Atomic UPDATE/INSERT<br/>COMMIT
-    W->>DB: Claim signature request after commit
-    W->>Sign: Send document with idempotency key
+    W->>DB: Claim notification after commit
 
-    Employee->>Sign: Ký tài liệu
-    Sign->>C: Signed callback + provider event ID
-    C->>S: ReconcileSignature(callback)
-    S->>Repo: Verify idempotency and activate contract
-    Repo->>DB: UPDATE signed/active + audit<br/>COMMIT
+    Employee->>Officer: Ký bản giấy hoặc bản scan
+    Officer->>UI: Tải lên bản đã ký
+    UI->>C: POST /contracts/{id}/signed-document
+    C->>S: AttachSignedDocument(actor, id, file)
+    S->>Repo: Scan file, lưu object key, chuyển executed
+    Repo->>Store: PUT bản đã ký vào private storage
+    Repo->>DB: UPDATE executed + audit<br/>COMMIT
+
+    Officer->>UI: Kích hoạt hợp đồng
+    UI->>C: POST /contracts/{id}/activate + If-Match
+    C->>S: Activate(actor, id, version)
+    S->>Repo: Đóng hợp đồng chính cũ, mở hợp đồng mới
+    Repo->>DB: Atomic UPDATE + audit<br/>COMMIT
 
     W->>Repo: Find contracts at alert thresholds
     Repo->>DB: Bounded expiry query
@@ -317,5 +329,10 @@ Các story sau đã có acceptance criteria nhưng chưa được vẽ sequence.
 
 | Story | Lý do chưa vẽ |
 |---|---|
+| `REC-03.1`, `REC-04.1`, `REC-05.1` | Luồng đọc pipeline, xếp lịch phỏng vấn và nộp scorecard đã đủ rõ trong acceptance criteria; chỉ vẽ nếu phát sinh tranh chấp về thứ tự gửi lời mời và khóa bản ghi đánh giá |
+| `EMP-01.1`–`EMP-01.2` | Luồng tra cứu và tự cập nhật hồ sơ là CRUD một bước, quy tắc quan trọng nằm ở field policy và data scope chứ không ở thứ tự tương tác |
+| `EMP-02.1` | Quản lý danh mục phòng ban, chức danh và phân công là CRUD có `If-Match`; sẽ vẽ nếu bổ sung luồng tái cấu trúc phòng ban hàng loạt |
+| `EMP-03.1` | Việc sinh checklist onboarding đã nằm trong sequence 4; phần theo dõi và nhắc hạn là công việc nền đơn giản |
+| `EMP-05.1` | Luồng upload và phát Signed URL sẽ vẽ chung với chuẩn lưu trữ tài liệu |
 | `EMP-06.1`–`EMP-06.2` | Sẽ vẽ khi chốt template đánh giá thử việc |
-| `EMP-07.1`–`EMP-07.2` | Cần vẽ trước khi implement: có nhiều side effect (khóa tài khoản, hủy đơn nghỉ, chốt công nợ) và thứ tự thực hiện quan trọng |
+| `EMP-07.1`–`EMP-07.2` | Cần vẽ trước khi implement: có nhiều side effect (khóa tài khoản đúng ngày làm việc cuối, thu hồi tài sản, chốt công nợ) và thứ tự thực hiện quan trọng |

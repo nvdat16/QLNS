@@ -1,6 +1,8 @@
 # QLNS API Reference
 
-Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yaml) cho hai phân hệ được chọn triển khai trước: **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**, cùng Reports và Administration. Attendance & Leave nằm ngoài phạm vi; contract của nhóm đó được giữ tại [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml).
+Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yaml) cho hai phân hệ được chọn triển khai trước: **Recruitment (ATS)** và **Core HR** (bao gồm nhánh con Contracts).
+
+**Phạm vi:** chỉ các chức năng lá được **in đậm** dưới Recruitment và Core HR của [`topdown-approach.png`](../topdown-approach.png) — xem thêm [README · Functional architecture](../README.md#2-delivery-scope--seven-pillars-two-selected). Nằm ngoài phạm vi và **không** có endpoint trong tài liệu này: Reports & Analytics (kèm xuất báo cáo), System Administration (quản lý user/role, tra cứu audit log, theo dõi delivery, cấu hình integration), Performance Management, Compensation & Benefits, Attendance & Leave Management, cùng bốn chức năng không in đậm nằm trong hai phân hệ được chọn: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Contract của Attendance & Leave được giữ tại [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml).
 
 > OpenAPI là nguồn contract chính thức. Khi nội dung mô tả ở đây khác OpenAPI, ưu tiên `openapi.yaml`.
 
@@ -68,9 +70,10 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Mục đích:** Thực hiện command workflow cho requisition.
 - **Action:** `submit`, `approve`, `reject`, `publish`, `close`, `cancel`.
 - **Header:** Bắt buộc `If-Match`.
-- **Body:** `RequisitionAction`; `reject` bắt buộc `reason`, `publish` bắt buộc ít nhất một `channel`.
+- **Body:** `RequisitionAction`; `reject` bắt buộc `reason`. `publish` không nhận danh sách kênh — bài đăng chỉ hiển thị trên kênh careers mặc định.
 - **Workflow:** `draft → pending_approval → approved → active_recruiting → closed/cancelled`; reject trả requisition về trạng thái có thể chỉnh sửa.
-- **Side effect:** Publish ghi outbox để gửi sang job board sau khi transaction thành công.
+- **Side effect:** Publish ghi outbox để phát hành bài đăng sau khi transaction thành công.
+- **Phê duyệt:** Là quyết định của HR Manager. `targetHeadcount`, `salaryMin`, `salaryMax` là dữ liệu khai báo của requisition, server không dùng chúng làm điều kiện chặn.
 
 ### 2.2. Candidate intake và CV
 
@@ -249,12 +252,6 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 
 ### 3.2. Organization
 
-#### `GET /api/v1/organization/chart`
-
-- **Mục đích:** Lấy cây tổ chức gồm phòng ban, quản lý và headcount.
-- **Query:** `rootDepartmentId`, `depth` từ 1 đến 10.
-- **Kết quả:** Mảng `OrganizationNode` phân cấp.
-
 #### `GET /api/v1/organization/departments`
 
 - **Mục đích:** Lấy danh mục phòng ban.
@@ -406,6 +403,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 #### `POST /api/v1/offboarding/cases`
 
 - **Mục đích:** Mở hồ sơ thôi việc.
+- **Tiền điều kiện:** Nhân viên phải đang ở trạng thái `active` hoặc `probation`.
 - **Body:** `separationType`, `lastWorkingDate`, `handoverToEmployeeId`, `reason`, tùy chọn `noticeReceivedOn`.
 - **Quy tắc:** Nhân viên đã có case đang mở → `409` (`ux_offboarding_open_case`). `handoverToEmployeeId` không được là chính nhân viên thôi việc → `422`.
 - **Cảnh báo, không chặn:** Thiếu thời hạn báo trước được trả về ở `noticePeriodShortfallDays` như một cảnh báo, không chặn việc lưu — quyết định thuộc HR Manager và cảnh báo được ghi audit log.
@@ -518,112 +516,9 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Header:** Bắt buộc `If-Match`.
 - **Kết quả:** ContractAddendum và `ETag` mới.
 
-## 5. Reports
+## 5. Operations
 
-#### `GET /api/v1/reports/headcount`
-
-- Trả KPI quân số, active/probation, cơ cấu phòng ban, loại hợp đồng và tỷ lệ hoàn thiện hồ sơ.
-- Bắt buộc `from`, `to`; hỗ trợ lọc phòng ban, vị trí và địa điểm.
-- Mỗi metric có mã công thức, policy version và thời điểm read model được làm mới.
-
-#### `GET /api/v1/reports/recruitment`
-
-- Trả recruitment funnel, time-to-hire, hiệu quả nguồn và tỷ lệ chấp nhận Offer.
-- Bắt buộc `from`, `to`; hỗ trợ lọc phòng ban, vị trí, địa điểm và requisition.
-- Dữ liệu luôn được giới hạn theo data scope của người xem.
-
-#### `POST /api/v1/reports/exports`
-
-- Tạo export CSV, XLSX hoặc PDF bất đồng bộ cho báo cáo headcount/recruitment.
-- Yêu cầu `Idempotency-Key` và quyền export riêng.
-- Server áp dụng field allowlist, data scope, watermark người xuất và audit.
-
-#### `GET /api/v1/reports/exports/{exportId}`
-
-- Theo dõi trạng thái `queued`, `processing`, `completed`, `failed` hoặc `expired`.
-- Chỉ người tạo hoặc actor có quyền quản lý export được xem.
-
-#### `POST /api/v1/reports/exports/{exportId}/download-url`
-
-- Tạo signed URL ngắn hạn cho export đã hoàn tất.
-- Export chưa hoàn tất/hết hạn trả `409`; truy cập không đúng scope trả `403/404`.
-
-## 6. Administration và Operations
-
-### 6.1. User và RBAC
-
-#### `GET /api/v1/administration/users`
-
-- Tìm local actor mapping theo search/status; không truy cập mật khẩu hoặc credential của IdP.
-
-#### `POST /api/v1/administration/users`
-
-- Ánh xạ một `externalSubject` đã tồn tại tại IdP với user QLNS.
-- Kiểm tra subject/email duy nhất; trả user cùng `ETag`.
-
-#### `GET /api/v1/administration/users/{userId}`
-
-- Lấy mapping, trạng thái, role grants và data scopes của một user.
-
-#### `POST /api/v1/administration/users/{userId}/{action}`
-
-- Action: `enable`, `disable`, `synchronize`; bắt buộc `If-Match`.
-- Disable/synchronize không quản lý password; IdP vẫn sở hữu xác thực danh tính.
-
-#### `GET /api/v1/administration/roles`
-
-- Lấy catalog role, permission và loại data scope có thể cấp.
-
-#### `GET /api/v1/administration/users/{userId}/role-grants`
-
-- Lấy toàn bộ role/data-scope grants của user.
-
-#### `POST /api/v1/administration/users/{userId}/role-grants`
-
-- Cấp role với scope `self`, `department` hoặc `organization`.
-- Yêu cầu `Idempotency-Key`; mọi grant được audit.
-
-#### `DELETE /api/v1/administration/users/{userId}/role-grants/{roleCode}`
-
-- Thu hồi đúng một grant, xác định thêm bằng `dataScopeType` và `dataScopeId`.
-- Không được tự thu hồi quyền cuối cùng nếu làm hệ thống mất khả năng quản trị theo policy.
-
-### 6.2. Audit và delivery
-
-#### `GET /api/v1/administration/audit-logs`
-
-- Tìm audit theo actor, action, entity, result và khoảng thời gian.
-- Payload before/after được redacted và giới hạn theo mandate của auditor.
-
-#### `GET /api/v1/administration/audit-logs/{auditLogId}`
-
-- Lấy một audit record bất biến; không trả secret hoặc trường nhạy cảm ngoài quyền.
-
-#### `GET /api/v1/administration/deliveries`
-
-- Theo dõi outbox/provider delivery theo status, message type và aggregate.
-- Không trả payload chứa dữ liệu nhạy cảm.
-
-#### `POST /api/v1/administration/deliveries/{deliveryId}/retry`
-
-- Lập lịch retry hữu hạn cho delivery failed/dead-letter.
-- Yêu cầu `Idempotency-Key` và lý do; không gọi provider trong transaction HTTP.
-
-### 6.3. Integration và health
-
-#### `GET /api/v1/administration/integrations`
-
-- Lấy cấu hình provider đã mask; chỉ cho biết secret đã được cấu hình hay chưa.
-
-#### `PUT /api/v1/administration/integrations/{integrationKey}`
-
-- Thay thế setting và có thể rotate `rotatedSecret` dạng write-only.
-- Bắt buộc `If-Match`; response tuyệt đối không echo secret.
-
-#### `POST /api/v1/administration/integrations/{integrationKey}/test`
-
-- Khởi chạy connectivity test bất đồng bộ, không ghi business state.
-- Yêu cầu `Idempotency-Key`; trả test ID và trạng thái.
+Hai endpoint dưới đây là endpoint hạ tầng phục vụ deployment (liveness/readiness probe), không phải chức năng nghiệp vụ trên bản đồ phân rã chức năng.
 
 #### `GET /health/live`
 
@@ -634,7 +529,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - Probe công khai tối giản cho biết service sẵn sàng nhận traffic.
 - Trả `200` khi ready hoặc `503` khi chưa ready; không liệt kê secret/dependency detail.
 
-## 7. Trạng thái triển khai
+## 6. Trạng thái triển khai
 
 Contract trên mô tả API mục tiêu. Source backend hiện là **skeleton cấu trúc** (bố cục solution, tách 3 layer, một module mẫu kèm unit test); **chưa operation nào được tính là đã triển khai**. Mọi operation trong `openapi.yaml` đều mang `x-implementation-status: proposed`.
 
@@ -646,8 +541,6 @@ Contract trên mô tả API mục tiêu. Source backend hiện là **skeleton c�
 | Core HR — Employees, Organization, Onboarding, Events, Documents | `proposed` | Chốt IdP/RBAC; sinh EF Core migration |
 | Core HR — Probation, Offboarding | `proposed` | Chốt template checklist offboarding; công thức quy đổi phép chưa dùng |
 | Contracts | `proposed` | Chốt nhà cung cấp chữ ký số nếu dùng |
-| Reports | `proposed` | Chốt quy ước tính toán và quyền xuất dữ liệu |
-| Administration | `proposed` | Chốt IdP và chính sách audit |
 
 ### Nguyên tắc triển khai từng operation
 

@@ -11,77 +11,87 @@
 Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị nguồn nhân lực (HRMS) và tuyển dụng thông minh (ATS) toàn diện, nhằm:
 - Số hóa 100% vòng đời của nhân sự: từ khi nộp hồ sơ ứng tuyển, phỏng vấn, tiếp nhận thử việc, ký hợp đồng chính thức, biến động công tác (thăng chức, điều chuyển) đến thôi việc.
 - Tự động hóa các luồng xét duyệt hồ sơ, chấm điểm phỏng vấn và cảnh báo hợp đồng sắp hết hạn.
-- Cung cấp bảng điều khiển (Dashboard) và báo cáo phân tích số liệu quân số, chi phí tuyển dụng theo thời gian thực.
+- Tập trung dữ liệu tuyển dụng, hồ sơ nhân sự và hợp đồng vào một nguồn dữ liệu duy nhất, thay cho các tệp bảng tính rời rạc giữa các bộ phận.
 - Đảm bảo tuân thủ các quy định pháp luật lao động Việt Nam về hợp đồng, bảo hiểm và lưu trữ hồ sơ nhân sự.
 
-### 1.2. Đối tượng Người dùng & Ma trận Phân quyền (RBAC Matrix)
+### 1.2. Đối tượng Người dùng & Ma trận Phân quyền (Permission & Data Scope Matrix)
 
 | Vai trò (Role) | Mã quyền | Quyền hạn & Trách nhiệm chính |
 | :--- | :--- | :--- |
-| **Super Admin** | `ROLE_ADMIN` | Quản trị toàn bộ cấu hình hệ thống, quản lý tài khoản, phân quyền bảo mật, tra cứu Audit Log. |
-| **HR Director / Manager** | `ROLE_HR_MGR` | Phê duyệt đề xuất tuyển dụng, duyệt Offer letter, ký duyệt quyết định bổ nhiệm/điều chuyển/sa thải, xem toàn bộ báo cáo phân tích. |
+| **Super Admin** | `ROLE_ADMIN` | Vai trò định danh vẫn được giữ trong `users`/`user_roles` để phục vụ kiểm tra quyền, nhưng **không có chức năng nghiệp vụ nào thuộc phạm vi đợt này**: tạo tài khoản, gán vai trò và cấu hình hệ thống do Identity Provider bên ngoài và tệp `appsettings` đảm nhiệm. |
+| **HR Director / Manager** | `ROLE_HR_MGR` | Phê duyệt đề xuất tuyển dụng, duyệt Offer letter, ký duyệt quyết định bổ nhiệm/điều chuyển/chấm dứt hợp đồng trên toàn tổ chức. |
 | **Talent Acquisition (Recruiter)** | `ROLE_RECRUITER` | Quản lý tin tuyển dụng (Job Posting), sàng lọc CV, xếp lịch phỏng vấn, theo dõi bảng Kanban ATS, gửi thư mời phỏng vấn & Offer. |
 | **Hiring Manager / Interviewer** | `ROLE_INTERVIEWER` | Tạo đề xuất tuyển dụng (Requisition), tham gia hội đồng phỏng vấn, chấm điểm ứng viên trên Scorecard, đưa ra khuyến nghị tuyển dụng. |
 | **HR Officer (C&B / Records)** | `ROLE_HR_OFFICER` | Quản lý danh bạ hồ sơ nhân viên, soạn thảo và theo dõi hợp đồng lao động, theo dõi danh mục công việc tiếp nhận (Onboarding Checklist). |
 | **Line Manager (Quản lý trực tiếp)** | `ROLE_LINE_MANAGER` | Thực hiện đánh giá hết thử việc, xác nhận bàn giao khi nhân viên thôi việc, đề xuất biến động nhân sự cho đội mình. Phạm vi dữ liệu giới hạn theo `data_scope_type = 'department'`. |
-| **Employee (Nhân viên)** | `ROLE_EMPLOYEE` | Xem thông tin hồ sơ cá nhân, xem sơ đồ tổ chức phòng ban, tra cứu thông tin hợp đồng của chính mình, thực hiện bàn giao khi thôi việc. |
+| **Employee (Nhân viên)** | `ROLE_EMPLOYEE` | Xem thông tin hồ sơ cá nhân, xem phòng ban và quản lý trực tiếp của mình, tra cứu thông tin hợp đồng của chính mình, thực hiện bàn giao khi thôi việc. |
+
+Nguyên tắc phân quyền không thay đổi: mọi request đều phải được kiểm tra **permission** của vai trò và **data scope** (`data_scope_type`: toàn tổ chức / phòng ban / chính mình) ở phía server; quyền do client gửi lên không được tin cậy. Bảng `users` và `user_roles` vẫn nằm trong canonical schema như dữ liệu định danh và phạm vi dữ liệu, nhưng đợt này không có API quản trị người dùng và vai trò — việc cấp, thu hồi tài khoản và vai trò thực hiện ở Identity Provider bên ngoài.
 
 ### 1.3. Phạm vi triển khai và nguyên tắc đặc tả
 
-- **Hai phân hệ được chọn triển khai trước**: Core HR (bao gồm Contracts) và Recruitment. Đây là phạm vi được ánh xạ đầy đủ xuống user story, canonical schema và API contract.
-- **Đã có ở mức thiết kế dữ liệu**: toàn bộ hai phân hệ trên, cùng identity/RBAC, audit log và outbox. `database/schema.sql` là canonical schema contract v1 với **23 bảng**; DDL cũ (`init.sql`, `postgres_db.sql`, `dbml.txt`) đã được đánh dấu deprecated và schema chưa được quản lý bởi EF Core migration/runtime.
+- **Nguồn xác định phạm vi**: bản đồ phân rã chức năng `topdown-approach.png` (xem mục 2 của [README.md](../README.md)). Quy tắc đọc bản đồ: **chỉ những chức năng lá được in đậm dưới hai trụ cột Recruitment và Core HR thuộc phạm vi giao hàng**; các lá không in đậm và toàn bộ các trụ cột còn lại đều nằm ngoài phạm vi.
+- **Hai phân hệ được chọn triển khai**: Recruitment (18 chức năng lá) và Core HR (16 chức năng lá). Contract Management là một nhóm chức năng thuộc Core HR, không phải một trụ cột riêng; tài liệu này tách thành phân hệ riêng chỉ để trình bày chi tiết. Đây là phạm vi được ánh xạ đầy đủ xuống user story, canonical schema và API contract.
+- **Đã có ở mức thiết kế dữ liệu**: toàn bộ hai phân hệ trên, cùng dữ liệu định danh (`users`, `user_roles`), audit log và outbox. `database/schema.sql` là canonical schema contract v1 với **23 bảng**; DDL cũ (`init.sql`, `postgres_db.sql`, `dbml.txt`) đã được đánh dấu deprecated và schema chưa được quản lý bởi EF Core migration/runtime.
 - **Ngoài phạm vi triển khai — đã có thiết kế, đang tạm dừng**: chấm công và nghỉ phép. Đặc tả, user story, DDL và API contract của nhóm này được giữ tại [docs/deferred/attendance_leave/](deferred/attendance_leave/README.md) để dùng lại sau; không nằm trong canonical schema hay OpenAPI hiện hành.
-- **Chưa thuộc phạm vi triển khai**: lương thưởng, hiệu suất, đào tạo. Các phân hệ này được đặc tả ở mức tên gọi để giữ tính toàn vẹn của bản đồ chức năng; không được giả định là đã có bảng dữ liệu hoặc API.
-- Mọi thao tác tạo, cập nhật, phê duyệt, từ chối và xuất dữ liệu phải kiểm tra quyền theo vai trò, lưu người thực hiện và thời điểm thực hiện.
+- Các phân hệ ngoài phạm vi **không** được đặc tả ở tài liệu này, kể cả ở mức tên gọi; ranh giới đầy đủ và lý do nằm ở mục [2.1](#21-ranh-giới-phạm-vi--những-gì-không-thuộc-đợt-này).
+- Mọi thao tác tạo, cập nhật, phê duyệt, từ chối và tải dữ liệu phải kiểm tra quyền theo vai trò, lưu người thực hiện và thời điểm thực hiện.
 - Các trạng thái nghiệp vụ phải được kiểm soát bằng tập giá trị hợp lệ; không cho phép cập nhật trực tiếp hoặc bỏ qua bước phê duyệt qua giao diện/API.
 
 ---
 
 ## 2. Đặc Tả Chi Tiết Các Phân Hệ Chức Năng
 
+Cây phân rã dưới đây chỉ chứa các chức năng thuộc phạm vi giao hàng, lấy trực tiếp từ các chức năng lá **in đậm** dưới hai trụ cột Recruitment và Core HR trên `topdown-approach.png` (mục 2 của [README.md](../README.md)). Các trụ cột khác của bản đồ không xuất hiện ở đây theo đúng phạm vi đã chốt.
+
 ```
 QLNS / NexusHR
-├── PHÂN HỆ 1: QUẢN LÝ TUYỂN DỤNG THÔNG MINH (ATS)
-│   ├── [REC-01] Quản lý Yêu cầu & Tin Tuyển dụng (Job Requisitions)
+├── PHÂN HỆ 1: QUẢN LÝ TUYỂN DỤNG THÔNG MINH (ATS) — trụ cột Recruitment
+│   ├── [REC-01] Quản lý Yêu cầu & Tin Tuyển dụng (Job Requisitions & Job Posting)
 │   ├── [REC-02] Tiếp nhận & Trích xuất Hồ sơ Ứng viên (CV Intake & AI Parsing)
 │   ├── [REC-03] Đường ống Tuyển dụng Trực quan (Kanban ATS Pipeline)
 │   ├── [REC-04] Lịch Phỏng vấn & Thư Mời (Interview Scheduling)
 │   ├── [REC-05] Đánh giá Phỏng vấn (Interview Scorecard)
-│   └── [REC-06] Quản lý Đề nghị Tuyển dụng (Offer Management)
-├── PHÂN HỆ 2: QUẢN LÝ HỒ SƠ & VÒNG ĐỜI NHÂN SỰ (CORE HR)
+│   └── [REC-06] Quản lý Đề nghị Tuyển dụng & Chuyển giao Onboarding (Offer Management & Handoff)
+├── PHÂN HỆ 2: QUẢN LÝ HỒ SƠ & VÒNG ĐỜI NHÂN SỰ (CORE HR) — trụ cột Core HR
 │   ├── [EMP-01] Danh bạ & Hồ sơ Tổng thể Nhân viên (Employee Master Data)
-│   ├── [EMP-02] Cơ cấu Tổ chức & Phòng Ban (Organizational Framework)
+│   ├── [EMP-02] Cơ cấu Tổ chức & Phòng Ban (Organization Management)
 │   ├── [EMP-03] Quy trình Tiếp nhận Nhân viên Mới (Onboarding Checklist)
 │   ├── [EMP-04] Quản lý Biến động Nhân sự (Internal Mobility & Events)
 │   ├── [EMP-05] Quản lý Tài liệu & Văn bản Nhân sự (Employee Documents)
 │   ├── [EMP-06] Đánh giá & Xác nhận Hết Thử việc (Probation Review)
 │   └── [EMP-07] Thôi việc & Bàn giao (Offboarding & Handover)
-├── PHÂN HỆ 3: QUẢN LÝ HỢP ĐỒNG LAO ĐỘNG (CONTRACTS)
-│   ├── [CON-01] Soạn thảo & Lưu trữ Hợp đồng (Contract Drafting & Storage)
-│   ├── [CON-02] Giám sát Thời hạn & Cảnh báo Tự động (Expiration Alerts)
-│   └── [CON-03] Quản lý Phụ lục Hợp đồng (Contract Addenda)
-├── PHÂN HỆ 4: BÁO CÁO & PHÂN TÍCH NHÂN SỰ (HR ANALYTICS)
-│   ├── [REP-01] Thống kê Quân số & Biến động Cơ cấu (Headcount KPIs)
-│   └── [REP-02] Đo lường Hiệu suất Tuyển dụng (Hiring Velocity & Funnel)
-├── PHÂN HỆ 5: CHẤM CÔNG & NGHỈ PHÉP (ATTENDANCE & LEAVE) — ngoài phạm vi, thiết kế giữ tại docs/deferred/
-│   ├── [ATT-01] Danh mục ca làm việc, Lịch phân ca & Lịch lễ
-│   ├── [ATT-02] Ghi nhận, Hiệu chỉnh chấm công & Tăng ca
-│   ├── [ATT-03] Quản lý quỹ phép, đơn nghỉ & phê duyệt
-│   └── [ATT-04] Bảng công, Duyệt kỳ công & Khóa kỳ (Timesheet Processing)
-├── PHÂN HỆ 6: LƯƠNG THƯỞNG & PHÚC LỢI (PAYROLL & BENEFITS)
-│   ├── [PAY-01] Cấu hình kỳ lương & tính lương
-│   ├── [PAY-02] Phiếu lương, phê duyệt & chi trả
-│   └── [PAY-03] Bảo hiểm, thuế & đối soát
-├── PHÂN HỆ 7: HIỆU SUẤT, ĐÀO TẠO & PHÁT TRIỂN
-│   ├── [PFT-01] Mục tiêu & đánh giá KPI/OKR
-│   ├── [PFT-02] Phản hồi 360 độ
-│   └── [LRN-01] Khóa học, tiến độ & chứng chỉ
-└── PHÂN HỆ 8: QUẢN TRỊ HỆ THỐNG & DỊCH VỤ DÙNG CHUNG
-    ├── [SYS-01] Tài khoản, xác thực & phân quyền
-    ├── [SYS-02] Thông báo & tác vụ cần xử lý
-    ├── [SYS-03] Nhật ký kiểm toán & bảo vệ dữ liệu cá nhân
-    └── [SYS-04] Tích hợp, xuất dữ liệu & vận hành hệ thống
+└── PHÂN HỆ 3: QUẢN LÝ HỢP ĐỒNG LAO ĐỘNG (CONTRACTS) — nhóm Contract Management thuộc Core HR
+    ├── [CON-01] Soạn thảo & Lưu trữ Hợp đồng (Contract Drafting & Storage)
+    ├── [CON-02] Giám sát Thời hạn & Cảnh báo Tự động (Expiration Alerts)
+    └── [CON-03] Quản lý Phụ lục Hợp đồng (Contract Addenda)
 ```
+
+### 2.1. Ranh giới phạm vi — những gì không thuộc đợt này
+
+Đây là ranh giới phạm vi chính thức, không phải phần còn thiếu của tài liệu.
+
+**a) Bốn chức năng lá không in đậm, nằm ngay trong hai phân hệ được chọn**
+
+| Chức năng | Thuộc nhóm | Hệ quả đối với đặc tả |
+| :--- | :--- | :--- |
+| Headcount & Budget Validation | Recruitment · Job Requisition | Requisition vẫn có luồng phê duyệt, nhưng hệ thống **không** tự kiểm tra định biên và ngân sách lương. `target_headcount`, `salary_min`, `salary_max` là dữ liệu khai báo phục vụ người phê duyệt, không phải cơ chế kiểm soát; quyết định thuộc HR Manager. |
+| Recruitment Channel Management | Recruitment · Job Posting | Publish/Update/Close tin tuyển dụng vẫn trong phạm vi, nhưng chỉ qua **một cổng careers mặc định**. Không chọn và quản lý nhiều kênh đăng tin, không đo hiệu quả nguồn tuyển. |
+| Organizational Chart | Core HR · Organization Management | Không có màn hình và endpoint hiển thị cây tổ chức. Phân cấp phòng ban vẫn **trong** phạm vi: `departments.parent_department_id`, quan hệ cha–con, quy tắc chống chu trình, ràng buộc xóa phòng ban, tính headcount và cost center đều được giữ ở `[EMP-02]`. Chỉ phần trình bày dạng cây bị loại. |
+| Suspension & Return to Work | Core HR · Employee Lifecycle | Không có nghiệp vụ tạm hoãn và trở lại làm việc. Giá trị `employees.status = 'suspended'` và `employee_events.event_type IN ('suspension','return_to_work')` vẫn tồn tại trong canonical schema nhưng là **reserved, không luồng hoặc endpoint nào đặt được trong đợt này**. |
+
+**b) Các trụ cột còn lại trên bản đồ chức năng**
+
+System Administration, Reports & Analytics, Performance Management, Compensation & Benefits và Attendance & Leave Management đều ngoài phạm vi và không được đặc tả ở tài liệu này. Thiết kế của Attendance & Leave được giữ nguyên tại [docs/deferred/attendance_leave/](deferred/attendance_leave/README.md).
+
+**c) Phân biệt bắt buộc: cơ chế xuyên suốt vẫn còn, API quản trị thì không**
+
+- Ghi audit log trong cùng transaction với thay đổi nghiệp vụ **vẫn bắt buộc**; bảng `audit_logs` được giữ. Chỉ endpoint tra cứu audit log là ngoài phạm vi.
+- Transactional outbox để gửi email và lịch **vẫn bắt buộc**; bảng `outbox_messages` được giữ. Chỉ endpoint xem và retry delivery là ngoài phạm vi.
+- Kiểm tra permission và data scope phía server trên mọi request **vẫn bắt buộc** (mục 1.2).
+- Bảng `users` và `user_roles` **vẫn tồn tại** làm dữ liệu định danh và data scope; API quản lý user, role và role-grant ngoài phạm vi vì việc cấp tài khoản và vai trò do Identity Provider bên ngoài đảm nhiệm.
+- Cấu hình tích hợp, thông báo và luồng phê duyệt nằm trong `appsettings`, không có giao diện hay API quản trị.
+- `GET /health/live` và `GET /health/ready` được giữ như endpoint hạ tầng phục vụ triển khai và giám sát, không phải chức năng nghiệp vụ trên bản đồ.
 
 ---
 
@@ -89,22 +99,23 @@ QLNS / NexusHR
 
 ### PHÂN HỆ 1: QUẢN LÝ TUYỂN DỤNG THÔNG MINH (ATS)
 
-#### [REC-01] Quản lý Yêu cầu & Đăng tin Tuyển dụng (Job Requisitions)
-- **Mục tiêu**: Cho phép Trưởng bộ phận gửi đề xuất tuyển người và Recruiter đăng tin tuyển dụng lên nhiều kênh.
+#### [REC-01] Quản lý Yêu cầu & Tin Tuyển dụng (Job Requisitions & Job Posting)
+- **Mục tiêu**: Cho phép Trưởng bộ phận gửi đề xuất tuyển người, HR Manager phê duyệt và Recruiter đăng, cập nhật, đóng tin tuyển dụng trên cổng careers.
 - **Tác nhân**: Hiring Manager, HR Manager, Recruiter.
 - **Tiền điều kiện**: Phòng ban tồn tại trong hệ thống.
 - **Luồng xử lý chính**:
   1. Hiring Manager chọn phòng ban, chức danh, nhập số lượng cần tuyển (Target Headcount), lý do tuyển (thay thế/mở rộng), mức lương dự kiến và yêu cầu kỹ năng.
-  2. Hệ thống kiểm tra ngân sách lương và chuyển trạng thái sang `Pending Approval`.
-  3. HR Manager phê duyệt đề xuất.
-  4. Recruiter lựa chọn kênh đăng tuyển (Cổng nội bộ Careers, LinkedIn, TopCV) và kích hoạt trạng thái `Active Recruiting`.
+  2. Hiring Manager gửi đề xuất; hệ thống chuyển trạng thái sang `Pending Approval` và tạo tác vụ phê duyệt cho HR Manager.
+  3. HR Manager phê duyệt hoặc từ chối đề xuất. Việc cân đối định biên và ngân sách lương là quyết định của người có thẩm quyền, hệ thống không tự kiểm tra và không tự chặn.
+  4. Recruiter đăng tin tuyển dụng lên cổng careers, kích hoạt trạng thái `Active Recruiting`; tin đã đăng có thể được cập nhật hoặc đóng.
   5. Hệ thống sinh mã định danh công việc (ví dụ: `REQ-2026-08`).
-- **Dữ liệu đầu vào**: Tiêu đề vị trí, phòng ban ID, số lượng tuyển, hình thức làm việc (Full-time/Part-time/Hybrid/Remote), dải lương (min - max), kênh phát hành, mô tả công việc (JD).
+- **Dữ liệu đầu vào**: Tiêu đề vị trí, phòng ban ID, số lượng tuyển, hình thức làm việc (Full-time/Part-time/Hybrid/Remote), dải lương (min - max), mô tả công việc (JD).
 - **Hậu điều kiện**: Bản ghi được lưu vào bảng `job_postings`, sẵn sàng nhận hồ sơ ứng tuyển.
 - **Quy tắc và ngoại lệ**:
   - Trạng thái hợp lệ: `Draft` → `Pending Approval` → `Approved` → `Active Recruiting` → `Closed` hoặc `Cancelled`; chỉ HR Manager được phê duyệt/từ chối.
   - Khi từ chối, bắt buộc nhập lý do và trả yêu cầu về `Draft` để Hiring Manager chỉnh sửa; không được đăng tin khi chưa `Approved`.
   - `closing_date` phải sau ngày đăng; `salary_min` không được lớn hơn `salary_max`; `target_headcount` phải lớn hơn 0.
+  - `target_headcount`, `salary_min` và `salary_max` là dữ liệu khai báo để người phê duyệt tham chiếu, không phải cơ chế kiểm soát tự động; hệ thống không đối chiếu với quỹ lương hay định biên của phòng ban.
   - Không cho đóng requisition còn Offer `Sent` nếu chưa có quyết định xử lý Offer; mọi thay đổi trạng thái phải ghi audit log.
 
 ---
@@ -183,7 +194,7 @@ QLNS / NexusHR
 
 ---
 
-#### [REC-06] Quản lý Đề nghị Tuyển dụng (Offer Management)
+#### [REC-06] Quản lý Đề nghị Tuyển dụng & Chuyển giao Onboarding (Offer Management & Handoff)
 - **Mục tiêu**: Lập và phê duyệt thư mời nhận việc trước khi gửi cho ứng viên trúng tuyển.
 - **Tác nhân**: Recruiter, HR Manager, Candidate.
 - **Luồng xử lý**:
@@ -208,25 +219,27 @@ QLNS / NexusHR
   - Thông tin cá nhân: Họ tên, Mã nhân viên (`EMP-xxxx`), Ngày sinh, Giới tính, CMND/CCCD, Quốc tịch, Tình trạng hôn nhân.
   - Thông tin liên hệ: Email công vụ, Email cá nhân, Số điện thoại di động, Địa chỉ thường trú, Địa chỉ tạm trú, Thông tin liên hệ khẩn cấp.
   - Thông tin công việc: Phòng ban ID, Chức vụ ID, Cấp bậc (Band/Grade: ví dụ IC-1 đến L-9), Quản lý trực tiếp (Manager ID), Địa điểm làm việc (Văn phòng Hà Nội, TP.HCM, Remote), Ngày vào công ty.
-  - Trạng thái công tác: `Active` (Đang làm việc), `Probation` (Thử việc), `Suspended` (Tạm hoãn), `Terminated` (Đã nghỉ việc).
+  - Trạng thái công tác được dùng trong đợt này: `Active` (Đang làm việc), `Probation` (Thử việc), `Terminated` (Đã nghỉ việc). Giá trị `Suspended` vẫn được giữ trong canonical schema như giá trị **reserved** — ngoài phạm vi đợt này, không luồng nghiệp vụ hay endpoint nào đặt được (xem mục 2.1).
 - **Yêu cầu hệ thống**:
   - Tìm kiếm toàn văn (Full-text search) theo Tên, Mã NV, Email hoặc Chức danh.
   - Lọc đa chiều theo Phòng ban, Cấp bậc, Trạng thái.
   - Nhân viên chỉ được xem và đề nghị chỉnh sửa các trường hồ sơ của chính mình; HR Officer/HR Manager được sửa dữ liệu nghiệp vụ theo phạm vi được phân quyền.
   - Email công vụ và mã nhân viên phải duy nhất. Thay đổi email, phòng ban, chức danh, trạng thái hoặc quản lý trực tiếp phải đi qua luồng biến động `[EMP-04]`, không được sửa trực tiếp từ màn hình hồ sơ.
-  - Các trường định danh nhạy cảm (CCCD, thông tin ngân hàng, liên hệ khẩn cấp) phải được mã hóa khi lưu trữ, che một phần khi hiển thị và không xuất trong báo cáo mặc định.
+  - Các trường định danh nhạy cảm (CCCD, thông tin ngân hàng, liên hệ khẩn cấp) phải được mã hóa khi lưu trữ, che một phần khi hiển thị và không đưa vào các bản xuất dữ liệu mặc định.
 
 ---
 
-#### [EMP-02] Cơ cấu Tổ chức & Phòng Ban (Organizational Framework)
-- **Mục tiêu**: Thể hiện trực quan mô hình phân cấp tổ chức (Phòng ban -> Bộ phận/Pod -> Vị trí -> Nhân viên).
+#### [EMP-02] Cơ cấu Tổ chức & Phòng Ban (Organization Management)
+- **Mục tiêu**: Quản lý dữ liệu chủ về phân cấp tổ chức (Phòng ban -> Bộ phận/Pod -> Vị trí -> Nhân viên), danh mục chức danh/cấp bậc và reporting line, làm nền cho hồ sơ nhân viên, requisition và hợp đồng.
 - **Quy tắc nghiệp vụ**:
   - Mỗi phòng ban có Mã phòng ban duy nhất (`code`) và tên phòng ban.
-  - Hệ thống tính toán tự động số lượng nhân sự trực thuộc (Headcount), Trung tâm chi phí (Cost Center) và Tỷ lệ kiểm soát (Span of Control) của từng quản lý.
+  - Phòng ban được tổ chức nhiều cấp qua `parent_department_id`; một phòng ban có tối đa một phòng ban cha.
+  - Hệ thống tính toán tự động số lượng nhân sự trực thuộc (Headcount) và gắn Trung tâm chi phí (Cost Center) cho từng phòng ban, tính cả các phòng ban con.
+  - Danh mục chức danh và cấp bậc (`positions`) được quản lý tập trung; phân công nhân viên và reporting line lấy từ `employees.department_id`, `employees.position_id` và `employees.manager_id`, mọi thay đổi phải đi qua luồng biến động `[EMP-04]`.
   - Không cho phép xóa phòng ban còn nhân viên hoặc requisition đang hiệu lực; phải điều chuyển hoặc đóng các bản ghi liên quan trước.
-- **Phụ thuộc dữ liệu**: Canonical schema đã có `departments(id, code, name, parent_department_id, cost_center, description, version)` cùng constraint `ck_departments_not_self_parent`, đủ để dựng cây tổ chức nhiều cấp và tính cost center. Reporting line được lấy từ `employees.manager_id`.
+- **Phụ thuộc dữ liệu**: Canonical schema đã có `departments(id, code, name, parent_department_id, cost_center, description, version)` cùng constraint `ck_departments_not_self_parent`, đủ để biểu diễn phân cấp phòng ban nhiều cấp và tính cost center. Reporting line được lấy từ `employees.manager_id`.
   - **Còn thiếu**: cột `manager_id` ở cấp phòng ban (trưởng phòng chính danh của đơn vị). Hiện chỉ suy ra được qua `employees.manager_id`, nên chưa biểu diễn được trường hợp phòng ban tạm thời không có nhân sự trực thuộc. Cần migration riêng nếu nghiệp vụ yêu cầu.
-  - Cây tổ chức phải chặn chu trình ở tầng service (A là cha của B, B là cha của A); constraint hiện chỉ chặn tự trỏ chính nó.
+  - Quan hệ phòng ban cha – con phải chặn chu trình ở tầng service (A là cha của B, B là cha của A); constraint hiện chỉ chặn trường hợp phòng ban tự trỏ chính nó.
 
 ---
 
@@ -244,7 +257,7 @@ QLNS / NexusHR
 - **Quy tắc nghiệp vụ**:
   - Checklist phải được sinh từ template theo đơn vị, vị trí, địa điểm và loại hợp đồng; không tạo trùng task khi Offer được xử lý lại.
   - Trạng thái task hợp lệ: `Pending` → `In Progress` → `Completed`; task hoàn thành chỉ được mở lại bởi HR Officer/HR Manager và phải ghi lý do.
-  - Dashboard phải cảnh báo task quá hạn và task chặn ngày nhận việc (ví dụ: chưa cấp tài khoản hoặc chưa ký hợp đồng thử việc).
+  - Màn hình theo dõi onboarding phải cảnh báo task quá hạn và task chặn ngày nhận việc (ví dụ: chưa cấp tài khoản hoặc chưa ký hợp đồng thử việc).
 
 ---
 
@@ -260,8 +273,6 @@ QLNS / NexusHR
      - `transfer` (Điều chuyển phòng ban / Chi nhánh)
      - `demotion` (Giáng chức)
      - `salary_adjustment` (Điều chỉnh bậc lương)
-     - `suspension` (Tạm hoãn thực hiện hợp đồng / Tạm đình chỉ công tác)
-     - `return_to_work` (Trở lại làm việc sau tạm hoãn)
      - `termination` (Chấm dứt hợp đồng) — sinh từ `[EMP-07]`
   3. Hệ thống lưu lại giá trị cũ (`old_department_id`, `old_position_id`) và giá trị mới (`new_department_id`, `new_position_id`), ngày có hiệu lực (`effective_date`) và lý do.
   4. Khi đến ngày hiệu lực, hệ thống tự động cập nhật bản ghi chính của nhân viên trong bảng `employees`.
@@ -269,7 +280,7 @@ QLNS / NexusHR
   - Bản ghi biến động cần trạng thái `Draft`/`Pending Approval`/`Approved`/`Cancelled` trong bảng hoặc workflow hỗ trợ; chỉ sự kiện `Approved` mới được áp dụng vào `employees`.
   - Không cho phép hai biến động hiệu lực cùng ngày làm thay đổi cùng một trường của nhân viên. Khi hủy sau khi áp dụng, tạo sự kiện điều chỉnh mới thay vì sửa hoặc xóa lịch sử.
   - Điều chỉnh lương phải liên kết với phụ lục hợp đồng hoặc quyết định lương đã được phê duyệt.
-  - Cặp `suspension` / `return_to_work` phải cân: không được tạo `return_to_work` khi nhân viên không ở trạng thái `suspended`, và không được tạo `suspension` thứ hai khi chưa có `return_to_work`.
+  - Hai giá trị `suspension` và `return_to_work` vẫn nằm trong `ck_employee_event_type` của canonical schema nhưng là giá trị **reserved**: đợt này không có luồng nghiệp vụ hay endpoint nào tạo được sự kiện thuộc hai loại đó (xem mục 2.1).
 
 ---
 
@@ -302,14 +313,14 @@ QLNS / NexusHR
   - Trạng thái `decided` bắt buộc có đồng thời `outcome`, `decided_by`, `decided_at` và `effective_date` (`ck_probation_decided`).
   - Chỉ Line Manager được gán là `reviewer_user_id` mới nhập được đánh giá; sau khi `decided`, chỉ HR Manager được mở lại và phải ghi lý do vào audit log.
   - `overall_score` nhận giá trị từ 0 đến 5. Kết quả `terminated` bắt buộc có nhận xét ở `improvements` để làm căn cứ.
-  - Dashboard phải cảnh báo đỏ các phiếu quá `review_due_date` mà còn `pending`/`in_review`. Đây là rủi ro pháp lý, không chỉ là trễ quy trình.
+  - Danh sách phiếu đánh giá thử việc phải cảnh báo đỏ các phiếu quá `review_due_date` mà còn `pending`/`in_review`. Đây là rủi ro pháp lý, không chỉ là trễ quy trình.
 
 ---
 
 #### [EMP-07] Thôi việc & Bàn giao (Offboarding & Handover)
 - **Mục tiêu**: Quản lý toàn bộ thủ tục chấm dứt quan hệ lao động: bàn giao công việc, thu hồi tài sản và tài khoản, chốt công nợ và lưu trữ hồ sơ theo thời hạn.
 - **Tác nhân**: Employee (gửi đơn), Line Manager (xác nhận bàn giao), HR Officer (điều phối), HR Manager (phê duyệt), IT Admin, Admin Logistics, Finance.
-- **Tiền điều kiện**: Nhân viên đang ở trạng thái `active`, `probation` hoặc `suspended`.
+- **Tiền điều kiện**: Nhân viên đang ở trạng thái `active` hoặc `probation`.
 - **Luồng xử lý chính**:
   1. HR Officer tạo `offboarding_cases` với `separation_type`, `notice_received_on`, `last_working_date`, người nhận bàn giao (`handover_to_employee_id`) và lý do.
   2. Hệ thống đối chiếu `notice_received_on` với thời hạn báo trước (`contracts.notice_period_days`) và cảnh báo nếu không đủ, nhưng không tự chặn — quyết định thuộc HR Manager.
@@ -357,7 +368,7 @@ QLNS / NexusHR
   - Hợp đồng thử việc: Cảnh báo trước **7 ngày** và **15 ngày** trước khi hết hạn để quản lý hoàn thành đánh giá thử việc.
   - Hợp đồng xác định thời hạn: Cảnh báo trước **30 ngày** và **45 ngày** trước khi hết hạn.
 - **Hành động hệ thống**:
-  - Hiển thị badge màu hổ phách/đỏ trên giao diện Dashboard.
+  - Hiển thị badge màu hổ phách/đỏ trên danh sách hợp đồng của HR phụ trách.
   - Gửi thông báo đến HR phụ trách hợp đồng để lập thông báo chấm dứt hoặc ký hợp đồng mới.
 
 ---
@@ -371,27 +382,4 @@ QLNS / NexusHR
   3. Sau khi `Approved` và được ký theo policy, phụ lục chuyển `Effective`; hệ thống tạo `employee_event` tương ứng và cập nhật dữ liệu chủ nếu đến ngày hiệu lực.
 - **Quy tắc**:
   - Phụ lục không được sửa hợp đồng gốc; thay đổi sau khi hiệu lực phải tạo phiên bản phụ lục mới hoặc phụ lục thay thế.
-  - Mỗi phụ lục cần số tham chiếu, người lập, người phê duyệt, file đã ký và audit trail trong bảng canonical `contract_addenda`; migration runtime vẫn phải được tạo và review trước khi triển khai.
-
----
-
-### PHÂN HỆ 4: BÁO CÁO & PHÂN TÍCH NHÂN SỰ (HR ANALYTICS)
-
-#### [REP-01] Bảng Điều Khiển Tổng Hợp Quân Số (Headcount Dashboard)
-- **Các chỉ số KPI**:
-  - Tổng số nhân viên đang làm việc (Total Headcount & Active Employees).
-  - Số lượng nhân viên đang thử việc (Probation Employees).
-  - Cơ cấu nhân sự theo phòng ban (Headcount Distribution by Department).
-  - Tỷ lệ hợp đồng theo loại hình (Permanent vs. Fixed-term vs. Probation).
-  - Tỷ lệ hoàn thiện hồ sơ gốc (Dossier Completion Rate: mục tiêu > 95%).
-
-#### [REP-02] Đo lường Hiệu Suất Tuyển Dụng (Hiring Analytics)
-- **Các chỉ số KPI**:
-  - Phễu chuyển đổi tuyển dụng (Recruitment Funnel Conversion Rates qua 6 giai đoạn).
-  - Tốc độ tuyển dụng trung bình (Time-to-Hire: số ngày từ lúc ứng tuyển đến khi nhận việc).
-  - Hiệu quả kênh nguồn (Sourcing Channel ROI: LinkedIn vs. TopCV vs. Careers Portal vs. Referral).
-  - Tỷ lệ chấp thuận thư mời nhận việc (Offer Acceptance Rate: mục tiêu > 85%).
-- **Yêu cầu chung cho báo cáo**:
-  - Mọi chỉ số phải hỗ trợ lọc theo khoảng thời gian, phòng ban, vị trí và địa điểm khi dữ liệu có sẵn; giao diện phải hiển thị thời điểm làm mới dữ liệu.
-  - Quy ước tính toán phải được công bố trong tooltip/tài liệu: `Time-to-Hire = accepted_at - applied_at`; Offer Acceptance Rate chỉ tính Offer có phản hồi trong khoảng lọc.
-  - Chỉ vai trò được cấp quyền mới được xem lương, dữ liệu định danh hoặc xuất Excel/CSV/PDF. Bản xuất phải có watermark người xuất, thời điểm xuất và phạm vi dữ liệu.
+  - Mỗi phụ lục cần số tham chiếu, người lập, người phê duyệt, file đã ký và vết ghi audit trong bảng canonical `contract_addenda`; migration runtime vẫn phải được tạo và review trước khi triển khai.

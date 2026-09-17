@@ -4,6 +4,9 @@
 
 > **Phạm vi:** các file HTML/CSS/JavaScript tại đây là **UI/UX prototype**, không phải frontend application. Mọi dữ liệu và thao tác là mô phỏng cục bộ; chưa có xác thực, Backend API, persistence hoặc xử lý nghiệp vụ phía server.
 
+> [!NOTE]
+> Prototype được vẽ trước khi phạm vi giao hàng được chốt, nên bộ này rộng hơn phạm vi hiện tại. Phạm vi giao hàng là các chức năng lá in đậm dưới Recruitment và Core HR trên [`topdown-approach.png`](../topdown-approach.png) — xem [mục 2 của README gốc](../README.md). Các màn hình ngoài phạm vi được giữ lại làm tham chiếu thiết kế và được đánh dấu ⏸️ tại chỗ: Dashboard tổng quan, Sơ đồ Cây Cơ cấu Tổ chức, và toàn bộ `attendance.html`.
+
 Giao diện dùng design system chung trong [`hrm-theme.css`](./hrm-theme.css): sidebar trắng cố định, topbar tối giản, workspace xám nhạt, card bo góc, accent xanh và mật độ dữ liệu vừa phải.
 
 ---
@@ -32,7 +35,7 @@ Hệ thống cung cấp 4 file HTML độc lập hoàn chỉnh, chạy trực ti
 
 | Tên File | Chức Năng Chính | Đường Dẫn Trực Tiếp |
 | :--- | :--- | :--- |
-| **`main.html`** | Dashboard tổng quan, Hồ sơ Nhân sự, Hợp đồng lao động, Sơ đồ tổ chức và Drawer chi tiết nhân sự | [Xem file main.html](./main.html) |
+| **`main.html`** | Hồ sơ Nhân sự, Hợp đồng lao động và Drawer chi tiết nhân sự. Hai view ⏸️ **ngoài phạm vi triển khai** (giữ làm concept): Dashboard tổng quan thuộc trụ cột Reports & Analytics, và Sơ đồ tổ chức thuộc chức năng Organizational Chart | [Xem file main.html](./main.html) |
 | **`recruitment.html`** | Phân hệ Tuyển dụng ATS: Quản lý Ứng viên (Pipeline Kanban/Table), Yêu cầu tuyển dụng, Lịch phỏng vấn & Đánh giá, Chuyển tiếp Tiếp nhận (Onboarding Handoff) | [Xem file recruitment.html](./recruitment.html) |
 | **`attendance.html`** | ⏸️ **Ngoài phạm vi triển khai** (giữ làm concept). Phân hệ Chấm công & Nghỉ phép: Bảng công & Điểm danh (Check-in/out), Định nghĩa & Lịch phân ca (Work Shifts), Đơn xin nghỉ phép & Quỹ phép (Leave Requests), Xét duyệt nghỉ phép (Leave Approval) | [Xem file attendance.html](./attendance.html) |
 | **`auth.html`** | Cổng xác thực: đăng nhập, đăng ký tài khoản, hiện/ẩn mật khẩu, kiểm tra biểu mẫu và điều hướng vào dashboard prototype. | [Xem file auth.html](./auth.html) |
@@ -42,6 +45,8 @@ Hệ thống cung cấp 4 file HTML độc lập hoàn chỉnh, chạy trực ti
 ## 2. Thư Viện Hình Ảnh Giao Diện (Visual Showcase)
 
 ### 2.1. Dashboard tổng quan (`main.html?view=dashboard`)
+
+⏸️ **Ngoài phạm vi triển khai** (giữ làm concept) — thuộc trụ cột Reports & Analytics. Không có endpoint báo cáo nào trong `api/openapi.yaml`.
 
 Trang mặc định cung cấp KPI nhân sự, biểu đồ biến động, đơn nghỉ gần đây, cơ cấu trạng thái và danh sách nhân sự mới. Các view nghiệp vụ cũ tiếp tục truy cập qua sidebar.
 
@@ -60,6 +65,8 @@ Quản lý vòng đời hợp đồng: Số hợp đồng, loại hợp đồng 
 ![Quản lý Hợp đồng Lao động](profile/contracts.png)
 
 #### 📷 Sơ đồ Cây Cơ cấu Tổ chức (Organizational Chart)
+⏸️ **Ngoài phạm vi triển khai** (giữ làm concept). Phân cấp phòng ban vẫn thuộc phạm vi ở tầng dữ liệu và quản lý, chỉ màn hình trình bày dạng cây và endpoint tương ứng bị loại.
+
 Trực quan hóa cây phả hệ doanh nghiệp: Hội đồng Quản trị -> Ban Giám đốc -> Các Khối & Phòng ban chức năng -> Đội ngũ nhân viên.
 ![Sơ đồ Cơ cấu Tổ chức](profile/organizational.png)
 

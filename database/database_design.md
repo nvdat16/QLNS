@@ -8,6 +8,9 @@
 > [!NOTE]
 > Attendance & Leave **không thuộc phạm vi triển khai**. DDL 13 bảng của nhóm này được giữ tại [docs/deferred/attendance_leave/](../docs/deferred/attendance_leave/README.md) để dùng lại sau, không nằm trong canonical schema.
 
+> [!NOTE]
+> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Lưu ý: *Departments & Organizational Hierarchy* vẫn **trong** phạm vi, nên `departments.parent_department_id`, quan hệ cha con và quy tắc chống vòng lặp đều được giữ — chỉ màn hình/endpoint trình bày dạng cây bị loại.
+
 ## Bản đồ bảng theo phân hệ
 
 | Phân hệ | Bảng | Số lượng |
@@ -16,8 +19,10 @@
 | **Core HR — Lifecycle** | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | 6 |
 | **Core HR — Contracts** | `contracts`, `contract_addenda` | 2 |
 | **Recruitment (ATS)** | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | 8 |
-| **Platform (Identity, Audit, Integration)** | `users`, `user_roles`, `audit_logs`, `outbox_messages` | 4 |
+| **Platform (định danh, audit, outbox)** | `users`, `user_roles`, `audit_logs`, `outbox_messages` | 4 |
 | **Tổng** | | **23** |
+
+Bốn bảng Platform **vẫn thuộc canonical schema**. `users` và `user_roles` là dữ liệu định danh và data scope mà tầng authorization đọc; `audit_logs` và `outbox_messages` là **cơ chế xuyên suốt bắt buộc**, ghi cùng transaction với thay đổi nghiệp vụ. Điều nằm ngoài phạm vi đợt này là **API quản trị** cho chúng: không có endpoint quản lý user/role/role-grant (việc cấp tài khoản và vai trò do Identity Provider bên ngoài đảm nhiệm), không có endpoint tra cứu audit log, không có endpoint xem và retry delivery. Không bảng nào bị bỏ đi vì thế.
 
 ## Quy ước chung của canonical schema
 
@@ -255,11 +260,14 @@ erDiagram
 | `phone` | `VARCHAR(20)` | `NULL` | Contact phone number |
 | `address` | `TEXT` | `NULL` | Permanent or temporary address |
 | `hire_date` | `DATE` | `NOT NULL` | Employment start date |
-| `status` | `VARCHAR(50)` | `NOT NULL`, `DEFAULT 'ACTIVE'` | Employment status (ACTIVE, ONBOARDING, PROBATION, RESIGNED) |
+| `status` | `VARCHAR(30)` | `NOT NULL`, `DEFAULT 'probation'`, `CHECK ck_employee_status` | Employment status: `probation`, `active`, `terminated`. Giá trị `suspended` vẫn nằm trong CHECK nhưng là **reserved** — Suspension & Return to Work ngoài phạm vi, không endpoint nào đặt được. |
 | `department_id` | `INTEGER` | `FOREIGN KEY` -> `departments(id)`, `NOT NULL` | Assigned department |
 | `position_id` | `INTEGER` | `FOREIGN KEY` -> `positions(id)`, `NOT NULL` | Assigned position |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
 | `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |
+
+> [!NOTE]
+> Tập giá trị canonical của `employees.status` là `ck_employee_status` trong [`schema.sql`](schema.sql): `probation`, `active`, `suspended`, `terminated` (bảng phía trên là bản mô tả lịch sử — xem [mục 6, ý 1](#6-điều-kiện-trước-khi-sinh-migration)). Trong đó **`suspended` là giá trị reserved**: nghiệp vụ *Suspension & Return to Work* nằm **ngoài phạm vi** đợt giao hàng này, nên **không endpoint nào đặt được** giá trị đó. Giá trị được giữ trong DDL để tập trạng thái ổn định khi phạm vi mở rộng. Vì vậy tiền điều kiện của offboarding là nhân viên đang `active` hoặc `probation`.
 
 ### 2.4. `onboarding_tasks` Table
 | Column | Data Type | Constraints | Description |
@@ -303,7 +311,7 @@ erDiagram
 | :--- | :--- | :--- | :--- |
 | `id` | `INTEGER` | `PRIMARY KEY`, Auto Increment | Primary key |
 | `employee_id` | `INTEGER` | `FOREIGN KEY` -> `employees(id)`, `NOT NULL` | Employee associated with the event |
-| `event_type` | `VARCHAR(50)` | `NOT NULL`, `CHECK` | One of `promotion`, `transfer`, `demotion`, `salary_adjustment`, `termination`, `correction` (client-writable via `EmployeeEventWrite`) or `probation_confirmation`, `probation_extension`, `suspension`, `return_to_work` (system-generated) |
+| `event_type` | `VARCHAR(50)` | `NOT NULL`, `CHECK` | One of `promotion`, `transfer`, `demotion`, `salary_adjustment`, `termination`, `correction` (client-writable via `EmployeeEventWrite`) or `probation_confirmation`, `probation_extension` (system-generated). `suspension` and `return_to_work` are **reserved values, out of scope for this delivery** — see the note below. |
 | `effective_date` | `DATE` | `NULL` | Date on which the decision takes effect |
 | `old_department_id` | `INTEGER` | `FOREIGN KEY` -> `departments(id)`, `NULL` | Previous department, if transferred |
 | `new_department_id` | `INTEGER` | `FOREIGN KEY` -> `departments(id)`, `NULL` | New department |
@@ -312,6 +320,9 @@ erDiagram
 | `description` | `TEXT` | `NULL` | Reason or decision details |
 | `created_by` | `INTEGER` | `FOREIGN KEY` -> `employees(id)`, `NULL` | Employee who created the record |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Record creation timestamp |
+
+> [!NOTE]
+> `ck_employee_event_type` trong [`schema.sql`](schema.sql) vẫn cho phép `suspension` và `return_to_work`, nhưng đây là **giá trị reserved, ngoài phạm vi** đợt giao hàng này: *Suspension & Return to Work* không được triển khai và **không endpoint nào đặt được** hai loại sự kiện đó. Do đó không có quy tắc đối chiếu "cặp `suspension`/`return_to_work` phải cân".
 
 ---
 
@@ -333,12 +344,14 @@ erDiagram
 | `salary_max` | `DECIMAL(15, 2)` | `NULL` | Maximum salary range |
 | `target_headcount` | `INTEGER` | `DEFAULT 1` | Number of positions to fill |
 | `status` | `VARCHAR` | `DEFAULT 'Active Recruiting'` | Recruitment status |
-| `channels` | `VARCHAR` | `DEFAULT 'LinkedIn, TopCV, Careers'` | Publishing channels |
 | `published_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Publication timestamp |
 | `closing_date` | `DATE` | `NULL` | Application deadline |
 | `created_by` | `INTEGER` | `NULL` | User who created the job posting |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
 | `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |
+
+> [!NOTE]
+> `target_headcount`, `salary_min` và `salary_max` là **dữ liệu khai báo**, không phải cơ chế kiểm soát: *Headcount & Budget Validation* nằm ngoài phạm vi đợt này, nên hệ thống không tự kiểm tra định biên hay ngân sách lương khi phê duyệt requisition — HR Manager quyết định thủ công. Tương tự, *Recruitment Channel Management* ngoài phạm vi: không có cột/danh sách kênh đăng tin, chỉ còn một kênh careers mặc định.
 
 ### 3.2. `candidates` Table
 
@@ -509,13 +522,15 @@ Một hợp đồng thử việc có đúng một phiếu đánh giá (`ux_proba
 
 ## 5. Platform Tables (Identity, Audit, Integration)
 
-Bốn bảng này không thuộc một phân hệ nghiệp vụ nào nhưng mọi phân hệ đều phụ thuộc. Đặc tả DDL đầy đủ ở [`schema.sql`](schema.sql).
+Bốn bảng này không thuộc một phân hệ nghiệp vụ nào nhưng mọi phân hệ đều phụ thuộc, và **cả bốn đều được giữ trong canonical schema**. Đặc tả DDL đầy đủ ở [`schema.sql`](schema.sql).
+
+Phân biệt bắt buộc cho đợt giao hàng này: **cơ chế vẫn bắt buộc, API quản trị thì không.** Ghi `audit_logs` trong cùng transaction với thay đổi nghiệp vụ và ghi `outbox_messages` để phát email/lịch là yêu cầu của mọi command; kiểm tra permission và data scope phía server trên mọi request cũng không đổi (quality goal Q1). Nhưng đợt này **không có endpoint** quản lý user/role/role-grant, tra cứu audit log, hay xem và retry delivery — việc cấp tài khoản và vai trò do **Identity Provider bên ngoài** đảm nhiệm, còn cấu hình integration/notification/approval nằm trong `appsettings`.
 
 | Bảng | Mục đích | Invariant chính |
 | :--- | :--- | :--- |
 | `users` | Danh tính ứng dụng, liên kết tới IdP qua `external_subject` | `external_subject` và `email` là `UNIQUE`; `status IN (active, disabled)` |
 | `user_roles` | Gán vai trò kèm **data scope** | `ck_user_roles_scope`: scope `department` bắt buộc có `data_scope_id > 0`; `self`/`organization` bắt buộc `= 0` |
-| `audit_logs` | Nhật ký mọi hành động tạo/sửa/duyệt/xuất dữ liệu | `result IN (succeeded, rejected, failed)`; index theo `entity` và theo `actor` |
+| `audit_logs` | Nhật ký mọi hành động tạo/sửa/duyệt/từ chối, ghi cùng transaction nghiệp vụ | `result IN (succeeded, rejected, failed)`; index theo `entity` và theo `actor` |
 | `outbox_messages` | Transactional outbox cho email/notification/integration | Ghi cùng transaction nghiệp vụ; index partial trên bản ghi chưa xử lý |
 
 ---

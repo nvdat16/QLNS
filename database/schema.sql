@@ -1,5 +1,11 @@
 -- QLNS canonical PostgreSQL schema — baseline v1
 -- Scope: Core HR (incl. Contracts) and Recruitment — 23 tables.
+-- Delivery scope follows the bold leaf functions under Recruitment and Core HR in
+-- topdown-approach.png; see section 2 of README.md. Out of scope for this delivery:
+-- Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart
+-- and Suspension & Return to Work. The users / user_roles / audit_logs / outbox_messages
+-- tables stay canonical: identity data plus the crosscutting audit and outbox mechanisms
+-- are still mandatory, only the administration endpoints that managed them are out of scope.
 -- Attendance & Leave DDL is parked out of scope in docs/deferred/attendance_leave/schema_attendance_leave.sql.
 -- Status: Proposed. This file is the canonical schema contract until EF Core
 -- migrations are generated and accepted. Times are stored in UTC (timestamptz).
@@ -259,6 +265,8 @@ CREATE TABLE employees (
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     version bigint NOT NULL DEFAULT 1,
+    -- 'suspended' is reserved: Suspension & Return to Work is out of scope for the current
+    -- delivery, so no endpoint can set it. Kept so the value set stays stable.
     CONSTRAINT ck_employee_status CHECK (status IN ('probation', 'active', 'suspended', 'terminated')),
     CONSTRAINT ck_employee_not_self_manager CHECK (manager_id IS NULL OR manager_id <> id),
     -- Created by offer-acceptance handoff before IT provisions a mailbox; must exist once active.
@@ -373,6 +381,8 @@ CREATE TABLE employee_events (
     updated_at timestamptz NOT NULL DEFAULT now(),
     version bigint NOT NULL DEFAULT 1,
     CONSTRAINT ck_employee_event_status CHECK (status IN ('draft', 'pending_approval', 'approved', 'applied', 'cancelled')),
+    -- 'suspension' and 'return_to_work' are reserved: Suspension & Return to Work is out of
+    -- scope for the current delivery, so no endpoint can set them.
     CONSTRAINT ck_employee_event_type CHECK (event_type IN (
         'probation_confirmation', 'probation_extension', 'promotion', 'demotion', 'transfer',
         'salary_adjustment', 'suspension', 'return_to_work', 'termination', 'correction'

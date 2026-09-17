@@ -2,7 +2,7 @@
 
 ## 1. Introduction and Goals
 
-QLNS là hệ thống quản trị nguồn nhân lực (HRMS) kết hợp quản lý tuyển dụng (ATS), hướng tới một luồng dữ liệu xuyên suốt từ yêu cầu tuyển dụng, ứng viên, phỏng vấn và offer đến hồ sơ nhân viên, hợp đồng, onboarding, thử việc và thôi việc. Chấm công và nghỉ phép nằm ngoài phạm vi triển khai hiện tại.
+QLNS là hệ thống quản trị nguồn nhân lực (HRMS) kết hợp quản lý tuyển dụng (ATS), hướng tới một luồng dữ liệu xuyên suốt từ yêu cầu tuyển dụng, ứng viên, phỏng vấn và offer đến hồ sơ nhân viên, hợp đồng, onboarding, thử việc và thôi việc. Phạm vi giao hàng của đợt này là các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ `topdown-approach.png`; danh sách đầy đủ những gì trong và ngoài phạm vi ở [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected).
 
 Mục tiêu kiến trúc là tạo ranh giới rõ giữa giao diện, quy tắc nghiệp vụ và dữ liệu; bảo vệ dữ liệu nhân sự nhạy cảm; đồng thời cho phép phát triển từng phần mà không biến UI prototype thành nguồn business rule.
 
@@ -11,7 +11,7 @@ Mục tiêu kiến trúc là tạo ranh giới rõ giữa giao diện, quy tắc
 | Role | Concern |
 |---|---|
 | Ban lãnh đạo / Nhà tài trợ | số liệu nhân sự đáng tin cậy, hiệu quả đầu tư, giảm rủi ro vận hành |
-| HR Director / HR Manager | quy trình đúng thẩm quyền, truy vết quyết định, báo cáo nhất quán |
+| HR Director / HR Manager | quy trình đúng thẩm quyền, truy vết quyết định, dữ liệu nhân sự nhất quán |
 | Recruiter | pipeline ứng viên, lịch phỏng vấn, scorecard và offer trên một luồng thống nhất |
 | Hiring / Line Manager | tác vụ phê duyệt rõ ràng, dữ liệu đúng phạm vi quản lý |
 | HR Officer / C&B | hồ sơ, hợp đồng, onboarding, thử việc và thôi việc chính xác |
@@ -31,7 +31,7 @@ Mục tiêu kiến trúc là tạo ranh giới rõ giữa giao diện, quy tắc
 | Q4 | **Khả dụng sử dụng** | người dùng hoàn thành tìm hồ sơ, chuyển vòng hoặc duyệt phép | các tác vụ ưu tiên đạt success rate ≥ 90% trong usability test; WCAG 2.1 AA cho luồng thiết yếu | 2 |
 | Q5 | **Hiệu năng tương tác** | tải danh sách có filter/pagination trong tải mục tiêu | p95 API đọc ≤ 500 ms và command ≤ 800 ms, không tính provider ngoài; quy mô tải phải được chốt trước production | 2 |
 | Q6 | **Dễ bảo trì** | thêm module hoặc thay provider tích hợp | không sửa domain module không liên quan; dependency fitness tests và contract tests đều pass | 2 |
-| Q7 | **Khả năng phục hồi tích hợp** | email/calendar/e-signature timeout hoặc gửi callback lặp | business transaction vẫn nhất quán; event trùng không tạo side effect trùng; retry hữu hạn có đối soát | 2 |
+| Q7 | **Khả năng phục hồi tích hợp** | email/calendar timeout hoặc cùng một command được gửi lặp | business transaction vẫn nhất quán; message trùng không tạo side effect trùng; retry hữu hạn có đối soát | 2 |
 | Q8 | **Phục hồi dữ liệu** | mất database node hoặc thao tác khôi phục | đạt RPO/RTO được phê duyệt và restore drill pass; giá trị cụ thể là Open Decision | 3 |
 
 Q1–Q3 là các mục tiêu định hình kiến trúc. Mọi quyết định làm suy giảm chúng phải có ADR riêng.
@@ -67,15 +67,12 @@ flowchart LR
     employee(["👤 Employee"])
     manager(["👤 Hiring / Line Manager"])
     hr(["👤 Recruiter / HR Officer / HR Manager"])
-    admin(["👤 System Administrator"])
 
     subgraph boundary["QLNS System Boundary"]
         qlns["QLNS<br/><i>[Software System — Proposed]</i><br/>Recruitment and HR lifecycle management"]
     end
 
-    jobboards["Job Boards<br/><i>[External System]</i>"]
     comms["Email / Calendar<br/><i>[External System]</i>"]
-    esign["E-signature<br/><i>[External System]</i>"]
     storage["Document Storage<br/><i>[External System]</i>"]
     idp["Identity Provider<br/><i>[External System]</i>"]
 
@@ -83,20 +80,17 @@ flowchart LR
     employee -- "profile, contracts, handover" --> qlns
     manager -- "requisition, scorecard, approvals" --> qlns
     hr -- "recruitment and HR operations" --> qlns
-    admin -- "accounts, roles, configuration" --> qlns
-    qlns -- "publishes/receives recruitment data" --> jobboards
     qlns -- "notifications and schedules" --> comms
-    qlns -- "documents and callbacks" --> esign
     qlns -- "private document objects" --> storage
     qlns -- "validates identity/tokens" --> idp
+    idp -- "provisions accounts, roles and data scope" --> qlns
 
     style qlns fill:#1168bd,color:#fff
-    style jobboards fill:#999,color:#fff
     style comms fill:#999,color:#fff
-    style esign fill:#999,color:#fff
     style storage fill:#999,color:#fff
     style idp fill:#999,color:#fff
 ```
+
 
 ### 3.2 External interfaces
 
@@ -104,11 +98,11 @@ flowchart LR
 |---|---|---|---|---|
 | Web API | in/out | HTTPS, REST/JSON, OpenAPI | QLNS Backend | RFC 7807-style error, `Retry-After` khi phù hợp |
 | Identity | in | OIDC/OAuth2 candidate; chưa chọn provider | Security / Platform | fail closed; token invalid → `401` |
-| Job boards | both | Provider API/webhook | Recruitment adapter | timeout/retry; duplicate → idempotent handling |
-| Email/Calendar | out/both | Provider API/webhook | Notification/Calendar adapter | delivery state + bounded retry + reconciliation |
-| E-signature | both | Provider API/webhook | Document/Contract adapter | callback verification; status reconciliation |
+| Email/Calendar | out | Provider API | Notification/Calendar adapter | delivery state + bounded retry + reconciliation |
 | Document storage | both | object API; signed/authorized download | Document adapter | unavailable → no metadata corruption |
 | Database | both | PostgreSQL protocol | Persistence layer | transaction rollback; readiness degraded |
+
+Identity là interface một chiều **vào** hệ thống: QLNS chỉ xác thực token và đọc claim (roles, data scope) do provider phát hành. Dữ liệu định danh vẫn được lưu ở `users`/`user_roles` để phục vụ authorization và audit, nhưng không có endpoint tạo/khóa tài khoản hay cấp vai trò — xem [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected). Hệ thống không nhận webhook từ provider ngoài trong đợt này, nên không có interface inbound nào khác ngoài Web API.
 
 ---
 
@@ -162,7 +156,6 @@ flowchart LR
     employee(["👤 Employee"])
     manager(["👤 Hiring / Line Manager"])
     hr(["👤 Recruiter / HR Officer / HR Manager"])
-    admin(["👤 System Administrator / Auditor"])
 
     subgraph system["QLNS System Boundary"]
         direction TB
@@ -173,9 +166,7 @@ flowchart LR
     end
 
     idp["Identity Provider<br/><i>[External System]</i>"]
-    jobboards["Job Boards<br/><i>[External System]</i>"]
     comms["Email / Calendar<br/><i>[External System]</i>"]
-    esign["E-signature<br/><i>[External System]</i>"]
     objects[("Private Object Storage<br/><i>[External System]</i>")]
     observe["Observability Platform<br/><i>[External System]</i>"]
 
@@ -183,7 +174,6 @@ flowchart LR
     employee -->|"HTTPS: profile, contracts and handover"| web
     manager -->|"HTTPS: requisition, review and approval"| web
     hr -->|"HTTPS: recruitment and HR operations"| web
-    admin -->|"HTTPS: account, role and audit"| web
 
     web -->|"HTTPS REST/JSON; OpenAPI contract"| api
     web -->|"OIDC Authorization Code + PKCE"| idp
@@ -191,13 +181,9 @@ flowchart LR
     api -->|"EF Core / Npgsql; ACID transaction"| db
     api -->|"object metadata and signed access"| objects
     api -->|"transactional outbox"| db
-    jobboards -->|"signed webhook / polling result"| api
-    esign -->|"signed callback"| api
 
     worker -->|"claim jobs/outbox; write delivery state"| db
-    worker -->|"publish jobs and reconcile status"| jobboards
     worker -->|"notification and calendar API"| comms
-    worker -->|"send documents and reconcile signature"| esign
     worker -->|"read/write document objects"| objects
     api -->|"logs, metrics and traces"| observe
     worker -->|"logs, metrics and traces"| observe
@@ -209,7 +195,7 @@ flowchart LR
     class web,api partial
     class worker proposed
     class db contract
-    class idp,jobboards,comms,esign,objects,observe external
+    class idp,comms,objects,observe external
 ```
 
 **Container responsibilities and dependency direction**
@@ -249,8 +235,6 @@ flowchart TB
             direction LR
             recruitment["Recruitment<br/><i>[Partial]</i><br/>jobs, candidates, interviews, offers"]
             corehr["Core HR<br/><i>[Proposed]</i><br/>employees, organization, contracts, onboarding"]
-            reporting["Dashboard & Reporting<br/><i>[Proposed]</i><br/>authorized KPIs and export"]
-            administration["Administration<br/><i>[Proposed]</i><br/>users, roles, configuration and audit"]
         end
 
         shared["Shared UI & Accessibility<br/><i>[Component — Partial]</i><br/>design tokens, forms, tables, feedback and WCAG states"]
@@ -260,18 +244,12 @@ flowchart TB
         shell --> auth
         shell --> recruitment
         shell --> corehr
-        shell --> reporting
-        shell --> administration
 
         recruitment --> shared
         corehr --> shared
-        reporting --> shared
-        administration --> shared
 
         recruitment --> client
         corehr --> client
-        reporting --> client
-        administration --> client
         shell --> telemetry
     end
 
@@ -284,7 +262,7 @@ flowchart TB
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
     class shell,recruitment,shared,client partial
-    class auth,corehr,reporting,administration,telemetry proposed
+    class auth,corehr,telemetry proposed
     class api,idp,observe external
 ```
 
@@ -297,7 +275,6 @@ Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên
 ```mermaid
 flowchart TB
     web["React Web Application<br/><i>[Container]</i>"]
-    callbacks["Provider / Device Callbacks<br/><i>[External Systems]</i>"]
     idp["Identity Provider<br/><i>[External System]</i>"]
     db[("PostgreSQL<br/><i>[Container]</i>")]
     objects[("Private Object Storage<br/><i>[External System]</i>")]
@@ -311,9 +288,6 @@ flowchart TB
             recApi["Recruitment API<br/><i>[Partial]</i>"]
             hrApi["Core HR API<br/><i>[Proposed]</i>"]
             contractApi["Contract & Onboarding API<br/><i>[Proposed]</i>"]
-            reportApi["Reporting API<br/><i>[Proposed]</i>"]
-            adminApi["Administration API<br/><i>[Proposed]</i>"]
-            webhookApi["Integration Webhook API<br/><i>[Proposed]</i>"]
         end
 
         subgraph business["Qlns.BusinessLogic — Business Layer"]
@@ -322,9 +296,6 @@ flowchart TB
             recLogic["Recruitment Services & Domain<br/><i>[Partial]</i>"]
             hrLogic["Core HR Services & Domain<br/><i>[Proposed]</i>"]
             contractLogic["Contract & Onboarding Services<br/><i>[Proposed]</i>"]
-            reportLogic["Reporting Query Services<br/><i>[Proposed]</i>"]
-            adminLogic["Identity Administration Services<br/><i>[Proposed]</i>"]
-            integrationLogic["Webhook Verification & Mapping<br/><i>[Proposed]</i>"]
             auditOutbox["Audit & Outbox Policies<br/><i>[Component — Proposed]</i>"]
         end
 
@@ -333,9 +304,6 @@ flowchart TB
             recRepo["Recruitment Repositories<br/><i>[Partial]</i>"]
             hrRepo["Core HR Repositories<br/><i>[Proposed]</i>"]
             contractRepo["Contract Repositories<br/><i>[Proposed]</i>"]
-            reportRepo["Reporting Read Repositories<br/><i>[Proposed]</i>"]
-            identityRepo["Identity Repositories<br/><i>[Proposed]</i>"]
-            integrationRepo["Integration & Idempotency Store<br/><i>[Proposed]</i>"]
             auditRepo["Audit & Outbox Repositories<br/><i>[Proposed]</i>"]
             uow["EF Core DbContext & Unit of Work<br/><i>[Component — Partial]</i>"]
             objectAdapter["Object Storage Adapter<br/><i>[Component — Proposed]</i>"]
@@ -343,43 +311,28 @@ flowchart TB
     end
 
     web -->|"REST/JSON"| pipeline
-    callbacks -->|"authenticated/signed webhook"| pipeline
     pipeline -->|"validate token / obtain claims"| idp
     pipeline --> recApi
     pipeline --> hrApi
     pipeline --> contractApi
-    pipeline --> reportApi
-    pipeline --> adminApi
-    pipeline --> webhookApi
     pipeline --> authorization
 
     recApi --> recLogic
     hrApi --> hrLogic
     contractApi --> contractLogic
-    reportApi --> reportLogic
-    adminApi --> adminLogic
-    webhookApi --> integrationLogic
 
     recLogic --> recRepo
     hrLogic --> hrRepo
     contractLogic --> contractRepo
-    reportLogic --> reportRepo
-    adminLogic --> identityRepo
-    integrationLogic --> integrationRepo
 
     recLogic --> auditOutbox
     hrLogic --> auditOutbox
     contractLogic --> auditOutbox
-    adminLogic --> auditOutbox
-    integrationLogic --> auditOutbox
     auditOutbox --> auditRepo
 
     recRepo --> uow
     hrRepo --> uow
     contractRepo --> uow
-    reportRepo --> uow
-    identityRepo --> uow
-    integrationRepo --> uow
     auditRepo --> uow
     uow -->|"EF Core / Npgsql"| db
     contractLogic --> objectAdapter
@@ -390,8 +343,8 @@ flowchart TB
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
     class pipeline,recApi,recLogic,recRepo,uow partial
-    class authorization,hrApi,contractApi,reportApi,adminApi,webhookApi,hrLogic,contractLogic,reportLogic,adminLogic,integrationLogic,auditOutbox,hrRepo,contractRepo,reportRepo,identityRepo,integrationRepo,auditRepo,objectAdapter proposed
-    class web,callbacks,idp,db,objects external
+    class authorization,hrApi,contractApi,hrLogic,contractLogic,auditOutbox,hrRepo,contractRepo,auditRepo,objectAdapter proposed
+    class web,idp,db,objects external
 ```
 
 Ba **tier runtime** là: Presentation Tier (React Web), Application Tier (ASP.NET Core API + .NET Worker) và Data Tier (PostgreSQL). Chúng là ranh giới triển khai/mạng; Worker không tạo tier thứ tư. Ba **layer source code** bên trong ASP.NET Core application tier là Presentation, Business Logic và Data Access:
@@ -399,7 +352,8 @@ Ba **tier runtime** là: Presentation Tier (React Web), Application Tier (ASP.NE
 - Presentation chỉ chuyển HTTP contract thành command/query, gọi Business Logic và map kết quả sang DTO/Problem Details.
 - Business Logic sở hữu use case, domain workflow, authorization theo tài nguyên và các repository/adapter contract; không phụ thuộc ASP.NET Core hoặc EF Core.
 - Data Access triển khai contract của Business Logic bằng EF Core/provider adapter. `Qlns.Api` chỉ tham chiếu Data Access tại composition root để đăng ký dependency.
-- Các module ghi dữ liệu phải đi qua Unit of Work và cùng transaction ghi audit/outbox; Reporting chỉ dùng read model đã áp dụng data scope.
+- Các module ghi dữ liệu phải đi qua Unit of Work và cùng transaction ghi audit/outbox. `Audit & Outbox Policies` và `Audit & Outbox Repositories` là cơ chế xuyên suốt bắt buộc cho mọi module, không phải một chức năng nghiệp vụ: chúng ghi `audit_logs`/`outbox_messages` nhưng không có API tra cứu hay điều khiển trong đợt này (§3.3).
+- Không có component nhận webhook từ provider ngoài: mọi request vào hệ thống đi qua `HTTP Pipeline` từ Web Application (kể cả endpoint phản hồi offer của ứng viên, dùng token ngắn hạn).
 
 <a id="c4-level-3-worker"></a>
 
@@ -408,9 +362,7 @@ Ba **tier runtime** là: Presentation Tier (React Web), Application Tier (ASP.NE
 ```mermaid
 flowchart LR
     db[("PostgreSQL<br/><i>[Container]</i>")]
-    jobboards["Job Boards<br/><i>[External System]</i>"]
     comms["Email / Calendar<br/><i>[External System]</i>"]
-    esign["E-signature<br/><i>[External System]</i>"]
     observe["Observability Platform<br/><i>[External System]</i>"]
 
     subgraph worker[".NET Background Worker [Container · Application Tier — Proposed]"]
@@ -422,22 +374,17 @@ flowchart LR
         offerExpiry["Offer Expiry Processor<br/><i>[Component]</i>"]
         effectiveEvents["Effective-date Employee Processor<br/><i>[Component]</i>"]
         notification["Notification & Calendar Handler<br/><i>[Component]</i>"]
-        providerSync["Provider Sync Handlers<br/><i>[Component]</i><br/>job board and e-signature reconciliation"]
         retry["Retry, Dead-letter & Reconciliation<br/><i>[Component]</i>"]
-        adapters["Provider Adapters<br/><i>[Component]</i><br/>timeout, idempotency and signature validation"]
+        adapters["Provider Adapters<br/><i>[Component]</i><br/>timeout and idempotency"]
         telemetry["Worker Telemetry<br/><i>[Component]</i>"]
 
         scheduler --> contractExpiry
         scheduler --> offerExpiry
         scheduler --> effectiveEvents
-        scheduler --> providerSync
         outbox --> dispatcher
         dispatcher --> notification
-        dispatcher --> providerSync
         notification --> adapters
-        providerSync --> adapters
         notification --> retry
-        providerSync --> retry
         contractExpiry --> retry
         offerExpiry --> retry
         effectiveEvents --> retry
@@ -451,16 +398,16 @@ flowchart LR
     effectiveEvents -->|"transactional state + outbox"| db
     dispatcher -->|"delivery status"| db
     retry -->|"attempt/dead-letter/reconciliation state"| db
-    adapters -->|HTTPS| jobboards
     adapters -->|HTTPS| comms
-    adapters -->|HTTPS| esign
     telemetry -->|"logs, metrics and traces"| observe
 
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
-    class scheduler,outbox,dispatcher,contractExpiry,offerExpiry,effectiveEvents,notification,providerSync,retry,adapters,telemetry proposed
-    class db,jobboards,comms,esign,observe external
+    class scheduler,outbox,dispatcher,contractExpiry,offerExpiry,effectiveEvents,notification,retry,adapters,telemetry proposed
+    class db,comms,observe external
 ```
+
+Worker vẫn bắt buộc trong phạm vi này vì ba nhóm việc thuộc chức năng đã chọn: áp dụng `employee_events` đã approved đúng `effective_date`, cảnh báo hợp đồng sắp hết hạn cùng xử lý offer quá hạn, và gửi outbox (email/lịch phỏng vấn, offer, thông báo onboarding). Không có job đồng bộ job board hay e-signature.
 
 Worker chưa có implementation đã xác minh. Mọi handler phải idempotent, claim công việc an toàn khi chạy nhiều instance, retry hữu hạn và chuyển dead-letter để đối soát; không giữ database transaction trong khi gọi provider ngoài.
 
@@ -474,14 +421,8 @@ Hai module nghiệp vụ được chọn triển khai trước — **Core HR** (
 | Core HR — Lifecycle | onboarding, events, documents, probation, offboarding | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | UI prototype (onboarding) + canonical schema + OpenAPI + story có AC |
 | Core HR — Contracts | contract lifecycle, expiry alert, addendum | `contracts`, `contract_addenda` | UI prototype + canonical schema + OpenAPI + story có AC |
 | Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + module mẫu trong skeleton |
-| Identity/Audit/Notification | actor, roles/data scope, audit, delivery state | `users`, `user_roles`, `audit_logs`, `outbox_messages` | canonical v1 design |
-| Reporting | authorized read models and export | read model trên bảng của các module trên; chưa có bảng riêng | UI/SRS concept |
+| Identity/Audit/Notification | actor, roles/data scope, audit, delivery state — **cơ chế xuyên suốt, không có API quản trị trong đợt này** | `users`, `user_roles`, `audit_logs`, `outbox_messages` | canonical v1 design |
 
-**Ownership rule:** Recruitment sở hữu dữ liệu ứng viên tới thời điểm offer được chấp nhận; từ đó Core HR sở hữu `employees` và mọi thứ phái sinh. Liên kết ngược duy nhất là `employees.source_application_id` (unique), dùng để đảm bảo một offer chỉ tạo một nhân viên. Chiều phụ thuộc là Core HR → Recruitment (đọc), một chiều.
-
-**Trạng thái nhân sự chỉ đổi qua sự kiện:** `employees.status`, phòng ban, chức danh và quản lý trực tiếp không được sửa thẳng; mọi thay đổi đi qua `employee_events` đã `approved` và được áp dụng đúng `effective_date`. Probation review và offboarding case đều kết thúc bằng việc sinh một `employee_events`, không ghi trực tiếp vào hồ sơ.
-
-Database không có C4 Component diagram riêng vì đây là data-store container, không phải executable container. Thành phần bên trong được mô hình hóa bằng ownership ở bảng trên và ERD/DDL trong `database/`.
 
 ### 5.6 Target code structure
 
@@ -491,9 +432,7 @@ frontend/
 ├── src/features/
 │   ├── recruitment/              # api, components, hooks, pages — sample module (skeleton)
 │   ├── core-hr/                  # proposed
-│   ├── contracts/                # proposed
-│   ├── reporting/                # proposed
-│   └── administration/           # proposed
+│   └── contracts/                # proposed
 ├── src/shared/                   # design system and generic UI
 └── src/api/                      # shared client and Problem Details mapping
 
@@ -505,7 +444,7 @@ backend/
 ├── tests/Qlns.BusinessLogic.UnitTests/
 └── tests/Qlns.IntegrationTests/  # proposed — required before the first slice
 
-api/openapi.yaml                  # contract-first OpenAPI 3.0.3 (87 operations)
+api/openapi.yaml                  # contract-first OpenAPI 3.0.3 (51 paths, 66 operations, 16 tags)
 database/schema.sql               # canonical schema contract before EF migrations (23 tables)
 ```
 
@@ -723,6 +662,9 @@ Docker Compose ba service có thể dùng cho local development sau này, nhưng
 | ADR-007 | Ports/adapters, outbox và reliable delivery | Proposed |
 | ADR-008 | Feature-based React frontend và shared API client | Accepted 2026-09-15 |
 | ADR-009 | .NET 10, ASP.NET Core, EF Core và PostgreSQL | Accepted 2026-09-15 |
+| ADR-010 | Thu hẹp phạm vi giao hàng về các chức năng lá in đậm dưới Recruitment và Core HR theo `topdown-approach.png`; System Administration, Reports & Analytics, Performance, C&B, Attendance & Leave cùng bốn chức năng không in đậm (Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart, Suspension & Return to Work) ra ngoài phạm vi, trong khi authorization, audit và outbox vẫn là cơ chế bắt buộc | Accepted 2026-09-17 |
+
+ADR-010 là quyết định phạm vi sản phẩm, được ghi nhận từ bản đồ phân rã chức năng `topdown-approach.png` cập nhật ngày 2026-09-17; **owner và alternatives/consequences đầy đủ chờ Project Owner xác nhận** trước khi ADR này được coi là hoàn chỉnh theo quy ước ở cuối mục này. Hệ quả kiến trúc đã được áp dụng ở [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected), §5.2–§5.6, §10 và §12.
 
 **Open decisions:** Identity Provider; object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency. EF Core migration là công cụ migration mục tiêu nhưng migration đầu tiên chỉ được sinh sau khi cài .NET 10 SDK và review model/schema drift.
 
@@ -737,9 +679,9 @@ Không ADR nào chuyển sang Accepted chỉ vì công nghệ xuất hiện tron
 | QR1 | Người dùng ngoài quyền | đọc hồ sơ/hợp đồng restricted | production | request bị từ chối trước khi trả dữ liệu | 100% authorization tests trả `401/403`; không rò field restricted |
 | QR2 | Hai recruiter | cùng chuyển một application | concurrent requests | đúng một transition commit | request còn lại trả `409` hoặc idempotent result; không có transition trùng |
 | QR3 | HR Officer | onboard lại cùng application | retry sau timeout | trả cùng employee hoặc conflict xác định | không tạo employee/task trùng |
-| QR4 | Provider | email/calendar timeout | sau business commit | retry hữu hạn, business state giữ nguyên | không rollback trạng thái đã commit; có delivery/reconciliation record |
+| QR4 | Provider | email/calendar timeout | sau business commit | retry hữu hạn, business state giữ nguyên | không rollback trạng thái đã commit; có delivery/reconciliation record trong `outbox_messages` |
 | QR5 | HR User | tải danh sách nhân viên | tải mục tiêu, warm service | trả page được scope/filter | p95 ≤ 500 ms; query bounded; không N+1 |
-| QR6 | Auditor | truy vết thay đổi hợp đồng | retention window | nhận actor, time, before/after reference và result | 100% command hợp đồng có audit link |
+| QR6 | Security / Legal | truy vết thay đổi hợp đồng | retention window | `audit_logs` chứa actor, time, before/after reference và result (truy cập trực tiếp trên database; không có API tra cứu trong đợt này) | 100% command hợp đồng có audit record trong cùng transaction |
 | QR7 | Operations | database unavailable | runtime | readiness fail, request không ghi dở dang | rollback hoàn toàn; `5xx` an toàn + correlation ID |
 | QR8 | Operations | restore từ backup | recovery drill | hệ thống phục hồi nhất quán | đạt RPO/RTO sau khi ADR tương ứng được Accepted |
 | QR9 | Keyboard user | hoàn thành một luồng ưu tiên | desktop/tablet | thao tác không cần chuột | 100% control thiết yếu keyboard-accessible, focus visible |
@@ -784,7 +726,7 @@ Các gate dưới đây là target bắt buộc. Skeleton source chỉ mới có
 | `EveryStateChangeUsesACommand` | Q3 | API cho phép generic patch trạng thái | Planned — route/contract tests |
 | `EveryCommandWritesAudit` | Q2 | command nhạy cảm commit mà không có audit record | Planned — integration tests |
 | `OutboxIsAtomicWithBusinessChange` | Q2/Q7 | commit business state nhưng thiếu outbox hoặc ngược lại | Planned — DB integration tests |
-| `IdempotentWebhookConformance` | Q7 | cùng external event tạo side effect lần hai | Planned — integration conformance tests |
+| `IdempotentCommandRetryConformance` | Q7 | cùng command gửi lại với `Idempotency-Key` tạo side effect lần hai | Planned — integration conformance tests |
 | `MigrationsUpgradeFromPreviousRelease` | C3 | migration fail hoặc schema không tương thích | Planned — CI database job |
 | `OpenApiBreakingChangeGate` | ADR-004 | contract breaking change không có version/ADR | Planned — CI contract diff |
 | `NoSensitiveDataInLogs` | §8 | log fixture chứa token, CV, salary hoặc restricted payload | Planned — security tests |

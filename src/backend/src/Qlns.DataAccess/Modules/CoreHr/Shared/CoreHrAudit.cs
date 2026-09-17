@@ -1,7 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
 using Qlns.BusinessLogic.Modules.CoreHr.Shared;
-using Qlns.DataAccess.Modules.Recruitment.Applications;
 
 namespace Qlns.DataAccess.Modules.CoreHr.Shared;
 

@@ -296,50 +296,6 @@ public sealed class OrganizationServiceTests
         Assert.Equal(0, positions.ReplaceCalls);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(11)]
-    public async Task GetChartAsync_DepthOutOfRange_ThrowsValidationOnDepth(int depth)
-    {
-        var departments = new FakeDepartmentRepository(Dept(1, "HQ", null));
-        var service = CreateService(departments);
-
-        var exception = await Assert.ThrowsAsync<CoreHrValidationException>(() =>
-            service.GetChartAsync(null, depth, Actor, CancellationToken.None));
-
-        Assert.Contains("depth", exception.Errors.Keys);
-    }
-
-    [Fact]
-    public async Task GetChartAsync_UnknownRoot_ThrowsNotFound()
-    {
-        var departments = new FakeDepartmentRepository(Dept(1, "HQ", null));
-        var service = CreateService(departments);
-
-        var exception = await Assert.ThrowsAsync<CoreHrNotFoundException>(() =>
-            service.GetChartAsync(999, 10, Actor, CancellationToken.None));
-
-        Assert.Equal("Department", exception.Resource);
-        Assert.Equal(999, exception.Id);
-    }
-
-    [Fact]
-    public async Task GetChartAsync_BuildsTreeWithHeadcounts()
-    {
-        var departments = new FakeDepartmentRepository(Dept(1, "HQ", null), Dept(2, "Engineering", 1))
-        {
-            Headcounts = { [1] = 2, [2] = 15 }
-        };
-        var service = CreateService(departments);
-
-        var tree = await service.GetChartAsync(null, 10, Actor, CancellationToken.None);
-
-        var hq = Assert.Single(tree);
-        Assert.Equal(2, hq.Headcount);
-        var engineering = Assert.Single(hq.Children);
-        Assert.Equal(15, engineering.Headcount);
-    }
-
     [Fact]
     public async Task ListDepartmentsAsync_ReturnsHeadcountPerDepartment()
     {

@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Qlns.BusinessLogic.Modules.CoreHr.EmployeeDocuments;
 using Qlns.BusinessLogic.Modules.CoreHr.Shared;
 using Qlns.DataAccess.Modules.CoreHr.Shared;
-using Qlns.DataAccess.Modules.Recruitment.Applications;
 
 namespace Qlns.DataAccess.Modules.CoreHr.EmployeeDocuments;
 

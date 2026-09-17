@@ -7,29 +7,12 @@ using Qlns.BusinessLogic.Modules.CoreHr.Organization;
 
 namespace Qlns.Api.Modules.CoreHr.Organization;
 
-/// <summary>Organization tag of the OpenAPI contract: chart, departments and positions (EMP-02.1).</summary>
+/// <summary>Organization tag of the OpenAPI contract: departments (with hierarchy) and positions (EMP-02.1).</summary>
 [Route("api/v1/organization")]
 public sealed class OrganizationController(OrganizationService service) : CoreHrControllerBase
 {
     private const string DepartmentsPath = "/api/v1/organization/departments";
     private const string PositionsPath = "/api/v1/organization/positions";
-
-    [HttpGet("chart", Name = "getOrganizationChart")]
-    [Authorize(Policy = CoreHrPolicies.OrganizationRead)]
-    public Task<IActionResult> GetChart(
-        [FromQuery] long? rootDepartmentId,
-        [FromQuery] int depth = DepartmentHierarchy.MaxDepth,
-        CancellationToken cancellationToken = default) =>
-        ExecuteAsync(async actor =>
-        {
-            if (rootDepartmentId is <= 0)
-            {
-                return ValidationProblemResult("rootDepartmentId", "rootDepartmentId must be a positive identifier.");
-            }
-
-            var nodes = await service.GetChartAsync(rootDepartmentId, depth, actor, cancellationToken);
-            return Ok(nodes.Select(ToResponse).ToList());
-        });
 
     [HttpGet("departments", Name = "listDepartments")]
     [Authorize(Policy = CoreHrPolicies.OrganizationRead)]
@@ -147,7 +130,7 @@ public sealed class OrganizationController(OrganizationService service) : CoreHr
         request.Level,
         request.Description);
 
-    // manager is always null: departments has no manager_id column yet (see OrganizationNode remarks).
+    // manager is always null: departments has no manager_id column yet (gap noted in docs/functional_specifications.md [EMP-02]).
     private static DepartmentResponse ToResponse(DepartmentDetail detail) => new(
         detail.Department.Id,
         detail.Department.Code,
@@ -158,18 +141,6 @@ public sealed class OrganizationController(OrganizationService service) : CoreHr
         Manager: null,
         detail.Headcount,
         detail.Department.Version);
-
-    private static OrganizationNodeResponse ToResponse(OrganizationNode node) => new(
-        node.Department.Id,
-        node.Department.Code,
-        node.Department.Name,
-        node.Department.ParentDepartmentId,
-        node.Department.CostCenter,
-        node.Department.Description,
-        Manager: null,
-        node.Headcount,
-        node.Department.Version,
-        node.Children.Select(ToResponse).ToList());
 
     private static PositionResponse ToResponse(Position position) => new(
         position.Id,
@@ -208,19 +179,6 @@ public sealed record DepartmentResponse(
     object? Manager,
     int Headcount,
     long Version);
-
-/// <summary>OpenAPI <c>OrganizationNode</c>: a Department plus its children.</summary>
-public sealed record OrganizationNodeResponse(
-    long Id,
-    string Code,
-    string Name,
-    long? ParentDepartmentId,
-    string? CostCenter,
-    string? Description,
-    object? Manager,
-    int Headcount,
-    long Version,
-    IReadOnlyList<OrganizationNodeResponse> Children);
 
 /// <summary>OpenAPI <c>Position</c>.</summary>
 public sealed record PositionResponse(

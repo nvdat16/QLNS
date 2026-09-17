@@ -3,7 +3,9 @@ using Qlns.BusinessLogic.Modules.CoreHr.Shared;
 namespace Qlns.BusinessLogic.Modules.CoreHr.Organization;
 
 /// <summary>
-/// Use cases of EMP-02 (departments, positions, organization chart). Departments and positions are
+/// Use cases of EMP-02 (departments and their hierarchy, positions). The Organizational Chart tree is out of
+/// scope for this delivery (README §2.3); hierarchy rules (parent, cycle prevention, delete restrictions) stay.
+/// Departments and positions are
 /// organization-wide reference data, so reads are not filtered by the actor's data scope; the actor is
 /// still required so every write is audited against the acting user.
 /// </summary>
@@ -16,29 +18,6 @@ public sealed class OrganizationService(
     public const string DepartmentHierarchyCycle = "corehr.department.hierarchy_cycle";
     public const string DepartmentInUse = "corehr.department.in_use";
     public const string PositionCodeTaken = "corehr.position.code_taken";
-
-    public async Task<IReadOnlyList<OrganizationNode>> GetChartAsync(
-        long? rootDepartmentId,
-        int depth,
-        CoreHrActor actor,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(actor);
-        if (depth is < DepartmentHierarchy.MinDepth or > DepartmentHierarchy.MaxDepth)
-        {
-            throw CoreHrValidationException.For(
-                "depth", $"depth must be between {DepartmentHierarchy.MinDepth} and {DepartmentHierarchy.MaxDepth}.");
-        }
-
-        if (rootDepartmentId is { } rootId && !await departments.ExistsAsync(rootId, cancellationToken))
-        {
-            throw new CoreHrNotFoundException("Department", rootId);
-        }
-
-        var all = await departments.GetAllAsync(cancellationToken);
-        var headcounts = await departments.GetHeadcountsAsync(cancellationToken);
-        return DepartmentHierarchy.BuildTree(all, headcounts, rootDepartmentId, depth);
-    }
 
     public async Task<IReadOnlyList<DepartmentDetail>> ListDepartmentsAsync(
         CoreHrActor actor,

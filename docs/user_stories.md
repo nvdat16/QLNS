@@ -2,7 +2,7 @@
 
 > **Tài liệu chuẩn yêu cầu nghiệp vụ (Authoritative Requirements Baseline)**
 > **Phạm vi:** hai phân hệ được chọn triển khai trước theo bản đồ chức năng — **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**. Attendance & Leave đã được tách ra ngoài phạm vi; story của nhóm đó được giữ tại [deferred/attendance_leave/user_stories_att.md](deferred/attendance_leave/user_stories_att.md).
-> **Ánh xạ kiến trúc:** [Functional Specifications](functional_specifications.md) · [Use Cases](use_cases.md) · [Architecture (arc42 + C4)](architecture.md) · [Database Schema](../database/schema.sql) · [API Contract](../api/openapi.yaml)
+> **Ánh xạ kiến trúc:** [Functional Specifications](functional_specifications.md) · [Use Cases](use_cases.md) · [Architecture (arc42 + C4)](architecture.md) · [Database Schema](../database/schema.sql) · [API Contract](api/openapi.yaml)
 > **Nguyên tắc thiết kế Story:** Tuân thủ tiêu chuẩn **INVEST** (*Independent, Negotiable, Valuable, Estimable, Small, Testable*).
 
 > [!NOTE]
@@ -826,7 +826,7 @@ Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_sco
 
 ### 6.2. Ánh xạ Cơ sở Dữ liệu & Use Cases (Traceability Matrix)
 
-> Bảng dưới đây đã được đối chiếu với [`schema.sql`](../database/schema.sql) và [`openapi.yaml`](../api/openapi.yaml). Tất cả tên bảng và endpoint đều tồn tại trong canonical artifact; base path là `/api/v1`.
+> Bảng dưới đây đã được đối chiếu với [`schema.sql`](../database/schema.sql) và [`openapi.yaml`](api/openapi.yaml). Tất cả tên bảng và endpoint đều tồn tại trong canonical artifact; base path là `/api/v1`.
 
 #### Recruitment
 

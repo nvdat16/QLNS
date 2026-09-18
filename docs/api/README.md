@@ -1,10 +1,10 @@
 # QLNS API contract
 
-[`openapi.yaml`](openapi.yaml) is the contract-first OpenAPI 3.0.3 target for the two modules selected for first delivery — **Recruitment (ATS)** and **Core HR** (including Contracts). Its scope is exactly the leaf functions printed in bold under those two pillars in [`topdown-approach.png`](../topdown-approach.png); see [README · Functional architecture](../README.md#2-delivery-scope--seven-pillars-two-selected). It currently defines **79 operations across 62 paths**, including the **Identity & Access (ADM)** module: password sign-in, refresh-token rotation and account/role administration are served by this API itself.
+[`openapi.yaml`](openapi.yaml) is the contract-first OpenAPI 3.0.3 target for the two modules selected for first delivery — **Recruitment (ATS)** and **Core HR** (including Contracts). Its scope is exactly the leaf functions printed in bold under those two pillars in [`topdown-approach.png`](../../topdown-approach.png); see [README · Functional architecture](../../README.md#2-delivery-scope--seven-pillars-two-selected). It currently defines **79 operations across 62 paths**, including the **Identity & Access (ADM)** module: password sign-in, refresh-token rotation and account/role administration are served by this API itself.
 
 The ASP.NET Core application must preserve operation IDs, schemas, status codes and error codes from this document. `x-requirement` links each operation to the requirements baseline; **presence in the contract does not by itself mean the operation is implemented** — check `x-implementation-status` on each operation.
 
-Attendance & Leave is out of scope. Its contract fragment (24 paths, 46 schemas) is parked in [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml) and is not part of this document. Everything else left out is listed in [Out of scope](#out-of-scope).
+Attendance & Leave is out of scope. Its contract fragment (24 paths, 46 schemas) is parked in [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../deferred/attendance_leave/openapi_attendance_leave.yaml) and is not part of this document. Everything else left out is listed in [Out of scope](#out-of-scope).
 
 Human-readable endpoint documentation: [`API_REFERENCE.md`](API_REFERENCE.md).
 
@@ -22,11 +22,11 @@ Human-readable endpoint documentation: [`API_REFERENCE.md`](API_REFERENCE.md).
 
 ## Current implementation
 
-Every operation now carries `x-implementation-status: code-complete`: controller, endpoint authorization policy, business workflow (service + domain), transactional persistence with audit and outbox rows, and unit tests exist under `src/backend` for all 79 operations, organized by `Modules/<Module>/<Feature>` so each OpenAPI tag has an explicit owner (see [src/backend/README.md](../src/backend/README.md)).
+Every operation now carries `x-implementation-status: code-complete`: controller, endpoint authorization policy, business workflow (service + domain), transactional persistence with audit and outbox rows, and unit tests exist under `src/backend` for all 79 operations, organized by `Modules/<Module>/<Feature>` so each OpenAPI tag has an explicit owner (see [src/backend/README.md](../../src/backend/README.md)).
 
 `code-complete` is deliberately not `implemented`: the repository's definition of *implemented* also requires integration/contract tests against PostgreSQL (`tests/Qlns.IntegrationTests`, still to be created). Until then the strongest invariants — partial unique indexes and conditional updates — are only exercised by the database itself. The ADM module has not yet been exercised end-to-end against a live PostgreSQL instance either; its unit tests cover the decisions, not the SQL.
 
-Two schema deltas surfaced while implementing and were folded into `database/schema.sql` v1.1: `offers.currency` / `contracts.currency`, the `interview_panelists` table behind `InterviewWrite.interviewerUserIds`, and `contract_addenda.version` as the addendum ETag (see [database/README.md §2.6](../database/README.md#26-delta-v11--phát-hiện-khi-triển-khai)).
+Two schema deltas surfaced while implementing and were folded into `database/schema.sql` v1.1: `offers.currency` / `contracts.currency`, the `interview_panelists` table behind `InterviewWrite.interviewerUserIds`, and `contract_addenda.version` as the addendum ETag (see [database/README.md §2.6](../../database/README.md#26-delta-v11--phát-hiện-khi-triển-khai)).
 
 ## Where server-side calculation is mandatory
 

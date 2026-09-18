@@ -1179,7 +1179,7 @@ ngoài phạm vi giao hàng, nên không command hay job nào đặt/sinh ra ch�
 `EmployeeEventType.suspension`, `EmployeeEventType.return_to_work`.
 
 ⁽ⁱ⁾ **Nội bộ** — enum chỉ dùng trong database và trong tầng business logic; các schema tương ứng đã được bỏ khỏi
-[`openapi.yaml`](../api/openapi.yaml) cùng với các endpoint quản trị, nên giá trị này **không còn xuất hiện trên API**:
+[`openapi.yaml`](api/openapi.yaml) cùng với các endpoint quản trị, nên giá trị này **không còn xuất hiện trên API**:
 `UserStatus`, `DataScopeType`, `AuditResult`. Chúng vẫn bắt buộc vì authorization, data scope và audit là cơ chế xuyên suốt (§5).
 
 **Chưa bị constraint khóa giá trị** — hiện là `varchar` tự do, cần chốt nghiệp vụ trước khi sinh migration: `contracts.contract_type`, `job_postings.employment_type`, `offers.employment_type`, `interviews.interview_type`, `employee_documents.document_type`, `employees.gender`, `applications.source`.
@@ -1194,7 +1194,7 @@ ngoài phạm vi giao hàng, nên không command hay job nào đặt/sinh ra ch�
 | Class diagram | Nguồn ràng buộc | Sequence liên quan |
 |---|---|---|
 | §1–§3 Core HR | [`schema.sql`](../database/schema.sql), [database_design.md](../database/database_design.md) | [sequence_diagrams.md](sequence_diagrams.md) |
-| §4 Recruitment | [`schema.sql`](../database/schema.sql), [openapi.yaml](../api/openapi.yaml) | [sequence 1–3](sequence_diagrams.md) |
+| §4 Recruitment | [`schema.sql`](../database/schema.sql), [openapi.yaml](api/openapi.yaml) | [sequence 1–3](sequence_diagrams.md) |
 | §5 Identity/Audit | [`schema.sql`](../database/schema.sql), [architecture.md §8](architecture.md#8-crosscutting-concepts), [architecture.md §5.5](architecture.md#55-business-modules-and-data-ownership) | [architecture.md §6.5](architecture.md#65-external-notification-after-transaction) |
 | §5.1 Handoff | [architecture.md §5.5](architecture.md#55-business-modules-and-data-ownership) | [architecture.md §6.4](architecture.md#64-candidate-to-employee-handoff) |
 | §6 Advance slice | source `src/backend/` | [architecture.md §6.3](architecture.md#63-advance-recruitment-stage--success-and-conflict) |

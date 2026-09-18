@@ -24,7 +24,7 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 | [Class Diagrams](class_diagrams.md) | Domain model 23 class theo module, design class diagram của vertical slice đã có code, và pattern 3-layer cho module còn lại | Proposed · Supporting |
 | [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng v1; bảng thứ 24 (delta v1.1) và bốn bảng định danh (delta v1.2) ở Database README | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |
-| [API Contract](../api/README.md) | OpenAPI 3.0.3, 79 operation trên 62 path, kèm `x-implementation-status` từng operation | Design artifact |
+| [API Contract](api/README.md) | OpenAPI 3.0.3, 79 operation trên 62 path, kèm `x-implementation-status` từng operation | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
 
 Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:

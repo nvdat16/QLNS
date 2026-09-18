@@ -2,7 +2,7 @@
 
 Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yaml) cho hai phân hệ được chọn triển khai trước: **Recruitment (ATS)** và **Core HR** (bao gồm nhánh con Contracts).
 
-**Phạm vi:** các chức năng lá được **in đậm** dưới Recruitment và Core HR của [`topdown-approach.png`](../topdown-approach.png) — xem thêm [README · Functional architecture](../README.md#2-delivery-scope--seven-pillars-two-selected) — cộng phân hệ **Identity & Access (ADM)**: đăng nhập bằng mật khẩu, làm mới phiên và quản trị tài khoản/vai trò do chính API này đảm nhiệm, không dùng Identity Provider bên ngoài. Nằm ngoài phạm vi và **không** có endpoint trong tài liệu này: Reports & Analytics (kèm xuất báo cáo), các chức năng System Administration còn lại (tra cứu audit log, theo dõi delivery, cấu hình integration/notification/approval), Performance Management, Compensation & Benefits, Attendance & Leave Management, cùng bốn chức năng không in đậm nằm trong hai phân hệ được chọn: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Contract của Attendance & Leave được giữ tại [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml).
+**Phạm vi:** các chức năng lá được **in đậm** dưới Recruitment và Core HR của [`topdown-approach.png`](../../topdown-approach.png) — xem thêm [README · Functional architecture](../../README.md#2-delivery-scope--seven-pillars-two-selected) — cộng phân hệ **Identity & Access (ADM)**: đăng nhập bằng mật khẩu, làm mới phiên và quản trị tài khoản/vai trò do chính API này đảm nhiệm, không dùng Identity Provider bên ngoài. Nằm ngoài phạm vi và **không** có endpoint trong tài liệu này: Reports & Analytics (kèm xuất báo cáo), các chức năng System Administration còn lại (tra cứu audit log, theo dõi delivery, cấu hình integration/notification/approval), Performance Management, Compensation & Benefits, Attendance & Leave Management, cùng bốn chức năng không in đậm nằm trong hai phân hệ được chọn: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Contract của Attendance & Leave được giữ tại [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../deferred/attendance_leave/openapi_attendance_leave.yaml).
 
 > OpenAPI là nguồn contract chính thức. Khi nội dung mô tả ở đây khác OpenAPI, ưu tiên `openapi.yaml`.
 
@@ -129,7 +129,7 @@ Yêu cầu permission `admin.user.read` để đọc, `admin.user.manage` để 
 
 #### `GET /api/v1/admin/roles`
 
-- Trả danh mục vai trò kèm permission của từng vai trò. **Chỉ đọc**: ma trận vai trò → permission là dữ liệu tham chiếu triển khai qua [`database/seed_roles.sql`](../database/seed_roles.sql), sửa đổi phải đi qua review chứ không qua API.
+- Trả danh mục vai trò kèm permission của từng vai trò. **Chỉ đọc**: ma trận vai trò → permission là dữ liệu tham chiếu triển khai qua [`database/seed_roles.sql`](../../database/seed_roles.sql), sửa đổi phải đi qua review chứ không qua API.
 - **Yêu cầu:** `ADM-02.2`.
 
 ## 3. Recruitment
@@ -627,7 +627,7 @@ Hai endpoint dưới đây là endpoint hạ tầng phục vụ deployment (live
 
 ## 7. Trạng thái triển khai
 
-Mọi operation trong `openapi.yaml` hiện mang `x-implementation-status: code-complete`: đã có controller, authorization policy ở endpoint, business workflow (service + domain), persistence transaction ghi kèm audit và outbox, và unit test cho tầng nghiệp vụ. Source nằm tại `src/backend`, tổ chức theo `Modules/<Module>/<Feature>`; xem [src/backend/README.md](../src/backend/README.md) để biết feature nào chứa operation nào.
+Mọi operation trong `openapi.yaml` hiện mang `x-implementation-status: code-complete`: đã có controller, authorization policy ở endpoint, business workflow (service + domain), persistence transaction ghi kèm audit và outbox, và unit test cho tầng nghiệp vụ. Source nằm tại `src/backend`, tổ chức theo `Modules/<Module>/<Feature>`; xem [src/backend/README.md](../../src/backend/README.md) để biết feature nào chứa operation nào.
 
 ### Ý nghĩa các giá trị `x-implementation-status`
 

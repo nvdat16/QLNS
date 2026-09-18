@@ -2,10 +2,10 @@
 
 Target: .NET 10, ASP.NET Core, Entity Framework Core and PostgreSQL.
 
-**Status:** every one of the 79 operations in [`api/openapi.yaml`](../../api/openapi.yaml) is `code-complete` — controller,
+**Status:** every one of the 79 operations in [`api/openapi.yaml`](../../docs/api/openapi.yaml) is `code-complete` — controller,
 endpoint authorization policy, business workflow, transactional persistence (audit + outbox in the same transaction) and
 unit tests (1 347 passing). What is still missing before an operation counts as `implemented` is listed in
-[API_REFERENCE §7](../../api/API_REFERENCE.md#7-trạng-thái-triển-khai): integration tests against PostgreSQL, EF Core
+[API_REFERENCE §7](../../docs/api/API_REFERENCE.md#7-trạng-thái-triển-khai): integration tests against PostgreSQL, EF Core
 migrations and the background worker host.
 
 ## Modular 3-layer backend

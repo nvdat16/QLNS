@@ -11,15 +11,15 @@ public sealed class UserCredentialEntityConfiguration : IEntityTypeConfiguration
         builder.HasKey(x => x.UserId);
         builder.Property(x => x.UserId).HasColumnName("user_id").ValueGeneratedNever();
         builder.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(255);
-        builder.Property(x => x.PasswordAlgorithm).HasColumnName("password_algorithm").HasMaxLength(40);
-        builder.Property(x => x.MustChangePassword).HasColumnName("must_change_password");
-        builder.Property(x => x.PasswordUpdatedAt).HasColumnName("password_updated_at");
-        builder.Property(x => x.FailedAttempts).HasColumnName("failed_attempts");
+        builder.Property(x => x.PasswordAlgorithm).HasColumnName("password_algorithm").HasMaxLength(40).HasDefaultValue("pbkdf2-sha512");
+        builder.Property(x => x.MustChangePassword).HasColumnName("must_change_password").HasDefaultValue(false);
+        builder.Property(x => x.PasswordUpdatedAt).HasColumnName("password_updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.FailedAttempts).HasColumnName("failed_attempts").HasDefaultValue(0);
         builder.Property(x => x.LockedUntil).HasColumnName("locked_until");
         builder.Property(x => x.LastLoginAt).HasColumnName("last_login_at");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L);
     }
 }
 
@@ -32,8 +32,8 @@ public sealed class RoleEntityConfiguration : IEntityTypeConfiguration<RoleEntit
         builder.Property(x => x.Code).HasColumnName("code").HasMaxLength(80).ValueGeneratedNever();
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
         builder.Property(x => x.Description).HasColumnName("description");
-        builder.Property(x => x.IsAssignable).HasColumnName("is_assignable");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.IsAssignable).HasColumnName("is_assignable").HasDefaultValue(true);
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
     }
 }
 
@@ -56,9 +56,9 @@ public sealed class UserRoleEntityConfiguration : IEntityTypeConfiguration<UserR
         builder.HasKey(x => new { x.UserId, x.RoleCode, x.DataScopeType, x.DataScopeId });
         builder.Property(x => x.UserId).HasColumnName("user_id");
         builder.Property(x => x.RoleCode).HasColumnName("role_code").HasMaxLength(80);
-        builder.Property(x => x.DataScopeType).HasColumnName("data_scope_type").HasMaxLength(30);
-        builder.Property(x => x.DataScopeId).HasColumnName("data_scope_id");
-        builder.Property(x => x.GrantedAt).HasColumnName("granted_at");
+        builder.Property(x => x.DataScopeType).HasColumnName("data_scope_type").HasMaxLength(30).HasDefaultValue("organization");
+        builder.Property(x => x.DataScopeId).HasColumnName("data_scope_id").HasDefaultValue(0L);
+        builder.Property(x => x.GrantedAt).HasColumnName("granted_at").HasDefaultValueSql("now()");
         builder.Property(x => x.GrantedBy).HasColumnName("granted_by");
     }
 }
@@ -72,7 +72,7 @@ public sealed class RefreshTokenEntityConfiguration : IEntityTypeConfiguration<R
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.UserId).HasColumnName("user_id");
         builder.Property(x => x.TokenHash).HasColumnName("token_hash").HasMaxLength(64);
-        builder.Property(x => x.IssuedAt).HasColumnName("issued_at");
+        builder.Property(x => x.IssuedAt).HasColumnName("issued_at").HasDefaultValueSql("now()");
         builder.Property(x => x.ExpiresAt).HasColumnName("expires_at");
         builder.Property(x => x.RevokedAt).HasColumnName("revoked_at");
         builder.Property(x => x.RevokedReason).HasColumnName("revoked_reason").HasMaxLength(40);

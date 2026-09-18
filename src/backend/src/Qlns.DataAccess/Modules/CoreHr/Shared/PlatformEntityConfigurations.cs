@@ -18,7 +18,7 @@ public sealed class AuditLogEntityConfiguration : IEntityTypeConfiguration<Audit
         builder.Property(x => x.AfterData).HasColumnName("after_data").HasColumnType("jsonb");
         builder.Property(x => x.Result).HasColumnName("result").HasMaxLength(30);
         builder.Property(x => x.CorrelationId).HasColumnName("correlation_id").HasMaxLength(100);
-        builder.Property(x => x.OccurredAt).HasColumnName("occurred_at");
+        builder.Property(x => x.OccurredAt).HasColumnName("occurred_at").HasDefaultValueSql("now()");
     }
 }
 
@@ -34,9 +34,9 @@ public sealed class OutboxMessageEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.AggregateId).HasColumnName("aggregate_id").HasMaxLength(100);
         builder.Property(x => x.Payload).HasColumnName("payload").HasColumnType("jsonb");
         builder.Property(x => x.OccurredAt).HasColumnName("occurred_at");
-        builder.Property(x => x.AvailableAt).HasColumnName("available_at");
+        builder.Property(x => x.AvailableAt).HasColumnName("available_at").HasDefaultValueSql("now()");
         builder.Property(x => x.ProcessedAt).HasColumnName("processed_at");
-        builder.Property(x => x.Attempts).HasColumnName("attempts");
+        builder.Property(x => x.Attempts).HasColumnName("attempts").HasDefaultValue(0);
         builder.Property(x => x.LastError).HasColumnName("last_error");
     }
 }

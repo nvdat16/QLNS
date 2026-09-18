@@ -59,16 +59,16 @@ public sealed class OffboardingCaseEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.LastWorkingDate).HasColumnName("last_working_date");
         builder.Property(x => x.HandoverToEmployeeId).HasColumnName("handover_to_employee_id");
         builder.Property(x => x.ExitInterviewAt).HasColumnName("exit_interview_at");
-        builder.Property(x => x.FinalSettlementStatus).HasColumnName("final_settlement_status").HasMaxLength(30);
-        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
+        builder.Property(x => x.FinalSettlementStatus).HasColumnName("final_settlement_status").HasMaxLength(30).HasDefaultValue("pending");
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("draft");
         builder.Property(x => x.Reason).HasColumnName("reason");
         builder.Property(x => x.CreatedBy).HasColumnName("created_by");
         builder.Property(x => x.ApprovedBy).HasColumnName("approved_by");
         builder.Property(x => x.ApprovedAt).HasColumnName("approved_at");
         builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
     }
 }
 
@@ -86,12 +86,12 @@ public sealed class OffboardingTaskEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.Description).HasColumnName("description");
         builder.Property(x => x.AssignedToUserId).HasColumnName("assigned_to_user_id");
         builder.Property(x => x.DueAt).HasColumnName("due_at");
-        builder.Property(x => x.BlocksLastWorkingDay).HasColumnName("blocks_last_working_day");
-        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
+        builder.Property(x => x.BlocksLastWorkingDay).HasColumnName("blocks_last_working_day").HasDefaultValue(false);
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("pending");
         builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
         builder.HasIndex(x => new { x.OffboardingCaseId, x.TemplateKey }).IsUnique().HasDatabaseName("ux_offboarding_task_template");
     }
 }

@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Hệ Thống Doanh Nghiệp - Quản Lý Tuyển Dụng & ATS</title>
+    <title>Enterprise System - Recruitment Management & ATS</title>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -249,46 +249,39 @@
         <div class="flex-1 overflow-y-auto px-3 py-5 space-y-1">
             <a href="main.html?view=dashboard"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
-                <span class="material-symbols-outlined text-[20px] text-slate-500">dashboard</span><span>Tổng quan</span>
+                <span class="material-symbols-outlined text-[20px] text-slate-500">dashboard</span><span>Overview</span>
             </a>
-            <!-- Item 1: Hồ sơ nhân viên -->
+            <!-- Item 1: Employee Records -->
             <a href="main.html?view=profiles" id="nav-emp"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
                 <span class="material-symbols-outlined text-[20px] text-slate-500">person</span>
-                <span>Hồ sơ nhân viên</span>
+                <span>Employee Records</span>
             </a>
 
-            <!-- Item 2: Sơ đồ tổ chức -->
+            <!-- Item 2: Organization Chart -->
             <a href="main.html?view=org" id="nav-org"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
                 <span class="material-symbols-outlined text-[20px] text-slate-500">account_tree</span>
-                <span>Sơ đồ tổ chức</span>
+                <span>Organization Chart</span>
             </a>
 
-            <!-- Item 3: Quản lý hợp đồng -->
+            <!-- Item 3: Contracts -->
             <a href="main.html?view=contracts" id="nav-contracts"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
                 <span class="material-symbols-outlined text-[20px] text-slate-500">description</span>
-                <span>Quản lý hợp đồng</span>
+                <span>Contracts</span>
             </a>
 
-            <!-- Item 4: Quản lý tuyển dụng (ACTIVE) -->
+            <!-- Item 4: Recruitment (ACTIVE) -->
             <a href="recruitment.html" id="nav-recruitment"
                 class="sidebar-active-item flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-semibold text-sm transition-colors">
                 <span class="material-symbols-outlined text-[20px]">person_search</span>
-                <span>Quản lý tuyển dụng</span>
+                <span>Recruitment</span>
             </a>
 
-            <!-- Item 5: Chấm công & Nghỉ phép -->
-            <a href="attendance.html" id="nav-attendance"
-                class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
-                <span class="material-symbols-outlined text-[20px] text-slate-500">calendar_clock</span>
-                <span>Chấm công & Nghỉ phép</span>
-            </a>
-
-            <p class="nav-section-label !mt-6">Hỗ trợ & cài đặt</p>
-            <a href="javascript:void(0)" onclick="alert('Bảng tin đang ở chế độ prototype')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 font-medium text-sm"><span class="material-symbols-outlined text-[20px] text-slate-500">campaign</span><span>Bảng tin</span></a>
-            <a href="javascript:void(0)" onclick="alert('Cài đặt đang ở chế độ prototype')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 font-medium text-sm"><span class="material-symbols-outlined text-[20px] text-slate-500">settings</span><span>Cài đặt</span></a>
+            <p class="nav-section-label !mt-6">Support & Settings</p>
+            <a href="javascript:void(0)" onclick="alert('Announcements is in prototype mode')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 font-medium text-sm"><span class="material-symbols-outlined text-[20px] text-slate-500">campaign</span><span>Announcements</span></a>
+            <a href="javascript:void(0)" onclick="alert('Settings is in prototype mode')" class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 font-medium text-sm"><span class="material-symbols-outlined text-[20px] text-slate-500">settings</span><span>Settings</span></a>
         </div>
 
         <!-- User Profile at Bottom -->
@@ -318,13 +311,13 @@
 
                 <div class="flex flex-col min-w-0">
                     <div class="text-xs text-slate-500 font-medium flex items-center gap-1.5 truncate">
-                        <span>Tuyển dụng</span>
+                        <span>Recruitment</span>
                         <span>/</span>
-                        <span id="breadcrumb-sub" class="text-slate-600 truncate">Quản lý tuyển dụng</span>
+                        <span id="breadcrumb-sub" class="text-slate-600 truncate">Recruitment</span>
                     </div>
                     <h1 id="header-title"
-                        class="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5 truncate">Quản lý
-                        tuyển dụng & hồ sơ ứng viên</h1>
+                        class="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5 truncate">Recruitment &
+                        Candidate Management</h1>
                 </div>
             </div>
 
@@ -333,17 +326,17 @@
                 <div class="relative hidden md:block">
                     <span
                         class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                    <input type="text" placeholder="Tìm kiếm nhanh..."
+                    <input type="text" placeholder="Quick search..."
                         class="w-48 lg:w-64 h-10 pl-9 pr-3 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-2xs" />
                 </div>
 
-                <button type="button" aria-label="Thông báo"
+                <button type="button" aria-label="Notifications"
                     class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-2xs relative flex-shrink-0">
                     <span class="material-symbols-outlined text-[20px]">notifications</span>
                     <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span>
                 </button>
 
-                <button type="button" aria-label="Trợ giúp"
+                <button type="button" aria-label="Help"
                     class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-2xs flex-shrink-0">
                     <span class="material-symbols-outlined text-[20px]">help</span>
                 </button>
@@ -358,40 +351,40 @@
                 <!-- Card 1 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium">Tổng hồ sơ ứng tuyển</span>
+                    <span class="text-sm text-slate-500 font-medium">Total Applications</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">312</span>
-                        <span class="text-xs font-semibold text-blue-600">+18 mới trong tuần</span>
+                        <span class="text-xs font-semibold text-blue-600">+18 new this week</span>
                     </div>
                 </div>
 
                 <!-- Card 2 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium">Đang phỏng vấn</span>
+                    <span class="text-sm text-slate-500 font-medium">In Interview</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">42</span>
-                        <span class="text-xs font-semibold text-emerald-600">Chiếm 14% phễu</span>
+                        <span class="text-xs font-semibold text-emerald-600">14% of funnel</span>
                     </div>
                 </div>
 
                 <!-- Card 3 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium">Đã gửi Offer (Chờ phản hồi)</span>
+                    <span class="text-sm text-slate-500 font-medium">Offers Sent (Awaiting Response)</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">18</span>
-                        <span class="text-xs font-semibold text-amber-600">Cần lưu ý</span>
+                        <span class="text-xs font-semibold text-amber-600">Needs attention</span>
                     </div>
                 </div>
 
                 <!-- Card 4 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium">Đã tiếp nhận (Hired)</span>
+                    <span class="text-sm text-slate-500 font-medium">Hired</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">24</span>
-                        <span class="text-xs font-semibold text-emerald-600">Đạt 80% quý III</span>
+                        <span class="text-xs font-semibold text-emerald-600">80% of Q3 target</span>
                     </div>
                 </div>
             </div>
@@ -437,7 +430,7 @@
                             <div class="relative flex-1 sm:flex-none min-w-[150px]">
                                 <select id="jobRoleFilter" onchange="filterCandidateRows()"
                                     class="w-full sm:w-auto h-10 pl-3 pr-8 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:border-blue-500 cursor-pointer appearance-none shadow-2xs">
-                                    <option value="all">Vị trí: Tất cả</option>
+                                    <option value="all">Position: All</option>
                                     <option value="Senior Tech Lead">Senior Tech Lead (TD-2024-01)</option>
                                     <option value="Trưởng nhóm Kinh doanh B2B">Trưởng nhóm Kinh doanh B2B (TD-2024-02)
                                     </option>
@@ -454,13 +447,13 @@
                             <div class="relative flex-1 sm:flex-none min-w-[150px]">
                                 <select id="stageFilter" onchange="filterCandidateRows()"
                                     class="w-full sm:w-auto h-10 pl-3 pr-8 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:border-blue-500 cursor-pointer appearance-none shadow-2xs">
-                                    <option value="all">Giai đoạn (Stage): Tất cả</option>
-                                    <option value="Sourced & Applied">Mới nộp (Sourced & Applied)</option>
-                                    <option value="AI Screening">Sơ loại AI (AI Screening)</option>
-                                    <option value="Tech Interview">Phỏng vấn kỹ thuật (Tech)</option>
-                                    <option value="Executive Round">Phỏng vấn Lãnh đạo (Executive)</option>
-                                    <option value="Offer Letter">Đã gửi Offer (Offer Letter)</option>
-                                    <option value="Hired & Ready">Đã tiếp nhận (Hired & Ready)</option>
+                                    <option value="all">Stage: All</option>
+                                    <option value="Sourced & Applied">Sourced & Applied</option>
+                                    <option value="AI Screening">AI Screening</option>
+                                    <option value="Tech Interview">Tech Interview</option>
+                                    <option value="Executive Round">Executive Round</option>
+                                    <option value="Offer Letter">Offer Letter</option>
+                                    <option value="Hired & Ready">Hired & Ready</option>
                                 </select>
                                 <span
                                     class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base">expand_more</span>
@@ -474,7 +467,7 @@
                                 <button onclick="switchAtsView('table')" id="viewBtnTable"
                                     class="px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-blue-600 shadow-xs flex items-center gap-1 transition-all">
                                     <span class="material-symbols-outlined text-sm">table_rows</span>
-                                    <span>Danh sách</span>
+                                    <span>List</span>
                                 </button>
                                 <button onclick="switchAtsView('kanban')" id="viewBtnKanban"
                                     class="px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 flex items-center gap-1 transition-all">
@@ -486,7 +479,7 @@
                             <button onclick="openAddCandidateModal()"
                                 class="h-10 px-3.5 sm:px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors flex-shrink-0">
                                 <span class="material-symbols-outlined text-[20px]">person_add</span>
-                                <span>Tiếp nhận</span>
+                                <span>Add Candidate</span>
                             </button>
                         </div>
                     </div>
@@ -497,13 +490,13 @@
                             <thead>
                                 <tr
                                     class="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-white">
-                                    <th class="py-3.5 px-5 whitespace-nowrap">MÃ ỨNG VIÊN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">HỌ VÀ TÊN ỨNG VIÊN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">VỊ TRÍ TUYỂN DỤNG</th>
+                                    <th class="py-3.5 px-5 whitespace-nowrap">CANDIDATE ID</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">CANDIDATE NAME</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">POSITION</th>
                                     <th class="py-3.5 px-4 whitespace-nowrap">AI MATCH SCORE</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">NGUỒN ỨNG TUYỂN</th>
-                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">GIAI ĐOẠN (STAGE)</th>
-                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">THAO TÁC</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">SOURCE</th>
+                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">STAGE</th>
+                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-sm" id="candidateTableBody">
@@ -539,11 +532,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-01')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-01')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-01')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-01')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -583,11 +576,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-02')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-02')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-02')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-02')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -627,11 +620,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-03')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-03')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-03')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-03')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -662,7 +655,7 @@
                                             89% Match
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Giới thiệu nội bộ
+                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Internal Referral
                                     </td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
@@ -672,11 +665,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-04')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-04')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-04')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-04')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -715,11 +708,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-05')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-05')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-05')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-05')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -759,11 +752,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-06')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-06')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-06')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-06')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -803,11 +796,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-07')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-07')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-07')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-07')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -838,7 +831,7 @@
                                             93% Match
                                         </span>
                                     </td>
-                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Giới thiệu</td>
+                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Referral</td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">Executive
@@ -847,11 +840,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-08')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-08')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-08')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-08')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -891,11 +884,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-09')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-09')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-09')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-09')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -935,11 +928,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('CAND-10')"
+                                            <button title="Move to Next Stage" onclick="advanceCandidate('CAND-10')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-10')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-10')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -979,11 +972,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <a href="main.html?view=profiles" title="Tiếp nhận hồ sơ nhân sự"
+                                            <a href="main.html?view=profiles" title="Onboard to Employee Records"
                                                 class="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors shadow-2xs">
                                                 <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
                                             </a>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-11')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-11')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -1023,11 +1016,11 @@
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <a href="main.html?view=profiles" title="Tiếp nhận hồ sơ nhân sự"
+                                            <a href="main.html?view=profiles" title="Onboard to Employee Records"
                                                 class="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center transition-colors shadow-2xs">
                                                 <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
                                             </a>
-                                            <button title="Tùy chọn" onclick="openCandidateDetail('CAND-12')"
+                                            <button title="More Options" onclick="openCandidateDetail('CAND-12')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -1064,8 +1057,8 @@
                                         <div class="text-xs text-slate-500 mb-2">Senior Tech Lead (TD-2024-01) • TopCV
                                         </div>
                                         <button onclick="event.stopPropagation(); advanceCandidate('CAND-01')"
-                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Chuyển
-                                            sang AI Screening →</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Move to
+                                            AI Screening →</button>
                                     </div>
                                     <!-- Card 2 -->
                                     <div class="p-3.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 transition-all cursor-pointer shadow-2xs"
@@ -1078,8 +1071,8 @@
                                         <div class="text-xs text-slate-500 mb-2">Trưởng nhóm Kinh doanh B2B • LinkedIn
                                         </div>
                                         <button onclick="event.stopPropagation(); advanceCandidate('CAND-02')"
-                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Chuyển
-                                            sang AI Screening →</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Move to
+                                            AI Screening →</button>
                                     </div>
                                 </div>
                             </div>
@@ -1105,8 +1098,8 @@
                                         <div class="font-bold text-sm text-slate-800">Nguyễn Văn Đức</div>
                                         <div class="text-xs text-slate-500 mb-2">Kỹ sư Cloud DevOps • Direct Web</div>
                                         <button onclick="event.stopPropagation(); advanceCandidate('CAND-03')"
-                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Lên
-                                            lịch Tech Interview →</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Schedule
+                                            Tech Interview →</button>
                                     </div>
                                     <div class="p-3.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 transition-all cursor-pointer shadow-2xs"
                                         onclick="openCandidateDetail('CAND-04')">
@@ -1115,10 +1108,10 @@
                                             <span class="text-[11px] font-semibold text-blue-600">89% Match</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Phạm Minh Anh</div>
-                                        <div class="text-xs text-slate-500 mb-2">Kỹ sư Phần mềm Frontend • Nội bộ</div>
+                                        <div class="text-xs text-slate-500 mb-2">Kỹ sư Phần mềm Frontend • Internal</div>
                                         <button onclick="event.stopPropagation(); advanceCandidate('CAND-04')"
-                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Lên
-                                            lịch Tech Interview →</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">Schedule
+                                            Tech Interview →</button>
                                     </div>
                                 </div>
                             </div>
@@ -1139,31 +1132,31 @@
                                         onclick="openCandidateDetail('CAND-05')">
                                         <div class="flex justify-between items-start mb-1.5">
                                             <span class="text-xs font-mono font-semibold text-blue-600">CAND-05</span>
-                                            <span class="text-[11px] font-semibold text-amber-600">Hôm nay @
+                                            <span class="text-[11px] font-semibold text-amber-600">Today @
                                                 15:30</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Lê Quốc Huy</div>
-                                        <div class="text-xs text-slate-500 mb-2">Người PV: Nguyễn Văn Hùng (Senior Tech
+                                        <div class="text-xs text-slate-500 mb-2">Interviewer: Nguyễn Văn Hùng (Senior Tech
                                             Lead)</div>
                                         <button
                                             onclick="event.stopPropagation(); openScorecardModal('Lê Quốc Huy', 'Senior Tech Lead')"
-                                            class="w-full py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors">Chấm
-                                            điểm Scorecard</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors">Score
+                                            Scorecard</button>
                                     </div>
                                     <div class="p-3.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 transition-all cursor-pointer shadow-2xs"
                                         onclick="openCandidateDetail('CAND-06')">
                                         <div class="flex justify-between items-start mb-1.5">
                                             <span class="text-xs font-mono font-semibold text-blue-600">CAND-06</span>
-                                            <span class="text-[11px] font-semibold text-amber-600">Ngày mai @
+                                            <span class="text-[11px] font-semibold text-amber-600">Tomorrow @
                                                 14:00</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Đặng Minh Khôi</div>
-                                        <div class="text-xs text-slate-500 mb-2">Hội đồng: Lê Hoàng Nam & Phạm Thanh Sơn
+                                        <div class="text-xs text-slate-500 mb-2">Panel: Lê Hoàng Nam & Phạm Thanh Sơn
                                         </div>
                                         <button
                                             onclick="event.stopPropagation(); openScorecardModal('Đặng Minh Khôi', 'Kỹ sư Phần mềm Frontend')"
-                                            class="w-full py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors">Chấm
-                                            điểm Scorecard</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors">Score
+                                            Scorecard</button>
                                     </div>
                                 </div>
                             </div>
@@ -1187,12 +1180,12 @@
                                             <span class="text-[11px] font-semibold text-purple-600">Score 4.8/5.0</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Phạm Thanh Thảo</div>
-                                        <div class="text-xs text-slate-500 mb-2">Người duyệt: Trần Thị Mai • Ngày mai
+                                        <div class="text-xs text-slate-500 mb-2">Approver: Trần Thị Mai • Tomorrow
                                             10:00</div>
                                         <button
                                             onclick="event.stopPropagation(); openOfferModal('Phạm Thanh Thảo', 'Trưởng nhóm Kinh doanh B2B')"
-                                            class="w-full py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">Soạn
-                                            Thảo Offer Letter</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">Draft
+                                            Offer Letter</button>
                                     </div>
                                     <div class="p-3.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 transition-all cursor-pointer shadow-2xs"
                                         onclick="openCandidateDetail('CAND-08')">
@@ -1201,12 +1194,12 @@
                                             <span class="text-[11px] font-semibold text-purple-600">Score 4.7/5.0</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Hoàng Minh Tuấn</div>
-                                        <div class="text-xs text-slate-500 mb-2">Lãnh đạo khối: Giám đốc Kỹ thuật • Thứ
-                                            Sáu</div>
+                                        <div class="text-xs text-slate-500 mb-2">Division Head: Giám đốc Kỹ thuật • Friday
+                                            </div>
                                         <button
                                             onclick="event.stopPropagation(); openOfferModal('Hoàng Minh Tuấn', 'Senior Tech Lead')"
-                                            class="w-full py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">Soạn
-                                            Thảo Offer Letter</button>
+                                            class="w-full py-1.5 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">Draft
+                                            Offer Letter</button>
                                     </div>
                                 </div>
                             </div>
@@ -1228,27 +1221,27 @@
                                         <div class="flex justify-between items-start mb-1.5">
                                             <span class="text-xs font-mono font-semibold text-blue-600">CAND-09</span>
                                             <span class="text-[11px] font-semibold text-rose-600 font-bold">38M VNĐ /
-                                                tháng</span>
+                                                month</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Đặng Tuấn Anh</div>
-                                        <div class="text-xs text-slate-500 mb-2">Kỹ sư Cloud DevOps • Còn 3 ngày</div>
+                                        <div class="text-xs text-slate-500 mb-2">Kỹ sư Cloud DevOps • 3 days left</div>
                                         <span
-                                            class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded w-full justify-center">Chờ
-                                            ký DocuSign</span>
+                                            class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded w-full justify-center">Awaiting
+                                            DocuSign Signature</span>
                                     </div>
                                     <div class="p-3.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 transition-all cursor-pointer shadow-2xs"
                                         onclick="openCandidateDetail('CAND-10')">
                                         <div class="flex justify-between items-start mb-1.5">
                                             <span class="text-xs font-mono font-semibold text-blue-600">CAND-10</span>
                                             <span class="text-[11px] font-semibold text-rose-600 font-bold">25M VNĐ /
-                                                tháng</span>
+                                                month</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Bùi Thùy Dung</div>
-                                        <div class="text-xs text-slate-500 mb-2">Kế toán trưởng Tổng hợp • Còn 5 ngày
+                                        <div class="text-xs text-slate-500 mb-2">Kế toán trưởng Tổng hợp • 5 days left
                                         </div>
                                         <span
-                                            class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded w-full justify-center">Đang
-                                            thương thảo</span>
+                                            class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-1 rounded w-full justify-center">Negotiating
+                                            </span>
                                     </div>
                                 </div>
                             </div>
@@ -1269,7 +1262,7 @@
                                         onclick="openCandidateDetail('CAND-11')">
                                         <div class="flex justify-between items-start mb-1.5">
                                             <span class="text-xs font-mono font-semibold text-blue-600">CAND-11</span>
-                                            <span class="text-[11px] font-semibold text-emerald-600">Bắt đầu:
+                                            <span class="text-[11px] font-semibold text-emerald-600">Start:
                                                 01/10/2026</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Vũ Mai Chi</div>
@@ -1277,14 +1270,14 @@
                                         <a href="main.html?view=profiles"
                                             class="inline-flex items-center justify-center gap-1 w-full py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-xs">
                                             <span class="material-symbols-outlined text-sm">how_to_reg</span>
-                                            <span>Tiếp nhận →</span>
+                                            <span>Onboard →</span>
                                         </a>
                                     </div>
                                     <div class="p-3.5 rounded-lg border border-slate-200 bg-white hover:border-blue-400 transition-all cursor-pointer shadow-2xs"
                                         onclick="openCandidateDetail('CAND-12')">
                                         <div class="flex justify-between items-start mb-1.5">
                                             <span class="text-xs font-mono font-semibold text-blue-600">CAND-12</span>
-                                            <span class="text-[11px] font-semibold text-emerald-600">Bắt đầu:
+                                            <span class="text-[11px] font-semibold text-emerald-600">Start:
                                                 15/10/2026</span>
                                         </div>
                                         <div class="font-bold text-sm text-slate-800">Cao Thanh Tùng</div>
@@ -1292,7 +1285,7 @@
                                         <a href="main.html?view=profiles"
                                             class="inline-flex items-center justify-center gap-1 w-full py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors shadow-xs">
                                             <span class="material-symbols-outlined text-sm">how_to_reg</span>
-                                            <span>Tiếp nhận →</span>
+                                            <span>Onboard →</span>
                                         </a>
                                     </div>
                                 </div>
@@ -1303,37 +1296,37 @@
                     <!-- Footer -->
                     <div
                         class="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 text-center sm:text-left">
-                        <span>Hiển thị 12 ứng viên trong quy trình tuyển dụng chuẩn ATS liên thông hệ thống nhân
-                            sự</span>
+                        <span>Showing 12 candidates in the standard ATS pipeline linked to the HR
+                            system</span>
                         <div class="flex items-center gap-1.5">
                             <button
-                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Trước</button>
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Prev</button>
                             <button
                                 class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold shadow-xs">1</button>
                             <button
-                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Tiếp</button>
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Next</button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- ======================================================== -->
-            <!-- TAB VIEW 2: JOB REQUISITIONS (5 Vị trí tuyển dụng) -->
+            <!-- TAB VIEW 2: JOB REQUISITIONS (5 open positions) -->
             <!-- ======================================================== -->
             <div id="view-jobs" class="tab-view hidden space-y-4">
                 <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
                     <div
                         class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div>
-                            <h3 class="font-bold text-base text-slate-900">Yêu Cầu Tuyển Dụng & Đăng Tin (Job
-                                Requisitions)</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Danh mục kế hoạch chỉ tiêu tuyển dụng các phòng ban
-                                doanh nghiệp</p>
+                            <h3 class="font-bold text-base text-slate-900">Job Requisitions & Postings
+                            </h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Headcount plan catalogue for all enterprise
+                                departments</p>
                         </div>
                         <button onclick="openPostJobModal()"
                             class="w-full sm:w-auto h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-colors">
                             <span class="material-symbols-outlined text-[18px]">add</span>
-                            <span>Đăng tin tuyển dụng mới</span>
+                            <span>New Job Posting</span>
                         </button>
                     </div>
 
@@ -1343,14 +1336,14 @@
                             <thead>
                                 <tr
                                     class="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-white">
-                                    <th class="py-3.5 px-5 whitespace-nowrap">MÃ VỊ TRÍ & CHỨC DANH</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">PHÒNG BAN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">CHỈ TIÊU (HEADCOUNT)</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">MỨC LƯƠNG DỰ TOÁN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">ĐỊA ĐIỂM & HÌNH THỨC</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">KÊNH ĐĂNG TUYỂN</th>
-                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">TRẠNG THÁI</th>
-                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">THAO TÁC</th>
+                                    <th class="py-3.5 px-5 whitespace-nowrap">REQUISITION ID & JOB TITLE</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">DEPARTMENT</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">HEADCOUNT</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">INDICATIVE SALARY</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">LOCATION & WORK MODE</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">POSTING CHANNELS</th>
+                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">STATUS</th>
+                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-sm">
@@ -1364,7 +1357,7 @@
                                     </td>
                                     <td class="py-4 px-4 text-xs whitespace-nowrap">
                                         <span class="font-bold text-slate-900">1 of 2 Hired</span>
-                                        <span class="text-slate-400 text-[11px] block">50% hoàn thành</span>
+                                        <span class="text-slate-400 text-[11px] block">50% complete</span>
                                     </td>
                                     <td class="py-4 px-4 font-bold text-slate-900 text-xs whitespace-nowrap">35.000.000đ
                                         - 45.000.000đ</td>
@@ -1400,7 +1393,7 @@
                                     </td>
                                     <td class="py-4 px-4 text-xs whitespace-nowrap">
                                         <span class="font-bold text-emerald-700">1 of 1 Hired</span>
-                                        <span class="text-emerald-600 text-[11px] block">100% Đạt chỉ tiêu</span>
+                                        <span class="text-emerald-600 text-[11px] block">100% of headcount</span>
                                     </td>
                                     <td class="py-4 px-4 font-bold text-slate-900 text-xs whitespace-nowrap">18.000.000đ
                                         - 25.000.000đ</td>
@@ -1419,8 +1412,8 @@
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap">
                                         <button onclick="switchRecruitmentTab('pipeline')"
-                                            class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 font-medium text-xs">Xem
-                                            hồ sơ</button>
+                                            class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 font-medium text-xs">View
+                                            Candidates</button>
                                     </td>
                                 </tr>
 
@@ -1434,11 +1427,11 @@
                                     </td>
                                     <td class="py-4 px-4 text-xs whitespace-nowrap">
                                         <span class="font-bold text-slate-900">1 of 2 Hired</span>
-                                        <span class="text-slate-400 text-[11px] block">50% hoàn thành</span>
+                                        <span class="text-slate-400 text-[11px] block">50% complete</span>
                                     </td>
                                     <td class="py-4 px-4 font-bold text-slate-900 text-xs whitespace-nowrap">35.000.000đ
                                         - 48.000.000đ</td>
-                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Toàn quốc • Remote
+                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Nationwide • Remote
                                     </td>
                                     <td class="py-4 px-4 text-xs whitespace-nowrap">
                                         <span
@@ -1471,7 +1464,7 @@
                                     </td>
                                     <td class="py-4 px-4 text-xs whitespace-nowrap">
                                         <span class="font-bold text-slate-900">0 of 3 Hired</span>
-                                        <span class="text-slate-400 text-[11px] block">0% hoàn thành</span>
+                                        <span class="text-slate-400 text-[11px] block">0% complete</span>
                                     </td>
                                     <td class="py-4 px-4 font-bold text-slate-900 text-xs whitespace-nowrap">12.000.000đ
                                         - 20.000.000đ</td>
@@ -1505,7 +1498,7 @@
                                     </td>
                                     <td class="py-4 px-4 text-xs whitespace-nowrap">
                                         <span class="font-bold text-slate-900">0 of 1 Hired</span>
-                                        <span class="text-slate-400 text-[11px] block">0% hoàn thành</span>
+                                        <span class="text-slate-400 text-[11px] block">0% complete</span>
                                     </td>
                                     <td class="py-4 px-4 font-bold text-slate-900 text-xs whitespace-nowrap">22.000.000đ
                                         - 30.000.000đ</td>
@@ -1544,14 +1537,14 @@
                         class="lg:col-span-8 bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-4">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                             <div>
-                                <h3 class="font-bold text-base text-slate-900">Lịch Phỏng Vấn Sắp Diễn Ra (SRS REC-04)
+                                <h3 class="font-bold text-base text-slate-900">Upcoming Interview Schedule (SRS REC-04)
                                 </h3>
-                                <p class="text-xs text-slate-500">Khớp bảng `interviews` & hội đồng đánh giá trong hệ
-                                    thống QLNS</p>
+                                <p class="text-xs text-slate-500">Mapped to the `interviews` table and evaluation panels in
+                                    the HRMS</p>
                             </div>
                             <span
                                 class="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200/60 rounded-lg text-xs font-semibold">
-                                4 Lịch Phỏng Vấn
+                                4 Interviews
                             </span>
                         </div>
 
@@ -1566,15 +1559,15 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-slate-800">Lê Quốc Huy • Senior Tech Lead</div>
-                                        <div class="text-xs text-slate-500 mt-0.5">Tech Interview • Hôm nay @ 15:30
+                                        <div class="text-xs text-slate-500 mt-0.5">Tech Interview • Today @ 15:30
                                             (Google Meet)</div>
-                                        <div class="text-[11px] text-blue-600 font-medium mt-1">Người phỏng vấn: Nguyễn
+                                        <div class="text-[11px] text-blue-600 font-medium mt-1">Interviewer: Nguyễn
                                             Văn Hùng (Senior Tech Lead)</div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 self-end sm:self-center">
                                     <a href="https://meet.google.com" target="_blank"
-                                        class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold text-xs">Vào
+                                        class="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold text-xs">Join
                                         Meet</a>
                                     <button onclick="openScorecardModal('Lê Quốc Huy', 'Senior Tech Lead')"
                                         class="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 font-semibold text-xs shadow-xs">Scorecard</button>
@@ -1592,9 +1585,9 @@
                                     <div>
                                         <div class="font-bold text-slate-800">Đặng Minh Khôi • Kỹ sư Phần mềm Frontend
                                         </div>
-                                        <div class="text-xs text-slate-500 mt-0.5">Tech Panel Interview • Ngày mai @
-                                            14:00 (Phòng Họp 3B)</div>
-                                        <div class="text-[11px] text-indigo-600 font-medium mt-1">Hội đồng: Lê Hoàng Nam
+                                        <div class="text-xs text-slate-500 mt-0.5">Tech Panel Interview • Tomorrow @
+                                            14:00 (Meeting Room 3B)</div>
+                                        <div class="text-[11px] text-indigo-600 font-medium mt-1">Panel: Lê Hoàng Nam
                                             & Phạm Thanh Sơn</div>
                                     </div>
                                 </div>
@@ -1615,15 +1608,15 @@
                                     <div>
                                         <div class="font-bold text-slate-800">Phạm Thanh Thảo • Trưởng nhóm Kinh doanh
                                             B2B</div>
-                                        <div class="text-xs text-slate-500 mt-0.5">Executive Review • Ngày mai @ 10:00 •
-                                            Điểm sơ duyệt: 4.8/5.0</div>
-                                        <div class="text-[11px] text-purple-600 font-medium mt-1">Người duyệt: Trần Thị
+                                        <div class="text-xs text-slate-500 mt-0.5">Executive Review • Tomorrow @ 10:00 •
+                                            Preliminary score: 4.8/5.0</div>
+                                        <div class="text-[11px] text-purple-600 font-medium mt-1">Approver: Trần Thị
                                             Mai (Trưởng nhóm Kinh doanh B2B)</div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 self-end sm:self-center">
                                     <button onclick="openOfferModal('Phạm Thanh Thảo', 'Trưởng nhóm Kinh doanh B2B')"
-                                        class="px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 font-semibold text-xs shadow-xs">Soạn
+                                        class="px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 font-semibold text-xs shadow-xs">Draft
                                         Offer</button>
                                 </div>
                             </div>
@@ -1638,15 +1631,15 @@
                                     </div>
                                     <div>
                                         <div class="font-bold text-slate-800">Hoàng Minh Tuấn • Senior Tech Lead</div>
-                                        <div class="text-xs text-slate-500 mt-0.5">Executive Final • Thứ Sáu @ 15:00 •
-                                            Điểm sơ duyệt: 4.7/5.0</div>
-                                        <div class="text-[11px] text-purple-600 font-medium mt-1">Lãnh đạo khối: Giám
+                                        <div class="text-xs text-slate-500 mt-0.5">Executive Final • Friday @ 15:00 •
+                                            Preliminary score: 4.7/5.0</div>
+                                        <div class="text-[11px] text-purple-600 font-medium mt-1">Division Head: Giám
                                             đốc Khối Kỹ thuật & Công nghệ</div>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2 self-end sm:self-center">
                                     <button onclick="openOfferModal('Hoàng Minh Tuấn', 'Senior Tech Lead')"
-                                        class="px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 font-semibold text-xs shadow-xs">Soạn
+                                        class="px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 font-semibold text-xs shadow-xs">Draft
                                         Offer</button>
                                 </div>
                             </div>
@@ -1658,27 +1651,27 @@
                         class="lg:col-span-4 bg-white rounded-xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-3.5">
                         <h3 class="font-bold text-sm text-slate-900 flex items-center gap-2">
                             <span class="material-symbols-outlined text-blue-600 text-base">checklist</span>
-                            <span>Tiêu Chuẩn Đánh Giá Chuẩn Hóa (SRS REC-05)</span>
+                            <span>Calibrated Evaluation Criteria (SRS REC-05)</span>
                         </h3>
                         <p class="text-xs text-slate-500 leading-relaxed">
-                            Mọi đánh giá ứng viên được định lượng qua bảng điểm Scorecard để triệt tiêu thiên vị chủ
-                            quan:
+                            Every candidate evaluation is quantified through a scorecard to remove subjective
+                            bias:
                         </p>
                         <div class="space-y-2.5 text-xs">
                             <div class="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                                <div class="font-semibold text-slate-800">1. Năng lực Kỹ thuật Cốt lõi (40%)</div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">Kiến trúc hệ thống, Clean Code, API
-                                    design và độ tối ưu.</div>
+                                <div class="font-semibold text-slate-800">1. Core Technical Skills (40%)</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">System architecture, clean code, API
+                                    design and optimisation.</div>
                             </div>
                             <div class="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                                <div class="font-semibold text-slate-800">2. Tư duy & Giải quyết Vấn đề (30%)</div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">Đánh giá đánh đổi (trade-offs), phân tích
-                                    nguyên nhân gốc rễ (RCA).</div>
+                                <div class="font-semibold text-slate-800">2. Problem Solving & Critical Thinking (30%)</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Trade-off judgement and root cause
+                                    analysis (RCA).</div>
                             </div>
                             <div class="p-3 rounded-lg bg-slate-50 border border-slate-100">
-                                <div class="font-semibold text-slate-800">3. Văn hóa & Kỹ năng Giao tiếp (30%)</div>
-                                <div class="text-[11px] text-slate-500 mt-0.5">Khả năng cộng tác liên phòng ban, tiếp
-                                    nhận phản hồi đóng góp.</div>
+                                <div class="font-semibold text-slate-800">3. Culture Fit & Communication (30%)</div>
+                                <div class="text-[11px] text-slate-500 mt-0.5">Cross-department collaboration and
+                                    receptiveness to feedback.</div>
                             </div>
                         </div>
                     </div>
@@ -1693,15 +1686,15 @@
                     <div
                         class="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-slate-100 pb-3">
                         <div>
-                            <h3 class="font-bold text-base text-slate-900">Quản Lý Thư Mời Nhận Việc & Tiếp Nhận Nhân Sự
+                            <h3 class="font-bold text-base text-slate-900">Offer Letter Management & Employee Onboarding
                             </h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Cầu nối trực tiếp từ trạng thái trúng tuyển sang hồ
-                                sơ nhân sự chính thức</p>
+                            <p class="text-xs text-slate-500 mt-0.5">Direct bridge from hired status to the official
+                                employee record</p>
                         </div>
                         <button onclick="openOfferModal('Đặng Tuấn Anh', 'Kỹ sư Cloud DevOps')"
                             class="w-full sm:w-auto h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-sm transition-colors">
                             <span class="material-symbols-outlined text-[18px]">add</span>
-                            <span>Soạn Offer mới</span>
+                            <span>New Offer</span>
                         </button>
                     </div>
 
@@ -1711,13 +1704,13 @@
                             <thead>
                                 <tr
                                     class="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-white">
-                                    <th class="py-3.5 px-3 sm:px-4">ỨNG VIÊN</th>
-                                    <th class="py-3.5 px-3 sm:px-4">VỊ TRÍ</th>
-                                    <th class="py-3.5 px-3 sm:px-4">LƯƠNG & ĐÃI NGỘ</th>
-                                    <th class="py-3.5 px-3 sm:px-4">NGÀY BẮT ĐẦU</th>
-                                    <th class="py-3.5 px-3 sm:px-4">HẠN PHẢN HỒI</th>
-                                    <th class="py-3.5 px-3 sm:px-4 text-center">TRẠNG THÁI</th>
-                                    <th class="py-3.5 px-3 sm:px-4 text-right">TIẾP NHẬN</th>
+                                    <th class="py-3.5 px-3 sm:px-4">CANDIDATE</th>
+                                    <th class="py-3.5 px-3 sm:px-4">POSITION</th>
+                                    <th class="py-3.5 px-3 sm:px-4">SALARY & BENEFITS</th>
+                                    <th class="py-3.5 px-3 sm:px-4">START DATE</th>
+                                    <th class="py-3.5 px-3 sm:px-4">RESPONSE DEADLINE</th>
+                                    <th class="py-3.5 px-3 sm:px-4 text-center">STATUS</th>
+                                    <th class="py-3.5 px-3 sm:px-4 text-right">ONBOARD</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-sm">
@@ -1732,20 +1725,20 @@
                                         <div class="text-[11px] text-slate-400">TD-2024-03</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4">
-                                        <div class="font-bold text-slate-900 text-xs">38.000.000đ/tháng</div>
-                                        <div class="text-[11px] text-blue-600 font-medium">+5M Thiết bị</div>
+                                        <div class="font-bold text-slate-900 text-xs">38.000.000đ/month</div>
+                                        <div class="text-[11px] text-blue-600 font-medium">+5M Equipment</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-slate-600 text-xs">01/11/2026</td>
-                                    <td class="py-3.5 px-3 sm:px-4 text-amber-700 font-semibold text-xs">Còn 3 ngày</td>
+                                    <td class="py-3.5 px-3 sm:px-4 text-amber-700 font-semibold text-xs">3 days left</td>
                                     <td class="py-3.5 px-3 sm:px-4 text-center">
                                         <span
-                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 whitespace-nowrap">Chờ
-                                            ký</span>
+                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 whitespace-nowrap">Awaiting
+                                            Signature</span>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-right">
                                         <span
-                                            class="inline-block px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-medium cursor-not-allowed whitespace-nowrap">Chờ
-                                            ứng viên ký</span>
+                                            class="inline-block px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-medium cursor-not-allowed whitespace-nowrap">Awaiting
+                                            Candidate Signature</span>
                                     </td>
                                 </tr>
 
@@ -1760,20 +1753,20 @@
                                         <div class="text-[11px] text-slate-400">TD-2024-05</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4">
-                                        <div class="font-bold text-slate-900 text-xs">25.000.000đ/tháng</div>
-                                        <div class="text-[11px] text-blue-600 font-medium">+1.5 Tháng thưởng</div>
+                                        <div class="font-bold text-slate-900 text-xs">25.000.000đ/month</div>
+                                        <div class="text-[11px] text-blue-600 font-medium">+1.5 Months Bonus</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-slate-600 text-xs">15/10/2026</td>
-                                    <td class="py-3.5 px-3 sm:px-4 text-slate-500 text-xs">Còn 5 ngày</td>
+                                    <td class="py-3.5 px-3 sm:px-4 text-slate-500 text-xs">5 days left</td>
                                     <td class="py-3.5 px-3 sm:px-4 text-center">
                                         <span
-                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 whitespace-nowrap">Đang
-                                            xem xét</span>
+                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-100 text-blue-800 whitespace-nowrap">Under
+                                            Review</span>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-right">
                                         <span
-                                            class="inline-block px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-medium cursor-not-allowed whitespace-nowrap">Đang
-                                            thương thảo</span>
+                                            class="inline-block px-3 py-1.5 rounded-lg bg-slate-100 text-slate-400 text-xs font-medium cursor-not-allowed whitespace-nowrap">Negotiating
+                                            </span>
                                     </td>
                                 </tr>
 
@@ -1791,22 +1784,22 @@
                                         <div class="text-[11px] text-slate-400">TD-2024-02</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4">
-                                        <div class="font-bold text-slate-900 text-xs">22.000.000đ/tháng</div>
-                                        <div class="text-[11px] text-emerald-700 font-medium">Hoa hồng nhóm</div>
+                                        <div class="font-bold text-slate-900 text-xs">22.000.000đ/month</div>
+                                        <div class="text-[11px] text-emerald-700 font-medium">Team Commission</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-slate-600 text-xs">01/10/2026</td>
-                                    <td class="py-3.5 px-3 sm:px-4 text-emerald-700 font-semibold text-xs">Đã chấp thuận
+                                    <td class="py-3.5 px-3 sm:px-4 text-emerald-700 font-semibold text-xs">Accepted
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-center">
                                         <span
-                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap">Đã
-                                            ký (Executed)</span>
+                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap">Executed
+                                            </span>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-right">
                                         <a href="main.html?view=profiles"
                                             class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors whitespace-nowrap">
                                             <span class="material-symbols-outlined text-[16px]">how_to_reg</span>
-                                            <span>Tiếp nhận</span>
+                                            <span>Onboard</span>
                                         </a>
                                     </td>
                                 </tr>
@@ -1825,22 +1818,22 @@
                                         <div class="text-[11px] text-slate-400">TD-2024-03</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4">
-                                        <div class="font-bold text-slate-900 text-xs">35.000.000đ/tháng</div>
-                                        <div class="text-[11px] text-emerald-700 font-medium">+15M Thiết bị</div>
+                                        <div class="font-bold text-slate-900 text-xs">35.000.000đ/month</div>
+                                        <div class="text-[11px] text-emerald-700 font-medium">+15M Equipment</div>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-slate-600 text-xs">15/10/2026</td>
-                                    <td class="py-3.5 px-3 sm:px-4 text-emerald-700 font-semibold text-xs">Đã chấp thuận
+                                    <td class="py-3.5 px-3 sm:px-4 text-emerald-700 font-semibold text-xs">Accepted
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-center">
                                         <span
-                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap">Đã
-                                            ký (Executed)</span>
+                                            class="inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 whitespace-nowrap">Executed
+                                            </span>
                                     </td>
                                     <td class="py-3.5 px-3 sm:px-4 text-right">
                                         <a href="main.html?view=profiles"
                                             class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors whitespace-nowrap">
                                             <span class="material-symbols-outlined text-[16px]">how_to_reg</span>
-                                            <span>Tiếp nhận</span>
+                                            <span>Onboard</span>
                                         </a>
                                     </td>
                                 </tr>
@@ -1853,13 +1846,13 @@
         </main>
     </div>
 
-    <!-- ================= MODAL: TIẾP NHẬN ỨNG VIÊN (Responsive) ================= -->
+    <!-- ================= MODAL: ADD CANDIDATE (Responsive) ================= -->
     <div id="addCandidateModal"
         class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div
             class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Tiếp Nhận Hồ Sơ Ứng Viên Mới</h3>
+                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Add New Candidate</h3>
                 <button onclick="closeAddCandidateModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <span class="material-symbols-outlined">close</span>
                 </button>
@@ -1867,20 +1860,20 @@
             <form onsubmit="handleCreateCandidate(event)" class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Mã Ứng Viên *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Candidate ID *</label>
                         <input type="text" id="newCandCode" required value="CAND-13"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800 font-mono" />
                     </div>
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Họ và Tên Ứng Viên *</label>
-                        <input type="text" id="newCandName" required placeholder="Ví dụ: Đỗ Gia Bảo"
+                        <label class="font-semibold text-slate-700 block mb-1">Candidate Full Name *</label>
+                        <input type="text" id="newCandName" required placeholder="e.g. Đỗ Gia Bảo"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800" />
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Vị Trí Tuyển Dụng *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Position *</label>
                         <select id="newCandJob"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800">
                             <option value="Senior Tech Lead">Senior Tech Lead (TD-2024-01)</option>
@@ -1899,19 +1892,19 @@
 
                 <div class="border border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50/50">
                     <span class="material-symbols-outlined text-slate-400 text-3xl">upload_file</span>
-                    <p class="font-medium text-slate-700 mt-1">Kéo thả CV (PDF/DOCX) hoặc bấm tải lên</p>
-                    <p class="text-[11px] text-slate-400 mt-0.5">Tự động kích hoạt AI CV Parsing & Trích xuất kỹ năng
+                    <p class="font-medium text-slate-700 mt-1">Drag and drop a CV (PDF/DOCX) or click to upload</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Automatically triggers AI CV parsing and skill extraction
                     </p>
                 </div>
 
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                     <button type="button" onclick="closeAddCandidateModal()"
                         class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">
-                        Hủy
+                        Cancel
                     </button>
                     <button type="submit"
                         class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs">
-                        Lưu & Thêm Vào Pipeline
+                        Save & Add to Pipeline
                     </button>
                 </div>
             </form>
@@ -1924,20 +1917,20 @@
         <div
             class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Tạo Yêu Cầu Tuyển Dụng Mới (Requisition)</h3>
+                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Create New Job Requisition</h3>
                 <button onclick="closePostJobModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
             <form onsubmit="handlePostJob(event)" class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto">
                 <div>
-                    <label class="font-semibold text-slate-700 block mb-1">Chức Danh Tuyển Dụng *</label>
-                    <input type="text" id="newJobTitle" required placeholder="Ví dụ: Senior Cloud DevOps Engineer"
+                    <label class="font-semibold text-slate-700 block mb-1">Job Title *</label>
+                    <input type="text" id="newJobTitle" required placeholder="e.g. Senior Cloud DevOps Engineer"
                         class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800" />
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Phòng Ban *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Department *</label>
                         <select id="newJobDept"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800">
                             <option>Kỹ thuật & Công nghệ</option>
@@ -1948,29 +1941,29 @@
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Chỉ Tiêu Quân Số (Headcount) *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Headcount *</label>
                         <input type="number" id="newJobHeadcount" required min="1" value="2"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800" />
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Lương Tối Thiểu (VNĐ)</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Minimum Salary (VND)</label>
                         <input type="text" id="newJobSalaryMin" value="30.000.000đ"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800 font-mono" />
                     </div>
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Lương Tối Đa (VNĐ)</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Maximum Salary (VND)</label>
                         <input type="text" id="newJobSalaryMax" value="50.000.000đ"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800 font-mono" />
                     </div>
                 </div>
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                     <button type="button" onclick="closePostJobModal()"
-                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">Hủy</button>
+                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">Cancel</button>
                     <button type="submit"
-                        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs">Đăng
-                        Tin Tuyển Dụng</button>
+                        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs">Publish
+                        Job Posting</button>
                 </div>
             </form>
         </div>
@@ -1983,72 +1976,72 @@
             class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold text-slate-900 text-base">Chấm Điểm Phỏng Vấn (Scorecard)</h3>
+                    <h3 class="font-bold text-slate-900 text-base">Interview Scorecard</h3>
                     <p id="scorecardCandidateTitle" class="text-xs text-blue-600 font-medium">Lê Quốc Huy • Senior Tech
                         Lead</p>
                 </div>
-                <button type="button" aria-label="Đóng bảng chấm điểm" onclick="closeScorecardModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><span
+                <button type="button" aria-label="Close scorecard" onclick="closeScorecardModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><span
                         class="material-symbols-outlined">close</span></button>
             </div>
             <div class="p-5 space-y-5 text-xs">
                 <div class="space-y-2">
                     <div class="flex items-start justify-between gap-3">
-                        <label for="technicalScore" class="font-semibold text-slate-700 leading-5">1. Kỹ năng Chuyên môn &
+                        <label for="technicalScore" class="font-semibold text-slate-700 leading-5">1. Technical Skills &
                             Clean Code <span class="text-slate-400 font-medium">(40%)</span></label>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span id="technicalScoreLabel"
-                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Xuất sắc</span>
+                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Excellent</span>
                             <output id="technicalScoreValue" for="technicalScore"
                                 class="min-w-[3.25rem] px-2 py-1 rounded-md bg-slate-900 text-white text-center font-bold tabular-nums">5.0</output>
                         </div>
                     </div>
                     <input id="technicalScore" class="score-range" type="range" min="1" max="5" step="0.1"
-                        value="5" data-weight="0.4" aria-label="Điểm kỹ năng chuyên môn và Clean Code"
+                        value="5" data-weight="0.4" aria-label="Technical skills and clean code score"
                         oninput="updateScoreSlider(this)" />
                     <div class="flex justify-between text-[10px] font-medium text-slate-400" aria-hidden="true">
-                        <span>1.0 · Chưa đạt</span><span>3.0 · Đạt yêu cầu</span><span>5.0 · Xuất sắc</span>
+                        <span>1.0 · Below</span><span>3.0 · Meets</span><span>5.0 · Excellent</span>
                     </div>
                 </div>
                 <div class="space-y-2">
                     <div class="flex items-start justify-between gap-3">
-                        <label for="problemSolvingScore" class="font-semibold text-slate-700 leading-5">2. Giải quyết Vấn đề &
-                            Tư duy Kiến trúc <span class="text-slate-400 font-medium">(30%)</span></label>
+                        <label for="problemSolvingScore" class="font-semibold text-slate-700 leading-5">2. Problem Solving &
+                            Architectural Thinking <span class="text-slate-400 font-medium">(30%)</span></label>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span id="problemSolvingScoreLabel"
-                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Xuất sắc</span>
+                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Excellent</span>
                             <output id="problemSolvingScoreValue" for="problemSolvingScore"
                                 class="min-w-[3.25rem] px-2 py-1 rounded-md bg-slate-900 text-white text-center font-bold tabular-nums">4.8</output>
                         </div>
                     </div>
                     <input id="problemSolvingScore" class="score-range" type="range" min="1" max="5" step="0.1"
-                        value="4.8" data-weight="0.3" aria-label="Điểm giải quyết vấn đề và tư duy kiến trúc"
+                        value="4.8" data-weight="0.3" aria-label="Problem solving and architectural thinking score"
                         oninput="updateScoreSlider(this)" />
                     <div class="flex justify-between text-[10px] font-medium text-slate-400" aria-hidden="true">
-                        <span>1.0 · Chưa đạt</span><span>3.0 · Đạt yêu cầu</span><span>5.0 · Xuất sắc</span>
+                        <span>1.0 · Below</span><span>3.0 · Meets</span><span>5.0 · Excellent</span>
                     </div>
                 </div>
                 <div class="space-y-2">
                     <div class="flex items-start justify-between gap-3">
-                        <label for="cultureScore" class="font-semibold text-slate-700 leading-5">3. Phù hợp Văn hóa & Tinh thần
-                            Đồng đội <span class="text-slate-400 font-medium">(30%)</span></label>
+                        <label for="cultureScore" class="font-semibold text-slate-700 leading-5">3. Culture Fit & Teamwork
+                             <span class="text-slate-400 font-medium">(30%)</span></label>
                         <div class="flex items-center gap-1.5 shrink-0">
                             <span id="cultureScoreLabel"
-                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Xuất sắc</span>
+                                class="hidden sm:inline-flex px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-semibold">Excellent</span>
                             <output id="cultureScoreValue" for="cultureScore"
                                 class="min-w-[3.25rem] px-2 py-1 rounded-md bg-slate-900 text-white text-center font-bold tabular-nums">5.0</output>
                         </div>
                     </div>
                     <input id="cultureScore" class="score-range" type="range" min="1" max="5" step="0.1" value="5"
-                        data-weight="0.3" aria-label="Điểm phù hợp văn hóa và tinh thần đồng đội"
+                        data-weight="0.3" aria-label="Culture fit and teamwork score"
                         oninput="updateScoreSlider(this)" />
                     <div class="flex justify-between text-[10px] font-medium text-slate-400" aria-hidden="true">
-                        <span>1.0 · Chưa đạt</span><span>3.0 · Đạt yêu cầu</span><span>5.0 · Xuất sắc</span>
+                        <span>1.0 · Below</span><span>3.0 · Meets</span><span>5.0 · Excellent</span>
                     </div>
                 </div>
                 <div class="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 flex items-center justify-between gap-4">
                     <div>
-                        <p class="font-semibold text-slate-700">Điểm tổng hợp theo trọng số</p>
-                        <p id="scorecardRecommendation" class="text-[11px] text-blue-600 font-medium mt-0.5">Khuyến nghị: Strong Hire</p>
+                        <p class="font-semibold text-slate-700">Weighted Total Score</p>
+                        <p id="scorecardRecommendation" class="text-[11px] text-blue-600 font-medium mt-0.5">Recommendation: Strong Hire</p>
                     </div>
                     <div class="text-right shrink-0">
                         <span id="scorecardTotal" class="text-xl font-bold text-slate-900 tabular-nums">4.9</span>
@@ -2057,10 +2050,10 @@
                 </div>
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                     <button type="button" onclick="closeScorecardModal()"
-                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium">Đóng</button>
+                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium">Close</button>
                     <button type="button" onclick="saveScorecard()"
-                        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs">Lưu
-                        Đánh Giá</button>
+                        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs">Save
+                        Evaluation</button>
                 </div>
             </div>
         </div>
@@ -2073,7 +2066,7 @@
             class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                    <h3 class="font-bold text-slate-900 text-base">Soạn Thảo Thư Mời Nhận Việc (Offer)</h3>
+                    <h3 class="font-bold text-slate-900 text-base">Draft Offer Letter</h3>
                     <p id="offerCandidateTitle" class="text-xs text-blue-600 font-medium">Phạm Thanh Thảo</p>
                 </div>
                 <button onclick="closeOfferModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><span
@@ -2081,32 +2074,32 @@
             </div>
             <div class="p-5 space-y-3.5 text-xs">
                 <div>
-                    <label class="font-semibold text-slate-700 block mb-1">Lương Cơ Bản Đề Xuất (VNĐ / Tháng)</label>
+                    <label class="font-semibold text-slate-700 block mb-1">Proposed Base Salary (VND / Month)</label>
                     <input type="text" value="38.000.000đ"
                         class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800 font-bold" />
                 </div>
                 <div>
-                    <label class="font-semibold text-slate-700 block mb-1">Thưởng Gia Nhập (Sign-on Bonus)</label>
+                    <label class="font-semibold text-slate-700 block mb-1">Sign-on Bonus</label>
                     <input type="text" value="5.000.000đ"
                         class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800 font-mono" />
                 </div>
                 <div>
-                    <label class="font-semibold text-slate-700 block mb-1">Ngày Bắt Đầu Dự Kiến</label>
+                    <label class="font-semibold text-slate-700 block mb-1">Expected Start Date</label>
                     <input type="date" value="2026-11-01"
                         class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800" />
                 </div>
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                     <button type="button" onclick="closeOfferModal()"
-                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium">Hủy</button>
+                        class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium">Cancel</button>
                     <button type="button" onclick="submitOffer()"
-                        class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs">Gửi
-                        Thư Mời (DocuSign)</button>
+                        class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs">Send
+                        Offer (DocuSign)</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ================= SLIDE-OVER DRAWER: CHI TIẾT ỨNG VIÊN & SCORECARD ================= -->
+    <!-- ================= SLIDE-OVER DRAWER: CANDIDATE DETAIL & SCORECARD ================= -->
     <div id="candDetailDrawer" class="fixed inset-0 z-50 hidden">
         <div onclick="closeCandidateDetail()"
             class="absolute inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity"></div>
@@ -2134,13 +2127,13 @@
                 <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5 text-xs sm:text-sm">
                     <div class="flex justify-between"><span class="text-slate-500">Email:</span><span id="drawerEmail"
                             class="font-semibold text-slate-800 font-mono">minh.tran@email.com</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Số điện thoại:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Phone:</span><span
                             id="drawerPhone" class="font-semibold text-slate-800">+84 912 345 678</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Nguồn ứng tuyển:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Source:</span><span
                             id="drawerSource" class="text-slate-700">TopCV Direct</span></div>
                     <div class="flex justify-between"><span class="text-slate-500">AI Match Score:</span><span
                             id="drawerScore" class="font-bold text-emerald-600">92% Match</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Giai đoạn hiện tại:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Current Stage:</span><span
                             id="drawerStage"
                             class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Sourced &
                             Applied</span></div>
@@ -2148,8 +2141,8 @@
 
                 <!-- Skills Block -->
                 <div>
-                    <h4 class="font-bold text-slate-900 mb-2 text-xs uppercase tracking-wider text-slate-400">Kỹ Năng Đã
-                        Xác Thực (AI CV Parsing)</h4>
+                    <h4 class="font-bold text-slate-900 mb-2 text-xs uppercase tracking-wider text-slate-400">Verified Skills
+                        (AI CV Parsing)</h4>
                     <div class="flex flex-wrap gap-1.5 text-xs" id="drawerSkills">
                         <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-medium">Golang</span>
                         <span class="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 font-medium">PostgreSQL</span>
@@ -2160,8 +2153,8 @@
 
                 <!-- Evaluation & Notes -->
                 <div>
-                    <h4 class="font-bold text-slate-900 mb-2 text-xs uppercase tracking-wider text-slate-400">Ghi Chú
-                        Đánh Giá Tuyển Dụng</h4>
+                    <h4 class="font-bold text-slate-900 mb-2 text-xs uppercase tracking-wider text-slate-400">Recruitment
+                        Evaluation Notes</h4>
                     <div class="p-3.5 rounded-lg border border-slate-200 bg-white text-xs text-slate-600 leading-relaxed"
                         id="drawerNotes">
                         Hồ sơ kỹ thuật đạt yêu cầu tiêu chuẩn phân hệ ATS. Kinh nghiệm 5+ năm phát triển microservices
@@ -2171,7 +2164,7 @@
             </div>
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
                 <button onclick="closeCandidateDetail()"
-                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-xs hover:bg-slate-100">Đóng</button>
+                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-xs hover:bg-slate-100">Close</button>
             </div>
         </div>
     </div>
@@ -2258,7 +2251,7 @@
         }
 
         function advanceCandidate(code) {
-            alert(`Đã chuyển ứng viên ${code} sang giai đoạn kế tiếp trong quy trình tuyển dụng!`);
+            alert(`Candidate ${code} has been moved to the next stage of the recruitment pipeline!`);
         }
 
         // 12 Candidates from mock data
@@ -2270,7 +2263,7 @@
                 phone: '+84 912 345 678',
                 source: 'TopCV Direct',
                 score: '92% Match',
-                stage: 'Tiếp nhận hồ sơ (Sourced & Applied)',
+                stage: 'Sourced & Applied',
                 skills: ['Golang', 'PostgreSQL', 'Kafka', 'Docker', 'System Architecture'],
                 notes: 'CV phù hợp với yêu cầu TD-2024-01. Đã sẵn sàng cho vòng Sơ loại AI và phỏng vấn kỹ thuật.'
             },
@@ -2281,7 +2274,7 @@
                 phone: '+84 905 123 456',
                 source: 'LinkedIn Jobs',
                 score: '86% Match',
-                stage: 'Tiếp nhận hồ sơ (Sourced & Applied)',
+                stage: 'Sourced & Applied',
                 skills: ['B2B Sales', 'Key Account Management', 'CRM', 'Đàm phán thương mại'],
                 notes: 'Có 6 năm kinh nghiệm B2B trong mảng giải pháp phần mềm doanh nghiệp, năng động và quyết đoán.'
             },
@@ -2290,9 +2283,9 @@
                 job: 'Kỹ sư Cloud DevOps • TD-2024-03',
                 email: 'duc.nguyen@cloudtech.vn',
                 phone: '+84 988 776 554',
-                source: 'Tuyển dụng trực tiếp (Direct Web)',
+                source: 'Direct Web',
                 score: '96% Match',
-                stage: 'Sơ loại AI (AI Screening)',
+                stage: 'AI Screening',
                 skills: ['Kubernetes', 'AWS', 'Microservices', 'Distributed Systems', 'CI/CD'],
                 notes: 'AI CV Screening đạt 96%. Đã xác thực chứng chỉ AWS Solution Architect Professional.'
             },
@@ -2301,9 +2294,9 @@
                 job: 'Kỹ sư Phần mềm Frontend • TD-2024-04',
                 email: 'minhanh.pham@frontend.vn',
                 phone: '+84 971 234 567',
-                source: 'Giới thiệu nội bộ (Lê Hoàng Nam)',
+                source: 'Internal Referral (Lê Hoàng Nam)',
                 score: '89% Match',
-                stage: 'Sơ loại AI (AI Screening)',
+                stage: 'AI Screening',
                 skills: ['Vue.js', 'React', 'TailwindCSS', 'TypeScript', 'Responsive Design'],
                 notes: 'Được giới thiệu nội bộ từ Solution Architect Lê Hoàng Nam. Kinh nghiệm triển khai SPA phức tạp.'
             },
@@ -2312,9 +2305,9 @@
                 job: 'Senior Tech Lead • TD-2024-01',
                 email: 'huy.le@gotech.io',
                 phone: '+84 903 881 229',
-                source: 'Tuyển dụng trực tiếp (Direct Web)',
+                source: 'Direct Web',
                 score: '94% Match',
-                stage: 'Phỏng vấn chuyên môn (Tech Interview)',
+                stage: 'Tech Interview',
                 skills: ['Go', 'Postgres', 'Redis', 'gRPC', 'Distributed Systems'],
                 notes: 'Đã lên lịch Tech Interview với Senior Tech Lead Nguyễn Văn Hùng hôm nay @ 15:30.'
             },
@@ -2325,7 +2318,7 @@
                 phone: '+84 918 223 344',
                 source: 'TopCV',
                 score: '91% Match',
-                stage: 'Phỏng vấn chuyên môn (Tech Interview)',
+                stage: 'Tech Interview',
                 skills: ['JavaScript', 'ReactJS', 'TailwindCSS', 'UI/UX Performance'],
                 notes: 'Lịch phỏng vấn trực tiếp tại Phòng Họp 3B ngày mai @ 14:00 cùng hội đồng Phạm Thanh Sơn.'
             },
@@ -2336,7 +2329,7 @@
                 phone: '+84 934 556 677',
                 source: 'LinkedIn',
                 score: '91% Match',
-                stage: 'Phỏng vấn Ban Giám đốc (Executive Round)',
+                stage: 'Executive Round',
                 skills: ['Quản lý đối tác', 'Chiến lược B2B', 'Sales Pipeline', 'Thương thảo'],
                 notes: 'Điểm Scorecard vòng chuyên môn đạt 4.8/5.0. Chuẩn bị Executive Interview cùng Giám đốc Kinh doanh Trần Thị Mai.'
             },
@@ -2345,9 +2338,9 @@
                 job: 'Senior Tech Lead • TD-2024-01',
                 email: 'tuan.hoang@techleader.org',
                 phone: '+84 977 123 889',
-                source: 'Giới thiệu nội bộ',
+                source: 'Internal Referral',
                 score: '93% Match',
-                stage: 'Phỏng vấn Ban Giám đốc (Executive Round)',
+                stage: 'Executive Round',
                 skills: ['Golang', 'Concurrency', 'PostgreSQL', 'High Traffic', 'Team Leadership'],
                 notes: 'Điểm Scorecard vòng kỹ thuật đạt 4.7/5.0. Lịch Executive Final cùng Giám đốc Khối Kỹ thuật thứ Sáu @ 15:00.'
             },
@@ -2358,7 +2351,7 @@
                 phone: '+84 909 998 877',
                 source: 'LinkedIn',
                 score: '98% Match',
-                stage: 'Đề xuất tuyển dụng (Offer Letter)',
+                stage: 'Offer Letter',
                 skills: ['Cloud Architecture', 'Security', 'Fintech DevOps', 'Kubernetes'],
                 notes: 'Offer Package: 45.000.000 VNĐ / tháng + thưởng dự án. Đã phát hành thư mời qua DocuSign chờ ứng viên ký.'
             },
@@ -2369,7 +2362,7 @@
                 phone: '+84 945 678 123',
                 source: 'TopCV',
                 score: '93% Match',
-                stage: 'Đề xuất tuyển dụng (Offer Letter)',
+                stage: 'Offer Letter',
                 skills: ['Kế toán VAS/IFRS', 'Quyết toán thuế', 'ERP SAP', 'Báo cáo tài chính'],
                 notes: 'Offer Package: 35.000.000 VNĐ / tháng + phụ cấp. Ứng viên đang cân nhắc điều khoản ngày nhận việc.'
             },
@@ -2380,7 +2373,7 @@
                 phone: '+84 962 110 998',
                 source: 'LinkedIn',
                 score: '95% Match',
-                stage: 'Tiếp nhận thử việc (Hired & Ready)',
+                stage: 'Hired & Ready',
                 skills: ['B2B Sales', 'Team Management', 'CRM', 'Kế hoạch kinh doanh'],
                 notes: 'Đã hoàn tất ký hợp đồng thử việc. Ngày tiếp nhận chính thức: 01/10/2026. Sẵn sàng tạo hồ sơ nhân viên trong QLNS.'
             },
@@ -2389,9 +2382,9 @@
                 job: 'Kỹ sư Cloud DevOps • TD-2024-03',
                 email: 'tung.cao@cloudnative.dev',
                 phone: '+84 983 456 789',
-                source: 'Tuyển dụng trực tiếp (Direct Web)',
+                source: 'Direct Web',
                 score: '96% Match',
-                stage: 'Tiếp nhận thử việc (Hired & Ready)',
+                stage: 'Hired & Ready',
                 skills: ['Kubernetes', 'Helm', 'ArgoCD', 'AWS', 'Terraform'],
                 notes: 'Đã ký thư mời làm việc. Ngày bắt đầu: 15/10/2026. Thiết bị và tài khoản hạ tầng IT đã chuẩn bị xong.'
             }
@@ -2400,15 +2393,15 @@
         function openCandidateDetail(code) {
             const drawer = document.getElementById('candDetailDrawer');
             const cand = candidateDb[code] || {
-                name: 'Ứng viên mới',
+                name: 'New Candidate',
                 job: 'Chuyên viên phần mềm',
                 email: `${code.toLowerCase()}@candidate.vn`,
                 phone: '+84 900 000 000',
-                source: 'Tuyển dụng trực tiếp',
+                source: 'Direct Web',
                 score: '90% Match',
-                stage: 'Sơ loại',
+                stage: 'Screening',
                 skills: ['Kỹ năng phần mềm', 'Giao tiếp'],
-                notes: 'Hồ sơ đã được lưu trữ vào hệ thống.'
+                notes: 'This candidate profile has been saved to the system.'
             };
 
             document.getElementById('drawerCandCode').innerText = code;
@@ -2455,11 +2448,11 @@
         }
 
         function getScoreLabel(score) {
-            if (score >= 4.5) return 'Xuất sắc';
-            if (score >= 4.0) return 'Rất tốt';
-            if (score >= 3.0) return 'Đạt yêu cầu';
-            if (score >= 2.0) return 'Cần cân nhắc';
-            return 'Chưa đạt';
+            if (score >= 4.5) return 'Excellent';
+            if (score >= 4.0) return 'Very Good';
+            if (score >= 3.0) return 'Meets Expectations';
+            if (score >= 2.0) return 'Needs Consideration';
+            return 'Below Expectations';
         }
 
         function updateScoreSlider(slider) {
@@ -2468,7 +2461,7 @@
             const label = getScoreLabel(score);
 
             slider.style.setProperty('--score-fill', `${fill}%`);
-            slider.setAttribute('aria-valuetext', `${score.toFixed(1)} trên 5 - ${label}`);
+            slider.setAttribute('aria-valuetext', `${score.toFixed(1)} of 5 - ${label}`);
             document.getElementById(`${slider.id}Value`).textContent = score.toFixed(1);
             document.getElementById(`${slider.id}Label`).textContent = label;
             updateScorecardSummary();
@@ -2483,13 +2476,13 @@
                         : 'No Hire';
 
             document.getElementById('scorecardTotal').textContent = total.toFixed(1);
-            document.getElementById('scorecardRecommendation').textContent = `Khuyến nghị: ${recommendation}`;
+            document.getElementById('scorecardRecommendation').textContent = `Recommendation: ${recommendation}`;
         }
 
         function saveScorecard() {
             const total = document.getElementById('scorecardTotal').textContent;
             const recommendation = document.getElementById('scorecardRecommendation').textContent;
-            alert(`Đã lưu kết quả đánh giá Scorecard: ${total}/5.0. ${recommendation}.`);
+            alert(`Scorecard evaluation saved: ${total}/5.0. ${recommendation}.`);
             closeScorecardModal();
         }
 
@@ -2501,7 +2494,7 @@
             document.getElementById('offerModal').classList.add('hidden');
         }
         function submitOffer() {
-            alert('Đã gửi Thư mời nhận việc (Offer Letter) qua DocuSign thành công!');
+            alert('The offer letter has been sent successfully via DocuSign!');
             closeOfferModal();
         }
 
@@ -2531,16 +2524,16 @@
                         ${score}
                     </span>
                 </td>
-                <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Trực tiếp</td>
+                <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Direct Web</td>
                 <td class="py-4 px-4 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">Sourced & Applied</span>
                 </td>
                 <td class="py-4 px-5 text-right whitespace-nowrap" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-end gap-1.5">
-                        <button title="Chuyển bước kế tiếp" onclick="advanceCandidate('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
+                        <button title="Move to Next Stage" onclick="advanceCandidate('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                             <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
                         </button>
-                        <button title="Tùy chọn" onclick="openCandidateDetail('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
+                        <button title="More Options" onclick="openCandidateDetail('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                             <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                         </button>
                     </div>
@@ -2548,13 +2541,13 @@
             `;
             tbody.prepend(tr);
             closeAddCandidateModal();
-            alert(`Đã tiếp nhận hồ sơ ứng viên ${name} (${code}) vào pipeline!`);
+            alert(`Candidate ${name} (${code}) has been added to the pipeline!`);
         }
 
         function handlePostJob(e) {
             e.preventDefault();
             const title = document.getElementById('newJobTitle').value;
-            alert(`Đã tạo và đăng tin tuyển dụng "${title}" thành công lên các kênh LinkedIn, TopCV!`);
+            alert(`Job posting "${title}" has been created and published to LinkedIn and TopCV!`);
             closePostJobModal();
         }
     </script>

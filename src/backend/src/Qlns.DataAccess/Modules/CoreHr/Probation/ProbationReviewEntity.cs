@@ -36,7 +36,7 @@ public sealed class ProbationReviewEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.ContractId).HasColumnName("contract_id");
         builder.Property(x => x.ReviewDueDate).HasColumnName("review_due_date");
         builder.Property(x => x.ReviewerUserId).HasColumnName("reviewer_user_id");
-        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("pending");
         builder.Property(x => x.Outcome).HasColumnName("outcome").HasMaxLength(30);
         builder.Property(x => x.OverallScore).HasColumnName("overall_score").HasPrecision(3, 1);
         builder.Property(x => x.Strengths).HasColumnName("strengths");
@@ -45,9 +45,9 @@ public sealed class ProbationReviewEntityConfiguration : IEntityTypeConfiguratio
         builder.Property(x => x.DecidedBy).HasColumnName("decided_by");
         builder.Property(x => x.DecidedAt).HasColumnName("decided_at");
         builder.Property(x => x.EmployeeEventId).HasColumnName("employee_event_id");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
         builder.HasIndex(x => x.ContractId).IsUnique().HasDatabaseName("ux_probation_review_contract");
     }
 }

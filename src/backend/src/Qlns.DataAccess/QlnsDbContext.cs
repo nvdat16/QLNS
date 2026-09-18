@@ -12,5 +12,8 @@ public sealed class QlnsDbContext(DbContextOptions<QlnsDbContext> options) : DbC
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(QlnsDbContext).Assembly);
+
+        // Source for employees.employee_code (OfferRepository calls nextval('employee_code_seq') directly).
+        modelBuilder.HasSequence<long>("employee_code_seq").StartsAt(1).IncrementsBy(1);
     }
 }

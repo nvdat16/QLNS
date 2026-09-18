@@ -42,7 +42,7 @@ Q1–Q3 are the architecture-shaping goals. Any decision that weakens one of the
 
 | # | Constraint | Type | Implication |
 |---|---|---|---|
-| C1 | The current state is UI/UX prototypes, a React frontend and a .NET 10 backend that is **code-complete** across all 79 operations; there are no integration tests, no migrations and no verified runtime | Project | distinguish code-complete from implemented, integrated and production-ready; only integration tests against a real PostgreSQL can raise the status |
+| C1 | The current state is UI/UX prototypes, a React frontend and a .NET 10 backend that is **code-complete** across all 79 operations; the EF Core migration exists and has been applied to a real PostgreSQL with a manually verified sign-in and smoke-tested runtime, but there is still no automated integration test suite | Project | distinguish code-complete from implemented, integrated and production-ready; only an automated integration test suite against a real PostgreSQL can raise the status to `implemented` |
 | C2 | The frontend never reaches the database directly | Security | every query and command goes through the backend API and server-side authorization |
 | C3 | PostgreSQL is the standard database; `database/schema.sql` is the interim canonical contract | Technical | the schema must be reviewed, turned into an EF Core migration and constraint-tested before use |
 | C4 | React/Vite, ASP.NET Core on .NET 10, EF Core and PostgreSQL | Technical | approved by the Project Owner on 2026-09-15; package patch versions must be pinned before release |
@@ -211,7 +211,7 @@ React Web Application → ASP.NET Core API ─┬→ Business/Data Layer → Pos
 - **React web application:** renders the interface, handles navigation and local UI state, and calls the API; it is not a security boundary and owns no business invariant.
 - **ASP.NET Core backend API:** the single entry point for business data; authentication and authorization, use case execution, workflow and transactions.
 - **.NET background worker:** handles asynchronous or scheduled work after the business state has been committed; it takes no direct user requests.
-- **PostgreSQL:** the system of record. `database/schema.sql` is currently the canonical contract; the migration and runtime database are not verified.
+- **PostgreSQL:** the system of record. `database/schema.sql` is the canonical contract; the EF Core migration generated from it has been applied to a real PostgreSQL 17 and manually verified (sign-in, seed scripts, smoke tests), though no automated integration test runs against it yet.
 - **Private object storage:** holds file content; PostgreSQL keeps only the metadata and the access reference.
 - Blue is code-complete (code and unit tests exist, integration tests do not), purple is a proposed design with no code, green is a data contract, grey is an external system.
 
@@ -685,8 +685,7 @@ Rejecting any one of them would mean rewriting code, not adjusting configuration
 
 **Open decisions:** object storage; the worker/queue; the hosting platform; the SLA; RPO/RTO; retention and data residency.
 (The Identity Provider question is settled: authentication and account administration are in house — [ADR-011](adr/011-in-house-identity.md).)
-EF Core migrations are the intended migration tool, but the first migration can only be generated once the .NET 10 SDK is installed and the model/schema drift reviewed.
-model/schema drift.
+EF Core migrations are the intended migration tool; the first migration (`InitialCreate`) has been generated with the .NET 10 SDK, reviewed against `schema.sql` for drift, and applied to a real PostgreSQL 17.
 
 No ADR becomes Accepted merely because a technology appears in a prototype, a diagram, a DDL file or the source code. An
 Accepted ADR must have an owner, an approval date, alternatives and consequences.
@@ -717,7 +716,7 @@ Any budget set without load data or infrastructure is **provisional** and must b
 | # | Risk | Impact | Likelihood | Mitigation | Owner |
 |---|---|---|---|---|---|
 | R1 | The UI prototype is mistaken for a finished frontend | High | High | design-only labels, acceptance criteria, and no mock-data fallback in production | Product + Architecture |
-| R1b | `code-complete` is mistaken for an API that runs in a real environment | High | High | `x-implementation-status` on each operation; all 79 operations are at `code-complete` and **none** has reached `implemented`, because `tests/Qlns.IntegrationTests` and the EF Core migrations do not exist | Architecture |
+| R1b | `code-complete` is mistaken for an API that runs in a real environment | High | Medium | `x-implementation-status` on each operation; all 79 operations are at `code-complete` and **none** has reached `implemented` yet — the EF Core migration exists and the runtime has been manually verified (sign-in, seed scripts, smoke tests), but `tests/Qlns.IntegrationTests` still does not exist | Architecture |
 | R2 | The canonical schema has not been turned into a versioned EF migration | High | High | a migration plan plus constraint and invariant integration tests against a real PostgreSQL | Data + Backend |
 | R2b | The Attendance & Leave design split into `deferred/` may drift from the canonical schema (the `employees` and `users` tables, the error model) if that module returns | Medium | Medium | record the dependencies in `deferred/attendance_leave/README.md`; review every fragment before merging it back | Architecture |
 | R3 | The stack was chosen from a diagram rather than through a decision process | Medium | High | an ADR per framework and version, plus a proof-of-concept vertical slice | Architecture |

@@ -15,9 +15,9 @@ public sealed class DepartmentEntityConfiguration : IEntityTypeConfiguration<Dep
         builder.Property(x => x.ParentDepartmentId).HasColumnName("parent_department_id");
         builder.Property(x => x.CostCenter).HasColumnName("cost_center").HasMaxLength(100);
         builder.Property(x => x.Description).HasColumnName("description");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
         builder.HasIndex(x => x.Code).IsUnique();
     }
 }
@@ -33,9 +33,9 @@ public sealed class PositionEntityConfiguration : IEntityTypeConfiguration<Posit
         builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(255);
         builder.Property(x => x.Level).HasColumnName("level").HasMaxLength(50);
         builder.Property(x => x.Description).HasColumnName("description");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
         builder.HasIndex(x => x.Code).IsUnique();
     }
 }
@@ -50,10 +50,10 @@ public sealed class UserEntityConfiguration : IEntityTypeConfiguration<UserEntit
         builder.Property(x => x.ExternalSubject).HasColumnName("external_subject").HasMaxLength(255);
         builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(320);
         builder.Property(x => x.DisplayName).HasColumnName("display_name").HasMaxLength(255);
-        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version");
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("active");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L);
     }
 }
 
@@ -82,10 +82,10 @@ public sealed class EmployeeEntityConfiguration : IEntityTypeConfiguration<Emplo
         builder.Property(x => x.DepartmentId).HasColumnName("department_id");
         builder.Property(x => x.PositionId).HasColumnName("position_id");
         builder.Property(x => x.HireDate).HasColumnName("hire_date");
-        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("probation");
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
         builder.HasIndex(x => x.EmployeeCode).IsUnique();
         builder.HasIndex(x => new { x.DepartmentId, x.Status, x.LastName, x.FirstName })
             .HasDatabaseName("ix_employees_directory");
@@ -105,11 +105,11 @@ public sealed class OnboardingTaskEntityConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.Description).HasColumnName("description");
         builder.Property(x => x.AssignedToUserId).HasColumnName("assigned_to_user_id");
         builder.Property(x => x.DueAt).HasColumnName("due_at");
-        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("pending");
         builder.Property(x => x.CompletedAt).HasColumnName("completed_at");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
         builder.HasIndex(x => new { x.EmployeeId, x.TemplateKey }).IsUnique()
             .HasDatabaseName("ux_onboarding_task_template");
     }
@@ -124,13 +124,13 @@ public sealed class EmployeeDocumentEntityConfiguration : IEntityTypeConfigurati
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.EmployeeId).HasColumnName("employee_id");
         builder.Property(x => x.DocumentType).HasColumnName("document_type").HasMaxLength(80);
-        builder.Property(x => x.Version).HasColumnName("version");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1);
         builder.Property(x => x.OriginalFileName).HasColumnName("original_file_name").HasMaxLength(255);
         builder.Property(x => x.ObjectKey).HasColumnName("object_key").HasMaxLength(1024);
         builder.Property(x => x.ContentType).HasColumnName("content_type").HasMaxLength(100);
         builder.Property(x => x.SizeBytes).HasColumnName("size_bytes");
         builder.Property(x => x.UploadedBy).HasColumnName("uploaded_by");
-        builder.Property(x => x.UploadedAt).HasColumnName("uploaded_at");
+        builder.Property(x => x.UploadedAt).HasColumnName("uploaded_at").HasDefaultValueSql("now()");
         builder.Property(x => x.RetentionUntil).HasColumnName("retention_until");
         builder.Property(x => x.DeletedAt).HasColumnName("deleted_at");
         builder.HasIndex(x => x.ObjectKey).IsUnique();
@@ -148,7 +148,7 @@ public sealed class EmployeeEventEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.Id).HasColumnName("id");
         builder.Property(x => x.EmployeeId).HasColumnName("employee_id");
         builder.Property(x => x.EventType).HasColumnName("event_type").HasMaxLength(50);
-        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
+        builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).HasDefaultValue("draft");
         builder.Property(x => x.EffectiveDate).HasColumnName("effective_date");
         builder.Property(x => x.BeforeData).HasColumnName("before_data").HasColumnType("jsonb");
         builder.Property(x => x.AfterData).HasColumnName("after_data").HasColumnType("jsonb");
@@ -158,8 +158,8 @@ public sealed class EmployeeEventEntityConfiguration : IEntityTypeConfiguration<
         builder.Property(x => x.ApprovedBy).HasColumnName("approved_by");
         builder.Property(x => x.ApprovedAt).HasColumnName("approved_at");
         builder.Property(x => x.AppliedAt).HasColumnName("applied_at");
-        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
-        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        builder.Property(x => x.Version).HasColumnName("version").IsConcurrencyToken();
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at").HasDefaultValueSql("now()");
+        builder.Property(x => x.Version).HasColumnName("version").HasDefaultValue(1L).IsConcurrencyToken();
     }
 }

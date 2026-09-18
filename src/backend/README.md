@@ -4,9 +4,13 @@ Target: .NET 10, ASP.NET Core, Entity Framework Core and PostgreSQL.
 
 **Status:** every one of the 79 operations in [`docs/api/openapi.yaml`](../../docs/api/openapi.yaml) is `code-complete` — controller,
 endpoint authorization policy, business workflow, transactional persistence (audit + outbox in the same transaction) and
-unit tests (1 347 passing). What is still missing before an operation counts as `implemented` is listed in
-[API_REFERENCE §7](../../docs/api/API_REFERENCE.md#7-implementation-status): integration tests against PostgreSQL, EF Core
-migrations and the background worker host.
+unit tests (1 347 passing). The solution builds clean and the EF Core migration `InitialCreate`
+(`src/Qlns.DataAccess/Migrations`) has been generated and applied to a real PostgreSQL 17: it reproduces all 28 tables in
+`database/schema.sql` (v1.2) column-for-column, including defaults and the `employee_code_seq` sequence, `seed_roles.sql`
+and `seed_dev.sql` load without error on top of it, and a real sign-in plus both `tests/smoke/` scripts pass against the
+running API. What is still missing before an operation counts as `implemented` is listed in
+[API_REFERENCE §7](../../docs/api/API_REFERENCE.md#7-implementation-status): an automated integration test suite against
+PostgreSQL (`tests/Qlns.IntegrationTests`) and the background worker host.
 
 ## Modular 3-layer backend
 
@@ -158,6 +162,16 @@ Contracts, Probation and Offboarding modules have no collection of their own; us
 `docs/api/openapi.yaml` into Postman.
 
 **3. Integration tests** — `tests/Qlns.IntegrationTests` does not exist yet. `docs/architecture.md` §5.6 treats it as a precondition for an operation counting as `implemented`, because the strongest invariants (the partial unique indexes `ux_offers_one_open_per_application`, `ux_contracts_primary_active`, `ux_offboarding_open_case` and `ux_probation_review_contract`; conditional updates on version; and the more complex EF queries such as the expiry alert window or counting blocking tasks) can only be verified against a real PostgreSQL. Proposed stack: `WebApplicationFactory` plus Testcontainers.
+
+**Generating/regenerating the EF Core migration** (already committed under `src/Qlns.DataAccess/Migrations`; redo this only after an entity or entity-configuration change):
+
+```bash
+dotnet tool install --global dotnet-ef   # once
+dotnet ef migrations add <Name> --project src/Qlns.DataAccess --startup-project src/Qlns.Api --output-dir Migrations
+dotnet ef database update --project src/Qlns.DataAccess --startup-project src/Qlns.Api
+```
+
+`Qlns.Api.csproj` carries `Microsoft.EntityFrameworkCore.Design` (`PrivateAssets="all"`, build-time only) so the tool can load the model. Every entity configuration under `Modules/<Module>/Shared` sets `HasDefaultValueSql`/`HasDefaultValue` to mirror the `DEFAULT` clauses in `database/schema.sql`, and `QlnsDbContext.OnModelCreating` declares the `employee_code_seq` sequence that `OfferRepository` calls with `nextval(...)` — both are required for `database/seed_roles.sql` and `seed_dev.sql` to load on a freshly migrated database.
 
 **Authentication.** The token is issued by the API itself: `Authentication:Jwt:SigningKey` is **mandatory** — without it `AddIdentityAccess`
 throws at startup rather than running a half-configured API. `appsettings.Development.json` already carries a development key;

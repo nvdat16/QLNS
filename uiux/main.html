@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Hệ Thống Doanh Nghiệp - Quản Lý Hồ Sơ & Hợp Đồng</title>
+    <title>Enterprise System - Employee Records & Contract Management</title>
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -128,51 +128,44 @@
             <a href="javascript:void(0)" onclick="switchMainView('dashboard')" id="nav-dashboard"
                 class="sidebar-active-item flex items-center gap-3 px-3.5 py-2.5 rounded-lg font-semibold text-sm transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[20px]">dashboard</span>
-                <span>Tổng quan</span>
+                <span>Overview</span>
             </a>
-            <!-- Item 1: Hồ sơ nhân viên -->
+            <!-- Item 1: Employee Records -->
             <a href="javascript:void(0)" onclick="switchMainView('profiles')" id="nav-emp"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[20px] text-slate-500">group</span>
-                <span>Hồ sơ nhân viên</span>
+                <span>Employee Records</span>
             </a>
 
-            <!-- Item 2: Sơ đồ tổ chức -->
+            <!-- Item 2: Organization Chart -->
             <a href="javascript:void(0)" onclick="switchMainView('org')" id="nav-org"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[20px] text-slate-500">account_tree</span>
-                <span>Sơ đồ tổ chức</span>
+                <span>Organization Chart</span>
             </a>
 
-            <!-- Item 3: Quản lý hợp đồng -->
+            <!-- Item 3: Contracts -->
             <a href="javascript:void(0)" onclick="switchMainView('contracts')" id="nav-contracts"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors cursor-pointer">
                 <span class="material-symbols-outlined text-[20px] text-slate-500">description</span>
-                <span>Quản lý hợp đồng</span>
+                <span>Contracts</span>
             </a>
 
-            <!-- Item 4: Quản lý tuyển dụng & ATS -->
+            <!-- Item 4: Recruitment & ATS -->
             <a href="recruitment.html" id="nav-recruitment"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
                 <span class="material-symbols-outlined text-[20px] text-slate-500">person_search</span>
-                <span>Quản lý tuyển dụng</span>
+                <span>Recruitment</span>
             </a>
 
-            <!-- Item 5: Chấm công & Nghỉ phép -->
-            <a href="attendance.html" id="nav-attendance"
-                class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm transition-colors">
-                <span class="material-symbols-outlined text-[20px] text-slate-500">calendar_clock</span>
-                <span>Chấm công & Nghỉ phép</span>
-            </a>
-
-            <p class="nav-section-label !mt-6">Hỗ trợ & cài đặt</p>
-            <a href="javascript:void(0)" onclick="alert('Bảng tin đang ở chế độ prototype')"
+            <p class="nav-section-label !mt-6">Support & Settings</p>
+            <a href="javascript:void(0)" onclick="alert('Announcements are in prototype mode')"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm">
-                <span class="material-symbols-outlined text-[20px] text-slate-500">campaign</span><span>Bảng tin</span>
+                <span class="material-symbols-outlined text-[20px] text-slate-500">campaign</span><span>Announcements</span>
             </a>
-            <a href="javascript:void(0)" onclick="alert('Cài đặt đang ở chế độ prototype')"
+            <a href="javascript:void(0)" onclick="alert('Settings are in prototype mode')"
                 class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium text-sm">
-                <span class="material-symbols-outlined text-[20px] text-slate-500">settings</span><span>Cài đặt</span>
+                <span class="material-symbols-outlined text-[20px] text-slate-500">settings</span><span>Settings</span>
             </a>
         </div>
 
@@ -206,12 +199,12 @@
                 <div class="flex flex-col min-w-0">
                     <div id="header-breadcrumb"
                         class="text-xs text-slate-500 font-medium flex items-center gap-1.5 truncate">
-                        <span>Không gian làm việc</span>
+                        <span>Workspace</span>
                         <span>/</span>
-                        <span id="breadcrumb-sub" class="text-slate-600 truncate">Tổng quan</span>
+                        <span id="breadcrumb-sub" class="text-slate-600 truncate">Overview</span>
                     </div>
                     <h1 id="header-title"
-                        class="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5 truncate">Chào ngày làm việc, Minh Trí!</h1>
+                        class="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight mt-0.5 truncate">Welcome back, Minh Trí!</h1>
                 </div>
             </div>
 
@@ -221,19 +214,19 @@
                 <div class="relative hidden md:block">
                     <span
                         class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                    <input type="text" placeholder="Tìm kiếm nhanh..."
+                    <input type="text" placeholder="Quick search..."
                         class="w-48 lg:w-64 h-10 pl-9 pr-3 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-2xs" />
                 </div>
 
                 <!-- Notification Bell Button -->
-                <button type="button" aria-label="Thông báo"
+                <button type="button" aria-label="Notifications"
                     class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-2xs relative flex-shrink-0">
                     <span class="material-symbols-outlined text-[20px]">notifications</span>
                     <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-blue-600 ring-2 ring-white"></span>
                 </button>
 
                 <!-- Help Button -->
-                <button type="button" aria-label="Trợ giúp"
+                <button type="button" aria-label="Help"
                     class="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors shadow-2xs flex-shrink-0">
                     <span class="material-symbols-outlined text-[20px]">help</span>
                 </button>
@@ -248,63 +241,63 @@
                 <!-- Card 1 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-1">Tổng nhân viên</span>
+                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-1">Total Employees</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
                             id="kpi-val-1">312</span>
-                        <span class="text-xs font-semibold text-blue-600" id="kpi-sub-1">+8 mới trong tháng</span>
+                        <span class="text-xs font-semibold text-blue-600" id="kpi-sub-1">+8 new this month</span>
                     </div>
                 </div>
 
                 <!-- Card 2 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-2">Đang làm việc</span>
+                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-2">Active</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
                             id="kpi-val-2">284</span>
-                        <span class="text-xs font-semibold text-emerald-600" id="kpi-sub-2">91% tổng số</span>
+                        <span class="text-xs font-semibold text-emerald-600" id="kpi-sub-2">91% of total</span>
                     </div>
                 </div>
 
                 <!-- Card 3 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-3">Thử việc (30-60 ngày)</span>
+                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-3">Probation (30-60 Days)</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
                             id="kpi-val-3">18</span>
-                        <span class="text-xs font-semibold text-amber-600" id="kpi-sub-3">Cần lưu ý</span>
+                        <span class="text-xs font-semibold text-amber-600" id="kpi-sub-3">Needs attention</span>
                     </div>
                 </div>
 
                 <!-- Card 4 -->
                 <div
                     class="bg-white rounded-xl border border-slate-200 p-4 sm:p-5 shadow-xs flex flex-col justify-between">
-                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-4">Đã nghỉ việc / Tạm hoãn</span>
+                    <span class="text-sm text-slate-500 font-medium" id="kpi-title-4">Terminated / Suspended</span>
                     <div class="flex items-baseline justify-between mt-3">
                         <span class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight"
                             id="kpi-val-4">10</span>
-                        <span class="text-xs font-semibold text-blue-600" id="kpi-sub-4">Đã xử lý</span>
+                        <span class="text-xs font-semibold text-blue-600" id="kpi-sub-4">Processed</span>
                     </div>
                 </div>
             </div>
 
             <!-- ================= DASHBOARD OVERVIEW ================= -->
             <div id="view-dashboard-container" class="space-y-5">
-                <div class="grid grid-cols-1 xl:grid-cols-[1.7fr_1fr] gap-4">
+                <div class="grid grid-cols-1 gap-4">
                     <section class="hrm-card bg-white border p-5 sm:p-6 min-w-0">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <h2 class="text-base font-bold text-slate-900">Tổng quan nhân sự</h2>
-                                <p class="mt-1 text-xs text-slate-500">Biến động nhân sự theo tháng · Năm 2026</p>
+                                <h2 class="text-base font-bold text-slate-900">Workforce Overview</h2>
+                                <p class="mt-1 text-xs text-slate-500">Monthly headcount movement · 2026</p>
                             </div>
                             <div class="flex items-center gap-4 text-xs text-slate-500">
-                                <span class="inline-flex items-center gap-1.5"><i class="w-2 h-2 rounded-full bg-blue-600"></i>Đang làm việc</span>
-                                <span class="inline-flex items-center gap-1.5"><i class="w-2 h-2 rounded-full bg-blue-200"></i>Nhân sự mới</span>
+                                <span class="inline-flex items-center gap-1.5"><i class="w-2 h-2 rounded-full bg-blue-600"></i>Active</span>
+                                <span class="inline-flex items-center gap-1.5"><i class="w-2 h-2 rounded-full bg-blue-200"></i>New Hires</span>
                             </div>
                         </div>
-                        <div class="dashboard-chart mt-3" aria-label="Biểu đồ nhân sự theo tháng">
+                        <div class="dashboard-chart mt-3" aria-label="Monthly headcount chart">
                             <span class="chart-bar" style="--bar:48%" data-month="T1"></span>
                             <span class="chart-bar" style="--bar:62%" data-month="T2"></span>
                             <span class="chart-bar" style="--bar:54%" data-month="T3"></span>
@@ -320,41 +313,29 @@
                         </div>
                     </section>
 
-                    <section class="hrm-card bg-white border p-5 sm:p-6">
-                        <div class="flex items-center justify-between">
-                            <div><h2 class="text-base font-bold text-slate-900">Đơn nghỉ gần đây</h2><p class="mt-1 text-xs text-slate-500">Cập nhật trong tháng</p></div>
-                            <a href="attendance.html?view=approvals" class="text-xs font-semibold text-blue-600">Xem tất cả</a>
-                        </div>
-                        <div class="mt-5 space-y-4">
-                            <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-700 grid place-items-center font-bold text-xs">TM</div><div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">Trần Thị Mai</p><p class="text-xs text-slate-500 truncate">Nghỉ phép năm · 2 ngày</p></div><span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">Đã duyệt</span></div>
-                            <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-violet-50 text-violet-700 grid place-items-center font-bold text-xs">HN</div><div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">Hoàng Minh Ngọc</p><p class="text-xs text-slate-500 truncate">Nghỉ ốm · 1 ngày</p></div><span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-[11px] font-semibold">Chờ duyệt</span></div>
-                            <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-700 grid place-items-center font-bold text-xs">PS</div><div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">Phạm Thanh Sơn</p><p class="text-xs text-slate-500 truncate">Nghỉ cá nhân · 1 ngày</p></div><span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-semibold">Đã duyệt</span></div>
-                            <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-700 grid place-items-center font-bold text-xs">LA</div><div class="min-w-0 flex-1"><p class="text-sm font-semibold truncate">Lê Tuấn Anh</p><p class="text-xs text-slate-500 truncate">Nghỉ không lương · 3 ngày</p></div><span class="px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 text-[11px] font-semibold">Từ chối</span></div>
-                        </div>
-                    </section>
                 </div>
 
                 <div class="grid grid-cols-1 xl:grid-cols-[.8fr_1.5fr] gap-4">
                     <section class="hrm-card bg-white border p-5 sm:p-6">
-                        <div class="flex items-center justify-between"><div><h2 class="text-base font-bold text-slate-900">Trạng thái nhân viên</h2><p class="mt-1 text-xs text-slate-500">Tổng số 312 nhân sự</p></div><span class="material-symbols-outlined text-slate-400">donut_large</span></div>
+                        <div class="flex items-center justify-between"><div><h2 class="text-base font-bold text-slate-900">Employee Status</h2><p class="mt-1 text-xs text-slate-500">312 employees in total</p></div><span class="material-symbols-outlined text-slate-400">donut_large</span></div>
                         <div class="mt-6 space-y-5">
-                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Toàn thời gian</span><span class="text-slate-500">236 · 76%</span></div><div class="status-progress"><span class="bg-blue-600" style="width:76%"></span></div></div>
-                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Thử việc</span><span class="text-slate-500">38 · 12%</span></div><div class="status-progress"><span class="bg-violet-500" style="width:12%"></span></div></div>
-                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Bán thời gian</span><span class="text-slate-500">22 · 7%</span></div><div class="status-progress"><span class="bg-emerald-500" style="width:7%"></span></div></div>
-                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Tạm hoãn</span><span class="text-slate-500">16 · 5%</span></div><div class="status-progress"><span class="bg-amber-500" style="width:5%"></span></div></div>
+                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Full-time</span><span class="text-slate-500">236 · 76%</span></div><div class="status-progress"><span class="bg-blue-600" style="width:76%"></span></div></div>
+                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Probation</span><span class="text-slate-500">38 · 12%</span></div><div class="status-progress"><span class="bg-violet-500" style="width:12%"></span></div></div>
+                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Part-time</span><span class="text-slate-500">22 · 7%</span></div><div class="status-progress"><span class="bg-emerald-500" style="width:7%"></span></div></div>
+                            <div><div class="mb-2 flex justify-between text-xs"><span class="font-medium text-slate-700">Suspended</span><span class="text-slate-500">16 · 5%</span></div><div class="status-progress"><span class="bg-amber-500" style="width:5%"></span></div></div>
                         </div>
                     </section>
 
                     <section class="hrm-card bg-white border overflow-hidden min-w-0">
-                        <div class="p-5 sm:p-6 flex items-center justify-between"><div><h2 class="text-base font-bold text-slate-900">Nhân sự mới</h2><p class="mt-1 text-xs text-slate-500">Gia nhập gần đây</p></div><button onclick="switchMainView('profiles')" class="text-xs font-semibold text-blue-600">Xem danh sách</button></div>
+                        <div class="p-5 sm:p-6 flex items-center justify-between"><div><h2 class="text-base font-bold text-slate-900">New Hires</h2><p class="mt-1 text-xs text-slate-500">Recently joined</p></div><button onclick="switchMainView('profiles')" class="text-xs font-semibold text-blue-600">View list</button></div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
-                                <thead class="text-slate-500"><tr><th class="px-5 py-3 font-medium">Nhân viên</th><th class="px-4 py-3 font-medium">Vai trò</th><th class="px-4 py-3 font-medium">Phòng ban</th><th class="px-4 py-3 font-medium">Trạng thái</th><th class="px-5 py-3"></th></tr></thead>
+                                <thead class="text-slate-500"><tr><th class="px-5 py-3 font-medium">Employee</th><th class="px-4 py-3 font-medium">Role</th><th class="px-4 py-3 font-medium">Department</th><th class="px-4 py-3 font-medium">Status</th><th class="px-5 py-3"></th></tr></thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Nguyễn Văn Hùng</td><td class="px-4 py-4 text-slate-600">Senior Tech Lead</td><td class="px-4 py-4 text-slate-600">Công nghệ</td><td class="px-4 py-4"><span class="text-blue-600 font-medium">Toàn thời gian</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
-                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Trần Thị Mai</td><td class="px-4 py-4 text-slate-600">Sales Lead</td><td class="px-4 py-4 text-slate-600">Kinh doanh</td><td class="px-4 py-4"><span class="text-emerald-600 font-medium">Đang làm việc</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
-                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Phạm Thanh Sơn</td><td class="px-4 py-4 text-slate-600">Frontend Engineer</td><td class="px-4 py-4 text-slate-600">Công nghệ</td><td class="px-4 py-4"><span class="text-violet-600 font-medium">Thử việc</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
-                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Nguyễn Hồng Đào</td><td class="px-4 py-4 text-slate-600">Kế toán trưởng</td><td class="px-4 py-4 text-slate-600">Tài chính</td><td class="px-4 py-4"><span class="text-blue-600 font-medium">Toàn thời gian</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
+                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Nguyễn Văn Hùng</td><td class="px-4 py-4 text-slate-600">Senior Tech Lead</td><td class="px-4 py-4 text-slate-600">Công nghệ</td><td class="px-4 py-4"><span class="text-blue-600 font-medium">Full-time</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
+                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Trần Thị Mai</td><td class="px-4 py-4 text-slate-600">Sales Lead</td><td class="px-4 py-4 text-slate-600">Kinh doanh</td><td class="px-4 py-4"><span class="text-emerald-600 font-medium">Active</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
+                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Phạm Thanh Sơn</td><td class="px-4 py-4 text-slate-600">Frontend Engineer</td><td class="px-4 py-4 text-slate-600">Công nghệ</td><td class="px-4 py-4"><span class="text-violet-600 font-medium">Probation</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
+                                    <tr><td class="px-5 py-4 font-semibold text-slate-800">Nguyễn Hồng Đào</td><td class="px-4 py-4 text-slate-600">Kế toán trưởng</td><td class="px-4 py-4 text-slate-600">Tài chính</td><td class="px-4 py-4"><span class="text-blue-600 font-medium">Full-time</span></td><td class="px-5 py-4 text-right text-slate-400">•••</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -362,7 +343,7 @@
                 </div>
             </div>
 
-            <!-- ================= VIEW 1: HỒ SƠ NHÂN VIÊN ================= -->
+            <!-- ================= VIEW 1: EMPLOYEE RECORDS ================= -->
             <div id="view-profiles-container" class="space-y-4 hidden">
                 <!-- Data Table Card Container -->
                 <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
@@ -375,7 +356,7 @@
                                 <span
                                     class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
                                 <input type="text" id="empSearchInput" onkeyup="filterEmployeeRows()"
-                                    placeholder="Tìm mã nhân viên, họ tên, email..."
+                                    placeholder="Search by employee ID, name, or email..."
                                     class="w-full h-10 pl-9 pr-3 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 shadow-2xs" />
                             </div>
 
@@ -383,7 +364,7 @@
                             <div class="relative flex-1 sm:flex-none min-w-[170px]">
                                 <select id="deptFilter" onchange="filterEmployeeRows()"
                                     class="w-full sm:w-auto h-10 pl-3 pr-8 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:border-blue-500 cursor-pointer appearance-none shadow-2xs">
-                                    <option value="all">Phòng ban: Tất cả</option>
+                                    <option value="all">Department: All</option>
                                     <option value="Kỹ thuật & Công nghệ">Kỹ thuật & Công nghệ</option>
                                     <option value="Kinh doanh & Tiếp thị">Kinh doanh & Tiếp thị</option>
                                     <option value="Nhân sự & Đào tạo">Nhân sự & Đào tạo</option>
@@ -399,10 +380,10 @@
                             <div class="relative flex-1 sm:flex-none min-w-[170px]">
                                 <select id="statusFilter" onchange="filterEmployeeRows()"
                                     class="w-full sm:w-auto h-10 pl-3 pr-8 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 font-medium focus:outline-none focus:border-blue-500 cursor-pointer appearance-none shadow-2xs">
-                                    <option value="all">Tình trạng hiệu lực: Tất cả</option>
-                                    <option value="Hiệu lực">Hiệu lực</option>
-                                    <option value="Sắp hết hạn">Sắp hết hạn</option>
-                                    <option value="Thử việc">Thử việc</option>
+                                    <option value="all">Status: All</option>
+                                    <option value="Active">Active</option>
+                                    <option value="Expiring Soon">Expiring Soon</option>
+                                    <option value="Probation">Probation</option>
                                 </select>
                                 <span
                                     class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-base">expand_more</span>
@@ -415,13 +396,13 @@
                             <button onclick="filterEmployeeRows()"
                                 class="h-10 px-3.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium text-xs sm:text-sm flex items-center gap-1.5 transition-colors shadow-2xs">
                                 <span class="material-symbols-outlined text-[18px] text-slate-500">filter_list</span>
-                                <span>Lọc dữ liệu</span>
+                                <span>Filters</span>
                             </button>
 
                             <button onclick="openAddEmployeeModal()"
                                 class="h-10 px-3.5 sm:px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs sm:text-sm flex items-center gap-1.5 shadow-sm transition-colors flex-shrink-0">
                                 <span class="material-symbols-outlined text-[20px]">add</span>
-                                <span>Thêm nhân viên</span>
+                                <span>Add Employee</span>
                             </button>
                         </div>
                     </div>
@@ -432,14 +413,14 @@
                             <thead>
                                 <tr
                                     class="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-white">
-                                    <th class="py-3.5 px-5 whitespace-nowrap">MÃ NHÂN VIÊN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">NHÂN VIÊN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">PHÒNG BAN & CHỨC VỤ</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">LƯƠNG CƠ BẢN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">BẮT ĐẦU</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">HẾT HẠN</th>
-                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">HIỆU LỰC</th>
-                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">THAO TÁC</th>
+                                    <th class="py-3.5 px-5 whitespace-nowrap">EMPLOYEE ID</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">EMPLOYEE</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">DEPARTMENT & POSITION</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">BASE SALARY</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">START DATE</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">END DATE</th>
+                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">STATUS</th>
+                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-sm" id="employeeTableBody">
@@ -464,22 +445,22 @@
                                         01/10/2023
                                     </td>
                                     <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">
-                                        Vô thời hạn
+                                        Indefinite
                                     </td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100/70 text-emerald-700 border border-emerald-200/60">
-                                            Hiệu lực
+                                            Active
                                         </span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('NV-2023-089')"
+                                            <button title="Refresh status" onclick="refreshRow('NV-2023-089')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2023-089')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2023-089')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -513,17 +494,17 @@
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100/70 text-amber-700 border border-amber-200/60">
-                                            Sắp hết hạn
+                                            Expiring Soon
                                         </span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('NV-2022-142')"
+                                            <button title="Refresh status" onclick="refreshRow('NV-2022-142')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2022-142')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2022-142')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -553,22 +534,22 @@
                                         01/01/2021
                                     </td>
                                     <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">
-                                        Vô thời hạn
+                                        Indefinite
                                     </td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100/70 text-emerald-700 border border-emerald-200/60">
-                                            Hiệu lực
+                                            Active
                                         </span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('NV-2021-003')"
+                                            <button title="Refresh status" onclick="refreshRow('NV-2021-003')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2021-003')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2021-003')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -602,17 +583,17 @@
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100/70 text-amber-700 border border-amber-200/60">
-                                            Thử việc
+                                            Probation
                                         </span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('NV-2024-001')"
+                                            <button title="Refresh status" onclick="refreshRow('NV-2024-001')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2024-001')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2024-001')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -646,17 +627,17 @@
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
                                             class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100/70 text-emerald-700 border border-emerald-200/60">
-                                            Hiệu lực
+                                            Active
                                         </span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('NV-2023-112')"
+                                            <button title="Refresh status" onclick="refreshRow('NV-2023-112')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2023-112')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2023-112')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -670,21 +651,21 @@
                     <!-- Responsive Pagination Footer -->
                     <div
                         class="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 text-center sm:text-left">
-                        <span>Hiển thị <span class="font-semibold text-slate-700">5</span> trên <span
-                                class="font-semibold text-slate-700">312</span> nhân viên</span>
+                        <span>Showing <span class="font-semibold text-slate-700">5</span> of <span
+                                class="font-semibold text-slate-700">312</span> employees</span>
                         <div class="flex items-center gap-1.5">
                             <button
-                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition-colors">Trước</button>
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition-colors">Prev</button>
                             <button
                                 class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold shadow-xs">1</button>
                             <button
-                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition-colors">Tiếp</button>
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium transition-colors">Next</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ================= VIEW 2: QUẢN LÝ HỢP ĐỒNG (Khớp 100% Ảnh Tham Chiếu) ================= -->
+            <!-- ================= VIEW 2: CONTRACT MANAGEMENT ================= -->
             <div id="view-contracts-container" class="space-y-4 hidden">
                 <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
                     <!-- Filter & Action Bar -->
@@ -694,24 +675,24 @@
                             <div class="relative w-full sm:w-64">
                                 <span
                                     class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
-                                <input type="text" placeholder="Tìm số hợp đồng, nhân viên..."
+                                <input type="text" placeholder="Search by contract number or employee..."
                                     class="w-full h-10 pl-9 pr-3 text-sm bg-white border border-slate-200 rounded-lg text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 shadow-2xs" />
                             </div>
                             <button
                                 class="h-10 px-3.5 rounded-lg border border-slate-200 text-slate-700 font-medium text-sm flex items-center gap-2 hover:bg-slate-50 flex-1 sm:flex-none justify-between sm:justify-start">
-                                <span>Loại hợp đồng</span>
+                                <span>Contract Type</span>
                                 <span class="material-symbols-outlined text-base text-slate-400">expand_more</span>
                             </button>
                             <button
                                 class="h-10 px-3.5 rounded-lg border border-slate-200 text-slate-700 font-medium text-sm flex items-center gap-2 hover:bg-slate-50 flex-1 sm:flex-none justify-between sm:justify-start">
-                                <span>Tình trạng hiệu lực</span>
+                                <span>Status</span>
                                 <span class="material-symbols-outlined text-base text-slate-400">expand_more</span>
                             </button>
                         </div>
                         <button
                             class="w-full lg:w-auto h-10 px-4 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm flex items-center justify-center gap-1.5 shadow-sm transition-colors">
                             <span class="material-symbols-outlined text-[20px]">add</span>
-                            <span>Ký hợp đồng mới</span>
+                            <span>New Contract</span>
                         </button>
                     </div>
 
@@ -721,14 +702,14 @@
                             <thead>
                                 <tr
                                     class="border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-white">
-                                    <th class="py-3.5 px-5 whitespace-nowrap">SỐ HỢP ĐỒNG</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">NHÂN VIÊN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">LOẠI HỢP ĐỒNG</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">LƯƠNG CƠ BẢN</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">BẮT ĐẦU</th>
-                                    <th class="py-3.5 px-4 whitespace-nowrap">HẾT HẠN</th>
-                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">HIỆU LỰC</th>
-                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">THAO TÁC</th>
+                                    <th class="py-3.5 px-5 whitespace-nowrap">CONTRACT NO.</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">EMPLOYEE</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">CONTRACT TYPE</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">BASE SALARY</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">START DATE</th>
+                                    <th class="py-3.5 px-4 whitespace-nowrap">END DATE</th>
+                                    <th class="py-3.5 px-4 text-center whitespace-nowrap">STATUS</th>
+                                    <th class="py-3.5 px-5 text-right whitespace-nowrap">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100 text-sm">
@@ -739,24 +720,22 @@
                                         HĐ-2023-089</td>
                                     <td class="py-4 px-4 font-bold text-slate-800 whitespace-nowrap">Nguyễn Văn Hùng
                                     </td>
-                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Không xác định thời
-                                        hạn</td>
+                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Indefinite-term</td>
                                     <td class="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">35.000.000đ</td>
                                     <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">01/10/2023</td>
-                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Vô thời hạn</td>
+                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Indefinite</td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Hiệu
-                                            lực</span>
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Active</span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('HĐ-2023-089')"
+                                            <button title="Refresh status" onclick="refreshRow('HĐ-2023-089')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2023-089')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2023-089')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -770,25 +749,23 @@
                                     <td class="py-4 px-5 font-semibold text-blue-600 hover:underline whitespace-nowrap">
                                         HĐ-2022-142</td>
                                     <td class="py-4 px-4 font-bold text-slate-800 whitespace-nowrap">Trần Thị Mai</td>
-                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Xác định thời hạn (2
-                                        năm)</td>
+                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Fixed-term (2 years)</td>
                                     <td class="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">18.000.000đ</td>
                                     <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">15/06/2022</td>
                                     <td class="py-4 px-4 text-rose-600 font-semibold text-xs whitespace-nowrap">
                                         15/06/2024</td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Sắp
-                                            hết hạn</span>
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Expiring Soon</span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('HĐ-2022-142')"
+                                            <button title="Refresh status" onclick="refreshRow('HĐ-2022-142')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2022-142')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2022-142')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -802,24 +779,22 @@
                                     <td class="py-4 px-5 font-semibold text-blue-600 hover:underline whitespace-nowrap">
                                         HĐ-2021-003</td>
                                     <td class="py-4 px-4 font-bold text-slate-800 whitespace-nowrap">Lê Hoàng Nam</td>
-                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Không xác định thời
-                                        hạn</td>
+                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Indefinite-term</td>
                                     <td class="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">48.000.000đ</td>
                                     <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">01/01/2021</td>
-                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Vô thời hạn</td>
+                                    <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Indefinite</td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Hiệu
-                                            lực</span>
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Active</span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('HĐ-2021-003')"
+                                            <button title="Refresh status" onclick="refreshRow('HĐ-2021-003')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2021-003')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2021-003')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -833,25 +808,23 @@
                                     <td class="py-4 px-5 font-semibold text-blue-600 hover:underline whitespace-nowrap">
                                         HĐ-2024-001</td>
                                     <td class="py-4 px-4 font-bold text-slate-800 whitespace-nowrap">Phạm Thanh Sơn</td>
-                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Thử việc (2 tháng)
-                                    </td>
+                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Probation (2 months)</td>
                                     <td class="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">12.000.000đ</td>
                                     <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">01/02/2024</td>
                                     <td class="py-4 px-4 text-rose-600 font-semibold text-xs whitespace-nowrap">
                                         01/04/2024</td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Thử
-                                            việc</span>
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Probation</span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('HĐ-2024-001')"
+                                            <button title="Refresh status" onclick="refreshRow('HĐ-2024-001')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2024-001')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2024-001')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -866,25 +839,23 @@
                                         HĐ-2023-112</td>
                                     <td class="py-4 px-4 font-bold text-slate-800 whitespace-nowrap">Nguyễn Hồng Đào
                                     </td>
-                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Xác định thời hạn (1
-                                        năm)</td>
+                                    <td class="py-4 px-4 text-slate-600 text-xs whitespace-nowrap">Fixed-term (1 year)</td>
                                     <td class="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">22.000.000đ</td>
                                     <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">01/11/2023</td>
                                     <td class="py-4 px-4 text-rose-600 font-semibold text-xs whitespace-nowrap">
                                         01/11/2024</td>
                                     <td class="py-4 px-4 text-center whitespace-nowrap">
                                         <span
-                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Hiệu
-                                            lực</span>
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Active</span>
                                     </td>
                                     <td class="py-4 px-5 text-right whitespace-nowrap"
                                         onclick="event.stopPropagation()">
                                         <div class="flex items-center justify-end gap-1.5">
-                                            <button title="Làm mới trạng thái" onclick="refreshRow('HĐ-2023-112')"
+                                            <button title="Refresh status" onclick="refreshRow('HĐ-2023-112')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">sync</span>
                                             </button>
-                                            <button title="Tùy chọn" onclick="openEmployeeDetail('NV-2023-112')"
+                                            <button title="Options" onclick="openEmployeeDetail('NV-2023-112')"
                                                 class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                                                 <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                                             </button>
@@ -898,33 +869,31 @@
                     <!-- Footer -->
                     <div
                         class="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 text-center sm:text-left">
-                        <span>Hiển thị <span class="font-semibold text-slate-700">5</span> trên <span
-                                class="font-semibold text-slate-700">312</span> hợp đồng lao động</span>
+                        <span>Showing <span class="font-semibold text-slate-700">5</span> of <span
+                                class="font-semibold text-slate-700">312</span> employment contracts</span>
                         <div class="flex items-center gap-1.5">
                             <button
-                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Trước</button>
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Prev</button>
                             <button
                                 class="px-3 py-1.5 rounded-lg bg-blue-600 text-white font-semibold shadow-xs">1</button>
                             <button
-                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Tiếp</button>
+                                class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 font-medium">Next</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ================= VIEW 3: SƠ ĐỒ TỔ CHỨC (6 Khối Phòng Ban) ================= -->
+            <!-- ================= VIEW 3: ORGANIZATION CHART (6 DEPARTMENTS) ================= -->
             <div id="view-org-container" class="space-y-4 hidden">
                 <div class="bg-white rounded-xl border border-slate-200 p-4 sm:p-6 shadow-xs">
                     <div
                         class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
                         <div>
-                            <h3 class="font-bold text-slate-900 text-base">Sơ Đồ Cơ Cấu Tổ Chức & Phòng Ban</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Phân cấp tổ chức và định biên nhân sự theo từng
-                                khối chức năng</p>
+                            <h3 class="font-bold text-slate-900 text-base">Organization Structure & Departments</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Reporting hierarchy and planned headcount by functional unit</p>
                         </div>
                         <span
-                            class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold self-start sm:self-auto">6
-                            Khối phòng ban</span>
+                            class="px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold self-start sm:self-auto">6 Departments</span>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-5">
@@ -942,11 +911,11 @@
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                                <div class="flex justify-between"><span>Trưởng bộ phận:</span><span
+                                <div class="flex justify-between"><span>Department Head:</span><span
                                         class="font-semibold text-slate-800">Lê Hoàng Nam</span></div>
-                                <div class="flex justify-between"><span>Định biên nhân sự:</span><span
-                                        class="font-bold text-blue-600">120 nhân viên</span></div>
-                                <div class="flex justify-between"><span>Tỷ lệ lấp đầy:</span><span
+                                <div class="flex justify-between"><span>Planned Headcount:</span><span
+                                        class="font-bold text-blue-600">120 employees</span></div>
+                                <div class="flex justify-between"><span>Fill Rate:</span><span
                                         class="font-semibold text-emerald-600">95%</span></div>
                             </div>
                         </div>
@@ -965,11 +934,11 @@
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                                <div class="flex justify-between"><span>Trưởng bộ phận:</span><span
+                                <div class="flex justify-between"><span>Department Head:</span><span
                                         class="font-semibold text-slate-800">Trần Thị Mai</span></div>
-                                <div class="flex justify-between"><span>Định biên nhân sự:</span><span
-                                        class="font-bold text-blue-600">85 nhân viên</span></div>
-                                <div class="flex justify-between"><span>Tỷ lệ lấp đầy:</span><span
+                                <div class="flex justify-between"><span>Planned Headcount:</span><span
+                                        class="font-bold text-blue-600">85 employees</span></div>
+                                <div class="flex justify-between"><span>Fill Rate:</span><span
                                         class="font-semibold text-emerald-600">92%</span></div>
                             </div>
                         </div>
@@ -988,11 +957,11 @@
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                                <div class="flex justify-between"><span>Trưởng bộ phận:</span><span
+                                <div class="flex justify-between"><span>Department Head:</span><span
                                         class="font-semibold text-slate-800">Lê Minh Trí</span></div>
-                                <div class="flex justify-between"><span>Định biên nhân sự:</span><span
-                                        class="font-bold text-blue-600">24 nhân viên</span></div>
-                                <div class="flex justify-between"><span>Tỷ lệ lấp đầy:</span><span
+                                <div class="flex justify-between"><span>Planned Headcount:</span><span
+                                        class="font-bold text-blue-600">24 employees</span></div>
+                                <div class="flex justify-between"><span>Fill Rate:</span><span
                                         class="font-semibold text-emerald-600">100%</span></div>
                             </div>
                         </div>
@@ -1011,11 +980,11 @@
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                                <div class="flex justify-between"><span>Trưởng bộ phận:</span><span
+                                <div class="flex justify-between"><span>Department Head:</span><span
                                         class="font-semibold text-slate-800">Nguyễn Hồng Đào</span></div>
-                                <div class="flex justify-between"><span>Định biên nhân sự:</span><span
-                                        class="font-bold text-blue-600">18 nhân viên</span></div>
-                                <div class="flex justify-between"><span>Tỷ lệ lấp đầy:</span><span
+                                <div class="flex justify-between"><span>Planned Headcount:</span><span
+                                        class="font-bold text-blue-600">18 employees</span></div>
+                                <div class="flex justify-between"><span>Fill Rate:</span><span
                                         class="font-semibold text-emerald-600">94%</span></div>
                             </div>
                         </div>
@@ -1034,11 +1003,11 @@
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                                <div class="flex justify-between"><span>Trưởng bộ phận:</span><span
+                                <div class="flex justify-between"><span>Department Head:</span><span
                                         class="font-semibold text-slate-800">Đỗ Anh Tuấn</span></div>
-                                <div class="flex justify-between"><span>Định biên nhân sự:</span><span
-                                        class="font-bold text-blue-600">35 nhân viên</span></div>
-                                <div class="flex justify-between"><span>Tỷ lệ lấp đầy:</span><span
+                                <div class="flex justify-between"><span>Planned Headcount:</span><span
+                                        class="font-bold text-blue-600">35 employees</span></div>
+                                <div class="flex justify-between"><span>Fill Rate:</span><span
                                         class="font-semibold text-emerald-600">91%</span></div>
                             </div>
                         </div>
@@ -1057,11 +1026,11 @@
                                 </div>
                             </div>
                             <div class="space-y-1.5 text-xs text-slate-600 border-t border-slate-100 pt-3">
-                                <div class="flex justify-between"><span>Trưởng bộ phận:</span><span
+                                <div class="flex justify-between"><span>Department Head:</span><span
                                         class="font-semibold text-slate-800">Vũ Thu Trang</span></div>
-                                <div class="flex justify-between"><span>Định biên nhân sự:</span><span
-                                        class="font-bold text-blue-600">30 nhân viên</span></div>
-                                <div class="flex justify-between"><span>Tỷ lệ lấp đầy:</span><span
+                                <div class="flex justify-between"><span>Planned Headcount:</span><span
+                                        class="font-bold text-blue-600">30 employees</span></div>
+                                <div class="flex justify-between"><span>Fill Rate:</span><span
                                         class="font-semibold text-emerald-600">88%</span></div>
                             </div>
                         </div>
@@ -1072,13 +1041,13 @@
         </main>
     </div>
 
-    <!-- ================= MODAL: THÊM NHÂN VIÊN MỚI (Responsive) ================= -->
+    <!-- ================= MODAL: ADD NEW EMPLOYEE (Responsive) ================= -->
     <div id="addEmpModal"
         class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
         <div
             class="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200 max-h-[90vh] flex flex-col">
             <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Tiếp nhận & Thêm Nhân Viên Mới</h3>
+                <h3 class="font-bold text-slate-900 text-base sm:text-lg">Onboard New Employee</h3>
                 <button onclick="closeAddEmployeeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
                     <span class="material-symbols-outlined">close</span>
                 </button>
@@ -1086,20 +1055,20 @@
             <form onsubmit="handleCreateEmployee(event)" class="p-5 sm:p-6 space-y-4 text-xs overflow-y-auto">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Mã Nhân Viên *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Employee ID *</label>
                         <input type="text" id="newEmpCode" required value="NV-2024-118"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800 font-mono" />
                     </div>
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Họ và Tên *</label>
-                        <input type="text" id="newEmpName" required placeholder="Ví dụ: Hoàng Văn An"
+                        <label class="font-semibold text-slate-700 block mb-1">Full Name *</label>
+                        <input type="text" id="newEmpName" required placeholder="e.g. Hoàng Văn An"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800" />
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Phòng Ban *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Department *</label>
                         <select id="newEmpDept"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800">
                             <option value="Kỹ thuật & Công nghệ">Kỹ thuật & Công nghệ</option>
@@ -1111,26 +1080,26 @@
                         </select>
                     </div>
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Chức Danh / Vị Trí *</label>
-                        <input type="text" id="newEmpPosition" required placeholder="Ví dụ: Senior Tech Lead"
+                        <label class="font-semibold text-slate-700 block mb-1">Job Title / Position *</label>
+                        <input type="text" id="newEmpPosition" required placeholder="e.g. Senior Tech Lead"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800" />
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Lương Cơ Bản (VNĐ) *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Base Salary (VND) *</label>
                         <input type="text" id="newEmpSalary" required value="35.000.000đ"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800 font-bold" />
                     </div>
                     <div>
-                        <label class="font-semibold text-slate-700 block mb-1">Loại Hợp Đồng *</label>
+                        <label class="font-semibold text-slate-700 block mb-1">Contract Type *</label>
                         <select id="newEmpContract"
                             class="w-full h-9 px-3 border border-slate-200 rounded-lg text-slate-800">
-                            <option>Không xác định thời hạn</option>
-                            <option>Xác định thời hạn (1 năm)</option>
-                            <option>Xác định thời hạn (2 năm)</option>
-                            <option>Thử việc (2 tháng)</option>
+                            <option>Indefinite-term</option>
+                            <option>Fixed-term (1 year)</option>
+                            <option>Fixed-term (2 years)</option>
+                            <option>Probation (2 months)</option>
                         </select>
                     </div>
                 </div>
@@ -1138,18 +1107,18 @@
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                     <button type="button" onclick="closeAddEmployeeModal()"
                         class="px-4 py-2 rounded-lg border border-slate-200 text-slate-600 font-medium hover:bg-slate-50">
-                        Hủy
+                        Cancel
                     </button>
                     <button type="submit"
                         class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-xs">
-                        Lưu & Tạo Hồ Sơ
+                        Save & Create Record
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ================= SLIDE-OVER DRAWER: CHI TIẾT HỒ SƠ & HỢP ĐỒNG (Không hiển thị avatar) ================= -->
+    <!-- ================= SLIDE-OVER DRAWER: EMPLOYEE & CONTRACT DETAILS (no avatar) ================= -->
     <div id="empDetailDrawer" class="fixed inset-0 z-50 hidden">
         <div onclick="closeEmployeeDetail()"
             class="absolute inset-0 bg-slate-900/30 backdrop-blur-xs transition-opacity"></div>
@@ -1176,65 +1145,64 @@
             <div class="flex-1 p-5 sm:p-6 overflow-y-auto space-y-6 text-sm">
                 <!-- Master Info Block -->
                 <div class="p-4 rounded-xl bg-slate-50 border border-slate-100 space-y-2.5 text-xs sm:text-sm">
-                    <div class="flex justify-between"><span class="text-slate-500">Email công vụ:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Work Email:</span><span
                             id="drawerEmail"
                             class="font-semibold text-slate-800 font-mono">hung.nguyen@company.vn</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Số điện thoại:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Phone Number:</span><span
                             id="drawerPhone" class="font-semibold text-slate-800">0912 345 678</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Địa điểm làm việc:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Work Location:</span><span
                             id="drawerOffice" class="font-semibold text-slate-800">Hà Nội (Trụ sở chính)</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Phòng ban:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Department:</span><span
                             id="drawerDept" class="font-semibold text-slate-800">Kỹ thuật & Công nghệ</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Trung tâm chi phí:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Cost Center:</span><span
                             id="drawerCostCenter" class="font-mono text-slate-700">TT-KT-01</span></div>
                 </div>
 
                 <!-- Contract Info Block -->
                 <div class="p-4 rounded-xl bg-blue-50/50 border border-blue-100 space-y-2.5 text-xs sm:text-sm">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold text-blue-900 uppercase">Hợp đồng lao động</span>
+                        <span class="text-xs font-bold text-blue-900 uppercase">Employment Contract</span>
                         <span id="drawerContractStatus"
-                            class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Hiệu
-                            lực</span>
+                            class="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">Active</span>
                     </div>
-                    <div class="flex justify-between"><span class="text-slate-500">Số hợp đồng:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Contract No.:</span><span
                             id="drawerProtocol" class="font-mono font-bold text-blue-700">HĐ-2023-089</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Loại hợp đồng:</span><span
-                            id="drawerContract" class="text-slate-800">Không xác định thời hạn</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Lương cơ bản:</span><span
+                    <div class="flex justify-between"><span class="text-slate-500">Contract Type:</span><span
+                            id="drawerContract" class="text-slate-800">Indefinite-term</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Base Salary:</span><span
                             id="drawerSalary" class="font-bold text-slate-900">35.000.000đ</span></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Thời hạn thông báo:</span><span
-                            id="drawerNotice" class="text-slate-700">45 ngày</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Notice Period:</span><span
+                            id="drawerNotice" class="text-slate-700">45 days</span></div>
                 </div>
 
                 <!-- Onboarding Tasks -->
                 <div>
                     <h4 class="font-bold text-slate-900 mb-2.5 flex items-center justify-between text-xs">
-                        <span>Nhiệm vụ Onboarding</span>
-                        <span class="text-emerald-600 font-semibold">100% Hoàn tất</span>
+                        <span>Onboarding Tasks</span>
+                        <span class="text-emerald-600 font-semibold">100% Complete</span>
                     </h4>
                     <div class="space-y-2 text-xs" id="drawerOnboardingTasks">
                         <div class="p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
-                            <span>1. Cấp email công vụ & tài khoản hệ thống</span>
+                            <span>1. Issue work email & system accounts</span>
                             <span class="text-emerald-600 font-semibold flex items-center gap-1"><span
-                                    class="material-symbols-outlined text-sm">check_circle</span> Hoàn tất</span>
+                                    class="material-symbols-outlined text-sm">check_circle</span> Complete</span>
                         </div>
                         <div class="p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
-                            <span>2. Bàn giao máy tính & thiết bị làm việc</span>
+                            <span>2. Hand over laptop & work equipment</span>
                             <span class="text-emerald-600 font-semibold flex items-center gap-1"><span
-                                    class="material-symbols-outlined text-sm">check_circle</span> Đã nhận</span>
+                                    class="material-symbols-outlined text-sm">check_circle</span> Received</span>
                         </div>
                         <div class="p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
-                            <span>3. Đăng ký vân tay ra vào & bảo hiểm xã hội</span>
+                            <span>3. Register fingerprint access & social insurance</span>
                             <span class="text-emerald-600 font-semibold flex items-center gap-1"><span
-                                    class="material-symbols-outlined text-sm">check_circle</span> Đã hoàn tất</span>
+                                    class="material-symbols-outlined text-sm">check_circle</span> Completed</span>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
                 <button onclick="closeEmployeeDetail()"
-                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-xs hover:bg-slate-100">Đóng</button>
+                    class="px-4 py-2 rounded-lg border border-slate-200 bg-white text-slate-700 font-medium text-xs hover:bg-slate-100">Close</button>
             </div>
         </div>
     </div>
@@ -1303,93 +1271,93 @@
             const headerTitle = document.getElementById('header-title');
 
             if (view === 'dashboard') {
-                breadcrumbSub.innerText = 'Tổng quan';
-                headerTitle.innerText = 'Chào ngày làm việc, Minh Trí!';
+                breadcrumbSub.innerText = 'Overview';
+                headerTitle.innerText = 'Welcome back, Minh Trí!';
 
-                document.getElementById('kpi-title-1').innerText = 'Tổng nhân viên';
+                document.getElementById('kpi-title-1').innerText = 'Total Employees';
                 document.getElementById('kpi-val-1').innerText = '312';
-                document.getElementById('kpi-sub-1').innerText = '+8 trong tháng';
+                document.getElementById('kpi-sub-1').innerText = '+8 this month';
                 document.getElementById('kpi-sub-1').className = 'text-xs font-semibold text-emerald-600';
-                document.getElementById('kpi-title-2').innerText = 'Có mặt hôm nay';
+                document.getElementById('kpi-title-2').innerText = 'Present Today';
                 document.getElementById('kpi-val-2').innerText = '268';
-                document.getElementById('kpi-sub-2').innerText = '86% nhân sự';
+                document.getElementById('kpi-sub-2').innerText = '86% of headcount';
                 document.getElementById('kpi-sub-2').className = 'text-xs font-semibold text-violet-600';
-                document.getElementById('kpi-title-3').innerText = 'Đơn chờ duyệt';
+                document.getElementById('kpi-title-3').innerText = 'Pending Requests';
                 document.getElementById('kpi-val-3').innerText = '18';
-                document.getElementById('kpi-sub-3').innerText = 'Cần xử lý';
+                document.getElementById('kpi-sub-3').innerText = 'Action required';
                 document.getElementById('kpi-sub-3').className = 'text-xs font-semibold text-amber-600';
-                document.getElementById('kpi-title-4').innerText = 'Vị trí đang tuyển';
+                document.getElementById('kpi-title-4').innerText = 'Open Positions';
                 document.getElementById('kpi-val-4').innerText = '12';
-                document.getElementById('kpi-sub-4').innerText = '+3 vị trí mới';
+                document.getElementById('kpi-sub-4').innerText = '+3 new openings';
                 document.getElementById('kpi-sub-4').className = 'text-xs font-semibold text-blue-600';
             } else if (view === 'contracts') {
-                breadcrumbSub.innerText = 'Quản lý hợp đồng';
-                headerTitle.innerText = 'Quản lý hợp đồng lao động';
+                breadcrumbSub.innerText = 'Contracts';
+                headerTitle.innerText = 'Employment Contract Management';
 
-                document.getElementById('kpi-title-1').innerText = 'Tổng hợp đồng';
+                document.getElementById('kpi-title-1').innerText = 'Total Contracts';
                 document.getElementById('kpi-val-1').innerText = '312';
-                document.getElementById('kpi-sub-1').innerText = '+8 mới trong tháng';
+                document.getElementById('kpi-sub-1').innerText = '+8 new this month';
                 document.getElementById('kpi-sub-1').className = 'text-xs font-semibold text-blue-600';
 
-                document.getElementById('kpi-title-2').innerText = 'Đang hiệu lực';
+                document.getElementById('kpi-title-2').innerText = 'Active';
                 document.getElementById('kpi-val-2').innerText = '284';
-                document.getElementById('kpi-sub-2').innerText = '91% tổng số';
+                document.getElementById('kpi-sub-2').innerText = '91% of total';
                 document.getElementById('kpi-sub-2').className = 'text-xs font-semibold text-emerald-600';
 
-                document.getElementById('kpi-title-3').innerText = 'Sắp hết hạn (30 ngày)';
+                document.getElementById('kpi-title-3').innerText = 'Expiring Soon (30 Days)';
                 document.getElementById('kpi-val-3').innerText = '18';
-                document.getElementById('kpi-sub-3').innerText = 'Cần lưu ý';
+                document.getElementById('kpi-sub-3').innerText = 'Needs attention';
                 document.getElementById('kpi-sub-3').className = 'text-xs font-semibold text-amber-600';
 
-                document.getElementById('kpi-title-4').innerText = 'Đã hết hiệu lực';
+                document.getElementById('kpi-title-4').innerText = 'Expired';
                 document.getElementById('kpi-val-4').innerText = '10';
-                document.getElementById('kpi-sub-4').innerText = 'Đã xử lý';
+                document.getElementById('kpi-sub-4').innerText = 'Processed';
                 document.getElementById('kpi-sub-4').className = 'text-xs font-semibold text-blue-600';
             } else if (view === 'profiles') {
-                breadcrumbSub.innerText = 'Hồ sơ nhân viên';
-                headerTitle.innerText = 'Quản lý hồ sơ nhân viên';
+                breadcrumbSub.innerText = 'Employee Records';
+                headerTitle.innerText = 'Employee Records Management';
 
-                document.getElementById('kpi-title-1').innerText = 'Tổng nhân viên';
+                document.getElementById('kpi-title-1').innerText = 'Total Employees';
                 document.getElementById('kpi-val-1').innerText = '312';
-                document.getElementById('kpi-sub-1').innerText = '+8 mới trong tháng';
+                document.getElementById('kpi-sub-1').innerText = '+8 new this month';
                 document.getElementById('kpi-sub-1').className = 'text-xs font-semibold text-blue-600';
 
-                document.getElementById('kpi-title-2').innerText = 'Đang làm việc';
+                document.getElementById('kpi-title-2').innerText = 'Active';
                 document.getElementById('kpi-val-2').innerText = '284';
-                document.getElementById('kpi-sub-2').innerText = '91% tổng số';
+                document.getElementById('kpi-sub-2').innerText = '91% of total';
                 document.getElementById('kpi-sub-2').className = 'text-xs font-semibold text-emerald-600';
 
-                document.getElementById('kpi-title-3').innerText = 'Thử việc (30-60 ngày)';
+                document.getElementById('kpi-title-3').innerText = 'Probation (30-60 Days)';
                 document.getElementById('kpi-val-3').innerText = '18';
-                document.getElementById('kpi-sub-3').innerText = 'Cần lưu ý';
+                document.getElementById('kpi-sub-3').innerText = 'Needs attention';
                 document.getElementById('kpi-sub-3').className = 'text-xs font-semibold text-amber-600';
 
-                document.getElementById('kpi-title-4').innerText = 'Đã nghỉ việc / Tạm hoãn';
+                document.getElementById('kpi-title-4').innerText = 'Terminated / Suspended';
                 document.getElementById('kpi-val-4').innerText = '10';
-                document.getElementById('kpi-sub-4').innerText = 'Đã xử lý';
+                document.getElementById('kpi-sub-4').innerText = 'Processed';
                 document.getElementById('kpi-sub-4').className = 'text-xs font-semibold text-blue-600';
             } else if (view === 'org') {
-                breadcrumbSub.innerText = 'Sơ đồ tổ chức';
-                headerTitle.innerText = 'Cơ cấu tổ chức & phòng ban';
+                breadcrumbSub.innerText = 'Organization Chart';
+                headerTitle.innerText = 'Organization Structure & Departments';
 
-                document.getElementById('kpi-title-1').innerText = 'Tổng phòng ban';
+                document.getElementById('kpi-title-1').innerText = 'Total Departments';
                 document.getElementById('kpi-val-1').innerText = '6';
-                document.getElementById('kpi-sub-1').innerText = '+1 đơn vị mới';
+                document.getElementById('kpi-sub-1').innerText = '+1 new unit';
                 document.getElementById('kpi-sub-1').className = 'text-xs font-semibold text-blue-600';
 
-                document.getElementById('kpi-title-2').innerText = 'Nhân sự định biên';
+                document.getElementById('kpi-title-2').innerText = 'Planned Headcount';
                 document.getElementById('kpi-val-2').innerText = '340';
-                document.getElementById('kpi-sub-2').innerText = '92% tỷ lệ lấp đầy';
+                document.getElementById('kpi-sub-2').innerText = '92% fill rate';
                 document.getElementById('kpi-sub-2').className = 'text-xs font-semibold text-emerald-600';
 
-                document.getElementById('kpi-title-3').innerText = 'Trung tâm chi phí';
+                document.getElementById('kpi-title-3').innerText = 'Cost Centers';
                 document.getElementById('kpi-val-3').innerText = '18';
                 document.getElementById('kpi-sub-3').innerText = 'Cost Centers';
                 document.getElementById('kpi-sub-3').className = 'text-xs font-semibold text-amber-600';
 
-                document.getElementById('kpi-title-4').innerText = 'Tỷ lệ kiểm soát';
+                document.getElementById('kpi-title-4').innerText = 'Span of Control';
                 document.getElementById('kpi-val-4').innerText = '1:8';
-                document.getElementById('kpi-sub-4').innerText = 'Span of Control';
+                document.getElementById('kpi-sub-4').innerText = 'Manager to employee ratio';
                 document.getElementById('kpi-sub-4').className = 'text-xs font-semibold text-blue-600';
             }
 
@@ -1429,7 +1397,7 @@
         }
 
         function refreshRow(code) {
-            alert(`Đã đồng bộ và làm mới trạng thái hồ sơ của nhân viên: ${code}`);
+            alert(`Employee record status has been synced and refreshed: ${code}`);
         }
 
         const empDataDb = {
@@ -1443,10 +1411,10 @@
                 phone: '0912 345 678',
                 office: 'Hà Nội (Trụ sở chính)',
                 protocol: 'HĐ-2023-089',
-                contractType: 'Không xác định thời hạn',
+                contractType: 'Indefinite-term',
                 salary: '35.000.000đ',
-                notice: '45 ngày',
-                statusBadge: 'Hiệu lực'
+                notice: '45 days',
+                statusBadge: 'Active'
             },
             'NV-2022-142': {
                 code: 'NV-2022-142',
@@ -1458,10 +1426,10 @@
                 phone: '0987 654 321',
                 office: 'TP. Hồ Chí Minh',
                 protocol: 'HĐ-2022-142',
-                contractType: 'Xác định thời hạn (2 năm)',
+                contractType: 'Fixed-term (2 years)',
                 salary: '18.000.000đ',
-                notice: '30 ngày',
-                statusBadge: 'Sắp hết hạn'
+                notice: '30 days',
+                statusBadge: 'Expiring Soon'
             },
             'NV-2021-003': {
                 code: 'NV-2021-003',
@@ -1473,10 +1441,10 @@
                 phone: '0903 112 233',
                 office: 'Hà Nội (Trụ sở chính)',
                 protocol: 'HĐ-2021-003',
-                contractType: 'Không xác định thời hạn',
+                contractType: 'Indefinite-term',
                 salary: '48.000.000đ',
-                notice: '45 ngày',
-                statusBadge: 'Hiệu lực'
+                notice: '45 days',
+                statusBadge: 'Active'
             },
             'NV-2024-001': {
                 code: 'NV-2024-001',
@@ -1488,10 +1456,10 @@
                 phone: '0934 556 677',
                 office: 'Hà Nội (Trụ sở chính)',
                 protocol: 'HĐ-2024-001',
-                contractType: 'Thử việc (2 tháng)',
+                contractType: 'Probation (2 months)',
                 salary: '12.000.000đ',
-                notice: '3 ngày',
-                statusBadge: 'Thử việc'
+                notice: '3 days',
+                statusBadge: 'Probation'
             },
             'NV-2023-112': {
                 code: 'NV-2023-112',
@@ -1503,14 +1471,14 @@
                 phone: '0945 778 899',
                 office: 'Hà Nội (Trụ sở chính)',
                 protocol: 'HĐ-2023-112',
-                contractType: 'Xác định thời hạn (1 năm)',
+                contractType: 'Fixed-term (1 year)',
                 salary: '22.000.000đ',
-                notice: '30 ngày',
-                statusBadge: 'Hiệu lực'
+                notice: '30 days',
+                statusBadge: 'Active'
             }
         };
 
-        // Đồng bộ mã hợp đồng HĐ- sang mã nhân viên
+        // Map contract codes (HĐ-) to their employee records
         empDataDb['HĐ-2023-089'] = empDataDb['NV-2023-089'];
         empDataDb['HĐ-2022-142'] = empDataDb['NV-2022-142'];
         empDataDb['HĐ-2021-003'] = empDataDb['NV-2021-003'];
@@ -1521,7 +1489,7 @@
             const drawer = document.getElementById('empDetailDrawer');
             const emp = empDataDb[code] || {
                 code: code,
-                name: 'Nhân viên mới',
+                name: 'New Employee',
                 position: 'Chuyên viên kỹ thuật',
                 dept: 'Kỹ thuật & Công nghệ',
                 costCenter: 'TT-KT-01',
@@ -1529,10 +1497,10 @@
                 phone: '0900 000 000',
                 office: 'Hà Nội (Trụ sở chính)',
                 protocol: `HĐ-${code}`,
-                contractType: 'Không xác định thời hạn',
+                contractType: 'Indefinite-term',
                 salary: '25.000.000đ',
-                notice: '30 ngày',
-                statusBadge: 'Hiệu lực'
+                notice: '30 days',
+                statusBadge: 'Active'
             };
 
             document.getElementById('drawerEmpCode').innerText = emp.code || code;
@@ -1573,7 +1541,7 @@
             const salary = document.getElementById('newEmpSalary').value;
             const contract = document.getElementById('newEmpContract').value;
 
-            // Lưu vào database bộ nhớ
+            // Save to the in-memory database
             empDataDb[code] = {
                 code: code,
                 name: name,
@@ -1586,8 +1554,8 @@
                 protocol: `HĐ-${code}`,
                 contractType: contract,
                 salary: salary,
-                notice: '30 ngày',
-                statusBadge: 'Hiệu lực'
+                notice: '30 days',
+                statusBadge: 'Active'
             };
 
             const tbody = document.getElementById('employeeTableBody');
@@ -1605,19 +1573,19 @@
                     <div class="text-slate-400 text-[11px]">${pos}</div>
                 </td>
                 <td class="py-4 px-4 font-bold text-slate-900 whitespace-nowrap">${salary}</td>
-                <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Hôm nay</td>
-                <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Vô thời hạn</td>
+                <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Today</td>
+                <td class="py-4 px-4 text-slate-500 text-xs whitespace-nowrap">Indefinite</td>
                 <td class="py-4 px-4 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100/70 text-emerald-700 border border-emerald-200/60">
-                        Hiệu lực
+                        Active
                     </span>
                 </td>
                 <td class="py-4 px-5 text-right whitespace-nowrap" onclick="event.stopPropagation()">
                     <div class="flex items-center justify-end gap-1.5">
-                        <button title="Làm mới trạng thái" onclick="refreshRow('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
+                        <button title="Refresh status" onclick="refreshRow('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-blue-600 hover:bg-blue-50 flex items-center justify-center transition-colors">
                             <span class="material-symbols-outlined text-[18px]">sync</span>
                         </button>
-                        <button title="Tùy chọn" onclick="openEmployeeDetail('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
+                        <button title="Options" onclick="openEmployeeDetail('${code}')" class="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 flex items-center justify-center transition-colors">
                             <span class="material-symbols-outlined text-[18px]">more_horiz</span>
                         </button>
                     </div>
@@ -1625,7 +1593,7 @@
             `;
             tbody.prepend(tr);
             closeAddEmployeeModal();
-            alert(`Đã thêm thành công hồ sơ nhân viên ${name} (${code})!`);
+            alert(`Employee record for ${name} (${code}) was created successfully.`);
         }
     </script>
 </body>

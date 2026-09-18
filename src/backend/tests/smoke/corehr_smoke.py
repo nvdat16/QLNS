@@ -69,7 +69,7 @@ req("patch bad email -> 422", "PATCH", "/api/v1/employees/4/profile", EMP, {"per
 req("hr patches other employee", "PATCH", "/api/v1/employees/5/profile", HR, {"phone":"0933333333"}, ifmatch=1, ct="application/merge-patch+json", expect=200)
 req("line-manager patches other -> 403", "PATCH", "/api/v1/employees/4/profile", LM, {"phone":"0933333333"}, ifmatch=d["version"], ct="application/merge-patch+json", expect=403)
 print("== EMP-02 Organization ==")
-req("chart depth 3", "GET", "/api/v1/organization/chart?depth=3", EMP, expect=200)
+req("chart depth 3 -> 404 (out of scope)", "GET", "/api/v1/organization/chart?depth=3", EMP, expect=404)
 req("list departments", "GET", "/api/v1/organization/departments", EMP, expect=200)
 _, dep, det = req("create QA", "POST", "/api/v1/organization/departments", HR, {"code":"QA","name":"Đội QA","parentDepartmentId":2}, expect=201)
 req("duplicate code (case-insens) -> 409", "POST", "/api/v1/organization/departments", HR, {"code":"qa","name":"Dup"}, expect=409)

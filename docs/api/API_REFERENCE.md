@@ -513,7 +513,7 @@ Yêu cầu permission `admin.user.read` để đọc, `admin.user.manage` để 
 - **Action:** `approve`, `start`, `complete`, `cancel`; bắt buộc `If-Match`.
 - **`approve`:** Sinh `offboarding_tasks` từ template theo 5 nhóm `it`, `admin`, `hr`, `manager`, `finance`. Sinh lại không tạo task trùng (`ux_offboarding_task_template`).
 - **`complete`:** Bị từ chối khi còn task `blocksLastWorkingDay` chưa hoàn thành, hoặc `finalSettlementStatus` chưa đạt `paid`/`waived` → `409` kèm danh sách task đang chặn.
-- **Hệ quả:** Hủy các đơn nghỉ `approved` bắt đầu sau `lastWorkingDate` và trả lại quỹ. Tài khoản chỉ bị `disabled` đúng `lastWorkingDate`, không sớm hơn.
+- **Hệ quả:** Ghi một `employee_events` termination đã approved, hiệu lực đúng `lastWorkingDate`, cùng transaction với việc đóng case. Tài khoản chỉ bị `disabled` đúng `lastWorkingDate`, không sớm hơn — xem [sequence 7](../sequence_diagrams.md#7-thôi-việc-và-bàn-giao).
 
 #### `GET /api/v1/offboarding/cases/{caseId}/tasks`
 

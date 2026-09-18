@@ -558,7 +558,7 @@ Read in this order:
 | 03 | [INVEST user stories](docs/user_stories.md) | **28 stories with Gherkin acceptance criteria** and traceability |
 | 04 | [Use cases](docs/use_cases.md) | Actors, boundaries and the actor-to-function matrix |
 | 05 | [Architecture (arc42 + C4)](docs/architecture.md) | **The main design document** — context, containers, components, runtime, deployment |
-| 06 | [Sequence diagrams](docs/sequence_diagrams.md) | Seven flows across the three layers, success *and* failure branches |
+| 06 | [Sequence diagrams](docs/sequence_diagrams.md) | Eight flows across the three layers, success *and* failure branches |
 | 07 | [Class diagrams](docs/class_diagrams.md) | The domain model per module (27 classes, 13 enumerations), the design model of the "advance application" slice, and the 3-layer pattern every module follows |
 | 08 | [Database design](database/database_design.md) · [schema](database/schema.sql) | The ERD, the field specification, the canonical DDL |
 | 09 | [API contract](docs/api/README.md) · [OpenAPI](docs/api/openapi.yaml) · [reference](docs/api/API_REFERENCE.md) | Conventions, 79 operations across 62 paths, per-operation status |

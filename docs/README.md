@@ -20,7 +20,7 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules | Proposed · Authoritative |
 | [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ trong phạm vi: Core HR và Recruitment | Proposed · Supporting |
-| [Sequence Diagrams](sequence_diagrams.md) | 7 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
+| [Sequence Diagrams](sequence_diagrams.md) | 8 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
 | [Class Diagrams](class_diagrams.md) | Domain model 27 class và 13 enumeration theo module, design class diagram của vertical slice "Advance application", và pattern 3-layer dùng chung cho mọi module | Proposed · Supporting |
 | [Database Design](../database/database_design.md) | ERD đủ 28 bảng canonical v1.2 và đặc tả field-level theo module | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |

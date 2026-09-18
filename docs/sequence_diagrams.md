@@ -312,7 +312,87 @@ sequenceDiagram
     W->>DB: Insert deduplicated notification outbox
 ```
 
-## 7. Đăng nhập, làm mới phiên và phát hiện token bị đánh cắp
+## 7. Thôi việc và bàn giao
+
+**User Stories:** `EMP-07.1`, `EMP-07.2` · **Trạng thái:** Proposed.
+
+Luồng này có nhiều side effect và thứ tự giữa chúng là quy tắc nghiệp vụ, không phải chi tiết kỹ thuật: checklist chỉ sinh sau khi
+case được duyệt, `employee_events` termination chỉ được ghi khi hoàn tất, và tài khoản chỉ bị vô hiệu hoá đúng `lastWorkingDate`
+chứ không phải lúc bấm hoàn tất.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Officer as HR Officer
+    actor Mgr as Line Manager / HR Manager
+    participant UI as React Employee UI
+    participant C as OffboardingController
+    participant S as OffboardingCaseService
+    participant TS as OffboardingTaskService
+    participant Repo as OffboardingCaseRepository
+    participant DB as PostgreSQL
+    participant W as Worker (outbox + effective date)
+
+    Officer->>UI: Mở hồ sơ thôi việc (loại, ngày làm việc cuối, người nhận bàn giao, lý do)
+    UI->>C: POST /api/v1/offboarding/cases
+    C->>S: Open(actor, command)
+    S->>S: Kiểm tra employee đang active hoặc probation<br/>handoverToEmployeeId ≠ employeeId
+
+    alt Nhân viên đã có case đang mở
+        Repo->>DB: INSERT vi phạm ux_offboarding_open_case
+        DB-->>Repo: unique violation
+        S-->>C: Conflict
+        C-->>UI: 409 Problem Details
+    else Hợp lệ
+        Repo->>DB: INSERT case draft + audit (cùng transaction)
+        S->>S: Tính noticePeriodShortfallDays
+        Note over S,C: Thiếu thời hạn báo trước là **cảnh báo**, không chặn —<br/>quyết định thuộc HR Manager, cảnh báo được ghi audit
+        C-->>UI: 201 Created + ETag + noticePeriodShortfallDays
+    end
+
+    Mgr->>UI: Phê duyệt hồ sơ
+    UI->>C: POST /offboarding/cases/{id}/approve + If-Match
+    C->>S: Act(actor, Approve, version)
+    S->>S: Sinh checklist 5 nhóm it/admin/hr/manager/finance từ template
+    Repo->>DB: Conditional UPDATE WHERE version = expected<br/>+ INSERT tasks (bỏ qua template_key đã có) + audit
+    Note over Repo,DB: ux_offboarding_task_template khiến việc duyệt lại<br/>không sinh task trùng
+    C-->>UI: 200 + ETag mới
+
+    loop Từng task bàn giao / thu hồi
+        Mgr->>UI: start / complete task
+        UI->>C: POST /offboarding/tasks/{taskId}/{action} + If-Match
+        C->>TS: Act(actor, action, version)
+        TS->>Repo: Conditional UPDATE + audit
+    end
+
+    Officer->>UI: Hoàn tất hồ sơ
+    UI->>C: POST /offboarding/cases/{id}/complete + If-Match
+    C->>S: Act(actor, Complete, version, reason?)
+    S->>Repo: ListBlockingTasks(caseId)
+
+    alt Còn task blocks_last_working_day chưa xong và actor không có quyền approve
+        S-->>C: BusinessRule blocking_tasks_outstanding
+        C-->>UI: 409 + danh sách task đang chặn
+    else Bỏ qua task chặn (cần quyền approve + lý do)
+        S->>S: Đánh dấu overridden, lý do bắt buộc ghi audit
+    end
+
+    alt finalSettlementStatus chưa paid/waived
+        S-->>C: BusinessRule settlement_pending
+        C-->>UI: 409 — **không** có đường bỏ qua kiểm tra này
+        Note over S: Nguồn cập nhật finalSettlementStatus thuộc Payroll (ngoài phạm vi)
+    else Đã chốt công nợ
+        S->>Repo: SaveCompletion(case completed + termination event)
+        Repo->>DB: UPDATE case + INSERT employee_events<br/>(termination, approved, effective = lastWorkingDate)<br/>+ audit + outbox corehr.offboarding.case_completed<br/>MỘT transaction
+        C-->>UI: 200 + ETag mới
+    end
+
+    W->>DB: Claim outbox corehr.offboarding.case_completed
+    W->>DB: Đến lastWorkingDate: apply employee_events → employees.status = resigned/terminated
+    Note over W,DB: Tài khoản chỉ chuyển disabled đúng lastWorkingDate, không sớm hơn.<br/>Worker host chưa tồn tại — xem architecture.md §5.4
+```
+
+## 8. Đăng nhập, làm mới phiên và phát hiện token bị đánh cắp
 
 **User Stories:** `ADM-01.1`, `ADM-01.2` · **Trạng thái:** Proposed.
 
@@ -393,7 +473,7 @@ sequenceDiagram
     end
 ```
 
-## 8. Traceability
+## 9. Traceability
 
 | # | Sequence | User Story / Requirement | Module | Implementation status |
 |---|---|---|---|---|
@@ -403,7 +483,8 @@ sequenceDiagram
 | 4 | Offer acceptance | `REC-06.1`–`REC-06.2` | Recruitment → Core HR | Proposed |
 | 5 | Employee movement | `EMP-04.1` | Core HR | Proposed |
 | 6 | Contract lifecycle | `CON-01.1`–`CON-03.1` | Core HR / Contracts | Proposed |
-| 7 | Sign-in và refresh rotation | `ADM-01.1`–`ADM-01.2` | Identity & Access | Proposed |
+| 7 | Thôi việc và bàn giao | `EMP-07.1`–`EMP-07.2` | Core HR | Proposed |
+| 8 | Sign-in và refresh rotation | `ADM-01.1`–`ADM-01.2` | Identity & Access | Proposed |
 
 ### Luồng chưa có sequence diagram
 
@@ -417,5 +498,4 @@ Các story sau đã có acceptance criteria nhưng chưa được vẽ sequence.
 | `EMP-03.1` | Việc sinh checklist onboarding đã nằm trong sequence 4; phần theo dõi và nhắc hạn là công việc nền đơn giản |
 | `EMP-05.1` | Luồng upload và phát Signed URL sẽ vẽ chung với chuẩn lưu trữ tài liệu |
 | `EMP-06.1`–`EMP-06.2` | Sẽ vẽ khi chốt template đánh giá thử việc |
-| `EMP-07.1`–`EMP-07.2` | Cần vẽ trước khi implement: có nhiều side effect (khóa tài khoản đúng ngày làm việc cuối, thu hồi tài sản, chốt công nợ) và thứ tự thực hiện quan trọng |
-| `ADM-02.1`–`ADM-02.2` | Cấp tài khoản và thay vai trò là CRUD có `If-Match`; quy tắc quan trọng nằm ở kiểm tra tham chiếu và rào tự-quản-trị, không ở thứ tự tương tác. Hệ quả duy nhất có thứ tự — vô hiệu hoá tài khoản thu hồi refresh token — đã thể hiện ở sequence 7 |
+| `ADM-02.1`–`ADM-02.2` | Cấp tài khoản và thay vai trò là CRUD có `If-Match`; quy tắc quan trọng nằm ở kiểm tra tham chiếu và rào tự-quản-trị, không ở thứ tự tương tác. Hệ quả duy nhất có thứ tự — vô hiệu hoá tài khoản thu hồi refresh token — đã thể hiện ở sequence 8 |

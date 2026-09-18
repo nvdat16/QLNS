@@ -1,9 +1,95 @@
 # QLNS Core HR — request collection for the VS Code "REST Client" extension (or JetBrains HTTP Client).
-# Prerequisites: PostgreSQL from database/schema.sql + database/seed_dev.sql, API started with
+# Prerequisites: PostgreSQL from database/schema.sql + database/seed_roles.sql + database/seed_dev.sql, API started with
 #   dotnet run --project src/Qlns.Api   # listens on http://localhost:5080
-# Tokens come from the development-only endpoint /dev/token (personas: hr-manager, hr-officer, line-manager, employee, it-admin).
+# Two ways to get a token: the real sign-in below (every seeded account uses the password Qlns@2026), or the
+# development-only shortcut /dev/token (personas: hr-manager, hr-officer, line-manager, recruiter, employee, it-admin).
 
 @host = http://localhost:5080
+
+### Sign in — HR Manager (ADM-01, the production path)
+# @name signIn
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "email": "hr.manager@qlns.local", "password": "Qlns@2026" }
+
+### Current identity of that session
+GET {{host}}/api/v1/auth/me
+Authorization: Bearer {{signIn.response.body.$.accessToken}}
+
+### Rotate the refresh token (the presented one is consumed)
+POST {{host}}/api/v1/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{signIn.response.body.$.refreshToken}}" }
+
+### Sign out — revokes the refresh token; the access token lives until it expires
+POST {{host}}/api/v1/auth/logout
+Content-Type: application/json
+
+{ "refreshToken": "{{signIn.response.body.$.refreshToken}}" }
+
+### Change one's own password — requires the current one even though the caller is authenticated
+POST {{host}}/api/v1/auth/change-password
+Authorization: Bearer {{signIn.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "currentPassword": "Qlns@2026", "newPassword": "Qlns@2026-New" }
+
+### Sign in — Super Admin (the only account with admin.user.manage)
+# @name signInAdmin
+POST {{host}}/api/v1/auth/login
+Content-Type: application/json
+
+{ "email": "admin@qlns.local", "password": "Qlns@2026" }
+
+@admin = {{signInAdmin.response.body.$.accessToken}}
+
+### ADM-02 — role catalogue and its permission matrix
+GET {{host}}/api/v1/admin/roles
+Authorization: Bearer {{admin}}
+
+### ADM-02 — list accounts
+GET {{host}}/api/v1/admin/users?pageSize=20
+Authorization: Bearer {{admin}}
+
+### ADM-02 — provision an account (initial password always forces a change)
+# @name newUser
+POST {{host}}/api/v1/admin/users
+Authorization: Bearer {{admin}}
+Content-Type: application/json
+
+{
+  "email": "new.officer@qlns.local",
+  "displayName": "Nguyen Van New",
+  "initialPassword": "Initial-Secret-7",
+  "roles": [{ "roleCode": "ROLE_HR_OFFICER", "dataScopeType": "organization" }]
+}
+
+### ADM-02 — replace the role grants of that account (complete desired state)
+PUT {{host}}/api/v1/admin/users/{{newUser.response.body.$.id}}/roles
+Authorization: Bearer {{admin}}
+If-Match: "{{newUser.response.body.$.version}}"
+Content-Type: application/json
+
+{
+  "roles": [
+    { "roleCode": "ROLE_LINE_MGR", "dataScopeType": "department", "dataScopeId": 2 },
+    { "roleCode": "ROLE_LINE_MGR", "dataScopeType": "department", "dataScopeId": 4 }
+  ]
+}
+
+### ADM-02 — disable the account (also revokes its refresh tokens)
+POST {{host}}/api/v1/admin/users/{{newUser.response.body.$.id}}/disable
+Authorization: Bearer {{admin}}
+If-Match: "{{newUser.response.body.$.version}}"
+
+### ADM-02 — administrative password reset (hand the secret over out of band)
+POST {{host}}/api/v1/admin/users/{{newUser.response.body.$.id}}/password-reset
+Authorization: Bearer {{admin}}
+Content-Type: application/json
+
+{ "newPassword": "Reset-Secret-2" }
 
 ### Token — HR Manager (organization scope, all Core HR permissions)
 # @name hr

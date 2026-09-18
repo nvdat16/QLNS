@@ -9,6 +9,7 @@ using Qlns.DataAccess.Modules.CoreHr.Offboarding;
 using Qlns.DataAccess.Modules.CoreHr.Onboarding;
 using Qlns.DataAccess.Modules.CoreHr.Organization;
 using Qlns.DataAccess.Modules.CoreHr.Probation;
+using Qlns.DataAccess.Modules.Identity.Authentication;
 using Qlns.DataAccess.Modules.Recruitment.Applications;
 using Qlns.DataAccess.Modules.Recruitment.Evaluations;
 using Qlns.DataAccess.Modules.Recruitment.Intake;
@@ -32,6 +33,10 @@ public static class DependencyInjection
             ?? throw new InvalidOperationException("ConnectionStrings:Qlns is required.");
 
         services.AddDbContext<QlnsDbContext>(options => options.UseNpgsql(connectionString));
+
+        // Identity & Access (ADM-01 … ADM-02). Registered first: every other module depends on the actor it
+        // establishes, and a missing signing key must stop start-up before any business service is wired.
+        services.AddIdentityAccess(configuration);
 
         // Core HR — EMP-01 … EMP-07. Employee Documents also provides IDocumentStorage / IMalwareScanner
         // for every other feature that stores files (résumés, signed contracts), so it is registered first.

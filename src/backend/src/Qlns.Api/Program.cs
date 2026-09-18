@@ -5,6 +5,7 @@ using Qlns.Api.Modules.Contracts.Shared;
 using Qlns.Api.Modules.CoreHr.Offboarding;
 using Qlns.Api.Modules.CoreHr.Probation;
 using Qlns.Api.Modules.CoreHr.Shared;
+using Qlns.Api.Modules.Identity.Shared;
 using Qlns.Api.Modules.Operations;
 using Qlns.Api.Modules.Recruitment.Applications;
 using Qlns.Api.Modules.Recruitment.Evaluations;
@@ -13,6 +14,7 @@ using Qlns.Api.Modules.Recruitment.Interviews;
 using Qlns.Api.Modules.Recruitment.Offers;
 using Qlns.Api.Modules.Recruitment.Requisitions;
 using Qlns.DataAccess;
+using Qlns.DataAccess.Modules.Identity.Authentication;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,21 +47,17 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddDataAccess(builder.Configuration);
 builder.Services.AddHealthProbes();
 
+// Tokens are issued by the in-house Identity & Access module (ADM-01) and validated with the same options
+// object, so signing and validation share one source of truth and cannot drift apart. There is deliberately
+// no external-authority branch: federating with an OIDC provider would replace the sign-in endpoints, not
+// just this configuration, so it belongs in an ADR rather than in a silent fallback (see ADR-011).
+var jwtOptions = JwtAuthenticationOptions.Require(builder.Configuration);
+
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        if (DevelopmentAuthentication.IsEnabled(builder.Environment, builder.Configuration))
-        {
-            // Local development without an Identity Provider: symmetric key + GET /dev/token.
-            DevelopmentAuthentication.ConfigureJwtBearer(options, builder.Configuration);
-        }
-        else
-        {
-            options.Authority = builder.Configuration["Authentication:Authority"];
-            options.Audience = builder.Configuration["Authentication:Audience"];
-            options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
-        }
+        IdentityBearerAuthentication.ConfigureJwtBearer(options, jwtOptions, builder.Environment, builder.Configuration);
 
         options.Events = new JwtBearerEvents
         {
@@ -91,6 +89,7 @@ builder.Services
 // finer action-level permission and the actor's data scope (deny by default, quality goal Q1).
 builder.Services.AddAuthorization(options =>
 {
+    options.AddIdentityPolicies();
     options.AddCoreHrPolicies();
     options.AddProbationPolicies();
     options.AddOffboardingPolicies();

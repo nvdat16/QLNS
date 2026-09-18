@@ -29,10 +29,20 @@ export function getAccessToken(): string | undefined {
   return accessToken;
 }
 
+/** Exchanges the stored refresh token for a new access token, or resolves undefined when the session is
+ *  gone. Registered by the auth context; kept here so any request can recover from an expired token. */
+type Reauthorize = () => Promise<string | undefined>;
+
+let reauthorize: Reauthorize | undefined;
+
+export function setReauthorizeHandler(handler: Reauthorize | undefined): void {
+  reauthorize = handler;
+}
+
 export async function apiRequest(
   path: string,
   init?: RequestInit,
-  options?: { skipAuth?: boolean },
+  options?: { skipAuth?: boolean; skipRetry?: boolean },
 ): Promise<Response> {
   const headers = new Headers(init?.headers);
   headers.set("Accept", "application/json, application/problem+json");
@@ -41,10 +51,20 @@ export async function apiRequest(
   }
   if (accessToken && !options?.skipAuth) headers.set("Authorization", `Bearer ${accessToken}`);
 
-  const response = await fetch(`${baseUrl}${path}`, {
+  let response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers,
   });
+
+  // Access tokens are short-lived by design, so an expired one is an expected outcome rather than an
+  // error: refresh once and replay the request. Anything still 401 afterwards is a real failure.
+  if (response.status === 401 && !options?.skipAuth && !options?.skipRetry && reauthorize) {
+    const renewed = await reauthorize();
+    if (renewed) {
+      headers.set("Authorization", `Bearer ${renewed}`);
+      response = await fetch(`${baseUrl}${path}`, { ...init, headers });
+    }
+  }
 
   if (!response.ok) {
     const problem = (await response.json().catch(() => ({}))) as {

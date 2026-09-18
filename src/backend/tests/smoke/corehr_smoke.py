@@ -2,7 +2,7 @@
 """End-to-end smoke test for the Core HR API against a real PostgreSQL.
 
 Prerequisites (see src/backend/README.md, "Local testing"):
-  1. PostgreSQL loaded with database/schema.sql and database/seed_dev.sql (fresh seed each run).
+  1. PostgreSQL loaded with database/schema.sql, database/seed_roles.sql and database/seed_dev.sql (fresh seed each run).
   2. API running in Development:  ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/Qlns.Api
 Usage:  python3 tests/smoke/corehr_smoke.py [http://localhost:5080]
 Lines starting with "!!" are results that differ from the expected HTTP status.
@@ -10,6 +10,7 @@ Lines starting with "!!" are results that differ from the expected HTTP status.
 import json, sys, urllib.request, urllib.error, uuid, subprocess
 B = sys.argv[1].rstrip("/") if len(sys.argv) > 1 else "http://localhost:5080"
 def tok(p):
+    # Development-only persona shortcut. The real sign-in path is covered by tests/smoke/identity_smoke.py.
     with urllib.request.urlopen(f"{B}/dev/token?persona={p}") as r: return json.load(r)["token"]
 HR, EMP, LM = tok("hr-manager"), tok("employee"), tok("line-manager")
 def req(label, method, path, token=None, body=None, ifmatch=None, ct="application/json", multipart=None, expect=None):

@@ -6,3 +6,8 @@ export function formatDate(value?: string): string {
   if (!value) return "—";
   return new Date(value).toLocaleDateString("vi-VN");
 }
+
+export function formatDateTime(value?: string): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" });
+}

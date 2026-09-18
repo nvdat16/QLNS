@@ -51,6 +51,9 @@ public sealed class UserEntityConfiguration : IEntityTypeConfiguration<UserEntit
         builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(320);
         builder.Property(x => x.DisplayName).HasColumnName("display_name").HasMaxLength(255);
         builder.Property(x => x.Status).HasColumnName("status").HasMaxLength(30);
+        builder.Property(x => x.CreatedAt).HasColumnName("created_at");
+        builder.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        builder.Property(x => x.Version).HasColumnName("version");
     }
 }
 

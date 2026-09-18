@@ -2,6 +2,8 @@
   <ItemGroup>
     <ProjectReference Include="../Qlns.BusinessLogic/Qlns.BusinessLogic.csproj" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <!-- Signs the access tokens issued by Modules/Identity/Authentication (same major as the bearer handler in Qlns.Api). -->
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="8.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 </Project>

@@ -35,6 +35,9 @@ public sealed class UserEntity
     public string Email { get; set; } = null!;
     public string DisplayName { get; set; } = null!;
     public string Status { get; set; } = null!;
+    public DateTimeOffset CreatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
+    public long Version { get; set; }
 }
 
 public sealed class EmployeeEntity

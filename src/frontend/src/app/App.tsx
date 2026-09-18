@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { UserAccountsPage } from "../features/admin/pages/UserAccountsPage";
 import { AuthProvider } from "../features/auth/context/AuthContext";
+import { ChangePasswordPage } from "../features/auth/pages/ChangePasswordPage";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { ProtectedRoute } from "../features/auth/pages/ProtectedRoute";
 import { ContractsPage } from "../features/contracts/pages/ContractsPage";
@@ -18,10 +20,14 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
 
         <Route element={<ProtectedRoute />}>
+          {/* Outside the shell: reachable with the restricted session issued after a password reset. */}
+          <Route path="change-password" element={<ChangePasswordPage />} />
+
           <Route element={<AppShell />}>
             <Route index element={<Navigate to="/employees" replace />} />
             <Route path="employees" element={<EmployeesPage />} />
             <Route path="contracts" element={<ContractsPage />} />
+            <Route path="admin/users" element={<UserAccountsPage />} />
             <Route path="recruitment" element={<RecruitmentLayout />}>
               <Route index element={<Navigate to="/recruitment/pipeline" replace />} />
               <Route path="pipeline" element={<PipelinePage />} />

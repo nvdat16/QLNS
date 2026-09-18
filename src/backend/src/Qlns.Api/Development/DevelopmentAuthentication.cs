@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Qlns.BusinessLogic.Modules.Contracts.Shared;
@@ -17,9 +16,14 @@ using Qlns.BusinessLogic.Modules.Recruitment.Requisitions;
 namespace Qlns.Api.Development;
 
 /// <summary>
-/// DEVELOPMENT ONLY. Replaces the external Identity Provider with a symmetric signing key and a
-/// <c>GET /dev/token?persona=…</c> endpoint that mints tokens for the personas in database/seed_dev.sql.
-/// Active only when the environment is Development AND <c>Authentication:DevelopmentSigningKey</c> is set.
+/// DEVELOPMENT ONLY. A shortcut past the sign-in flow: <c>GET /dev/token?persona=…</c> mints a token for one of
+/// the personas in database/seed_dev.sql without a password, so smoke tests and the REST-Client collection do not
+/// need to keep credentials. Active only when the environment is Development AND
+/// <c>Authentication:DevelopmentSigningKey</c> is set; outside Development the endpoint is not even registered.
+/// <para>
+/// The real path is <c>POST /api/v1/auth/login</c> (module Identity, ADR-011). When both are configured the bearer
+/// handler trusts both issuers — see <c>IdentityBearerAuthentication</c>.
+/// </para>
 /// </summary>
 public static class DevelopmentAuthentication
 {
@@ -28,20 +32,6 @@ public static class DevelopmentAuthentication
     public static bool IsEnabled(IHostEnvironment environment, IConfiguration configuration) =>
         environment.IsDevelopment() &&
         !string.IsNullOrWhiteSpace(configuration["Authentication:DevelopmentSigningKey"]);
-
-    public static void ConfigureJwtBearer(JwtBearerOptions options, IConfiguration configuration)
-    {
-        options.Authority = null;
-        options.RequireHttpsMetadata = false;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidIssuer = Issuer,
-            ValidAudience = configuration["Authentication:Audience"],
-            IssuerSigningKey = SigningKey(configuration),
-            ValidateIssuerSigningKey = true,
-            ClockSkew = TimeSpan.FromSeconds(30)
-        };
-    }
 
     public static void MapDevelopmentTokenEndpoint(this WebApplication app)
     {
@@ -69,7 +59,8 @@ public static class DevelopmentAuthentication
         }).AllowAnonymous().ExcludeFromDescription();
     }
 
-    private static SymmetricSecurityKey SigningKey(IConfiguration configuration) =>
+    /// <summary>Signing key of the persona shortcut. Also trusted by <c>IdentityBearerAuthentication</c> in Development.</summary>
+    public static SymmetricSecurityKey SigningKey(IConfiguration configuration) =>
         new(Encoding.UTF8.GetBytes(configuration["Authentication:DevelopmentSigningKey"]!));
 
     private static readonly string[] AllCoreHrPermissions =
@@ -103,7 +94,11 @@ public static class DevelopmentAuthentication
         OfferPermissions.Read, OfferPermissions.Write, OfferPermissions.Approve
     ];
 
-    /// <summary>Personas match users/employees in database/seed_dev.sql and the role matrix in docs/user_stories.md §5.1.</summary>
+    /// <summary>
+    /// Personas match users/employees in database/seed_dev.sql and the role matrix in docs/user_stories.md §6.1.
+    /// This map duplicates database/seed_roles.sql on purpose: the shortcut must work without a database round trip.
+    /// The production path is POST /api/v1/auth/login, which resolves permissions from user_roles ⋈ role_permissions.
+    /// </summary>
     private static readonly Dictionary<string, Claim[]> Personas = new(StringComparer.OrdinalIgnoreCase)
     {
         // HR Manager: approves everything, organization-wide.

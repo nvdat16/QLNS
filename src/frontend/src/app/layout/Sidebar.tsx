@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { useAuth } from "../../features/auth/context/AuthContext";
-import { personaLabels } from "../../features/auth/api/authApi";
+import { describeRoles } from "../../features/auth/api/authApi";
+import { IdentityPermissions } from "../../features/auth/api/permissions";
+import { useAuth, usePermission } from "../../features/auth/context/AuthContext";
 
 const navItems = [
   { to: "/employees", icon: "group", label: "Hồ sơ nhân viên" },
@@ -10,6 +11,7 @@ const navItems = [
 
 export function Sidebar() {
   const { session, signOut } = useAuth();
+  const canReadUsers = usePermission(IdentityPermissions.userRead);
 
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-[260px] flex-col border-r border-[#e8ebf1] bg-white/98 lg:flex">
@@ -35,21 +37,44 @@ export function Sidebar() {
             {item.label}
           </NavLink>
         ))}
+
+        {canReadUsers && (
+          <>
+            <p className="nav-section-label">Quản trị hệ thống</p>
+            <NavLink
+              to="/admin/users"
+              className={({ isActive }) => `nav-item ${isActive ? "nav-item-active" : ""}`}
+            >
+              <span className="material-symbols-outlined icon-md">manage_accounts</span>
+              Tài khoản &amp; phân quyền
+            </NavLink>
+          </>
+        )}
       </nav>
 
       {session && (
         <div className="border-t border-[#e8ebf1] p-4">
           <div className="flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-2.5">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-bold text-brand-700">
-              {session.persona.slice(0, 2).toUpperCase()}
+              {session.user.displayName.slice(0, 2).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-slate-800">{personaLabels[session.persona]}</p>
-              <p className="truncate text-[11px] text-slate-400">Môi trường phát triển</p>
+              <p className="truncate text-sm font-semibold text-slate-800">{session.user.displayName}</p>
+              <p className="truncate text-[11px] text-slate-400" title={session.user.email}>
+                {describeRoles(session.user.roles)}
+              </p>
             </div>
+            <NavLink
+              to="/change-password"
+              title="Đổi mật khẩu"
+              aria-label="Đổi mật khẩu"
+              className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-brand-600"
+            >
+              <span className="material-symbols-outlined icon-sm">key</span>
+            </NavLink>
             <button
               type="button"
-              onClick={signOut}
+              onClick={() => void signOut()}
               title="Đăng xuất"
               aria-label="Đăng xuất"
               className="shrink-0 rounded-lg p-1.5 text-slate-400 hover:bg-white hover:text-rose-600"

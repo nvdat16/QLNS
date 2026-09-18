@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { personaLabels, personas, type Persona } from "../api/authApi";
 
 type Tab = "login" | "register";
 
@@ -12,19 +11,23 @@ const features = [
 ];
 
 export function LoginPage() {
-  const { session, signIn, signingIn, error } = useAuth();
+  const { session, signIn, signingIn, error, restoring } = useAuth();
   const location = useLocation();
   const [tab, setTab] = useState<Tab>("login");
-  const [persona, setPersona] = useState<Persona>("hr-manager");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   if (session) {
     const from = (location.state as { from?: Location })?.from;
-    return <Navigate to={from?.pathname ?? "/employees"} replace />;
+    // A pending password change leaves the session unable to do anything else.
+    const target = session.user.passwordChangeRequired ? "/change-password" : (from?.pathname ?? "/employees");
+    return <Navigate to={target} replace />;
   }
 
   function handleLogin(event: FormEvent) {
     event.preventDefault();
-    void signIn(persona);
+    void signIn(email.trim(), password);
   }
 
   return (
@@ -88,25 +91,46 @@ export function LoginPage() {
 
           {tab === "login" ? (
             <form onSubmit={handleLogin} className="space-y-4">
-              <h2 className="text-lg font-bold text-slate-900">Đăng nhập môi trường phát triển</h2>
+              <h2 className="text-lg font-bold text-slate-900">Đăng nhập hệ thống</h2>
               <p className="text-sm text-slate-500">
-                Chọn vai trò để lấy token phát triển từ backend (không có luồng email/mật khẩu vì hệ thống dùng
-                nhà cung cấp định danh (IdP) doanh nghiệp cho môi trường thật).
+                Dùng email công vụ và mật khẩu được cấp. Sau 5 lần sai liên tiếp, tài khoản sẽ tạm khoá 15 phút.
               </p>
 
               <label className="block">
-                <span className="mb-1.5 block text-sm font-medium text-slate-700">Vai trò đăng nhập</span>
-                <select
-                  value={persona}
-                  onChange={(event) => setPersona(event.target.value as Persona)}
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">Email công vụ</span>
+                <input
+                  type="email"
+                  autoComplete="username"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="ten.ban@qlns.local"
                   className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                >
-                  {personas.map((option) => (
-                    <option key={option} value={option}>
-                      {personaLabels[option]}
-                    </option>
-                  ))}
-                </select>
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-sm font-medium text-slate-700">Mật khẩu</span>
+                <span className="relative block">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2.5 pr-11 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((previous) => !previous)}
+                    aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
+                  >
+                    <span className="material-symbols-outlined icon-sm">
+                      {showPassword ? "visibility_off" : "visibility"}
+                    </span>
+                  </button>
+                </span>
               </label>
 
               {error && (
@@ -117,7 +141,7 @@ export function LoginPage() {
 
               <button
                 type="submit"
-                disabled={signingIn}
+                disabled={signingIn || restoring}
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {signingIn ? "Đang đăng nhập…" : "Đăng nhập"}
@@ -128,8 +152,8 @@ export function LoginPage() {
             <div className="space-y-4">
               <h2 className="text-lg font-bold text-slate-900">Đăng ký tài khoản</h2>
               <p className="text-sm text-slate-500">
-                Việc cấp tài khoản mới do nhà cung cấp định danh (IdP) doanh nghiệp quản lý và nằm ngoài phạm vi
-                triển khai hiện tại của QLNS.
+                QLNS không cho phép tự đăng ký. Tài khoản và vai trò do quản trị viên cấp trong mục Quản trị
+                người dùng, kèm mật khẩu tạm thời phải đổi ở lần đăng nhập đầu tiên.
               </p>
               <p className="rounded-lg bg-slate-50 px-3 py-3 text-sm text-slate-600">
                 Vui lòng liên hệ quản trị viên hệ thống để được cấp tài khoản và phân quyền truy cập.

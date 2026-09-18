@@ -11,7 +11,7 @@
 [![API](https://img.shields.io/badge/OpenAPI-3.0.3%20%C2%B7%2079%20ops%20%2F%2062%20paths-blue)](api/openapi.yaml)
 [![Schema](https://img.shields.io/badge/schema-28%20canonical%20tables%20%C2%B7%20v1.2-blue)](database/schema.sql)
 [![Stories](https://img.shields.io/badge/INVEST-28%20user%20stories-informational)](docs/user_stories.md)
-[![Code complete](https://img.shields.io/badge/code--complete-79%20of%2079%20operations-brightgreen)](api/API_REFERENCE.md#7-trạng-thái-triển-khai)
+[![Code complete](https://img.shields.io/badge/code--complete-79%20of%2079%20operations-brightgreen)](api/API_REFERENCE.md#7-implementation-status)
 [![Unit tests](https://img.shields.io/badge/unit%20tests-1347%20passing-brightgreen)](src/backend/README.md#local-testing)
 
 </div>
@@ -180,8 +180,8 @@ map, and are not a business function in scope.
 
 ## 3. Roles and use cases
 
-Detail: [Use Cases](docs/use_cases.md#1-use-case-tổng-quát) ·
-[Role-to-story permission matrix](docs/user_stories.md#61-bảng-phân-quyền-role-to-story)
+Detail: [Use Cases](docs/use_cases.md#1-overall-use-case-diagram) ·
+[Role-to-story permission matrix](docs/user_stories.md#61-role-to-story-permission-matrix)
 
 | Actor | Owns |
 |---|---|
@@ -202,7 +202,7 @@ flowchart LR
     User([Employee / Candidate])
     Admin([Super Admin])
 
-    subgraph HRMS["QLNS / HRMS"]
+    subgraph HRMS["QLNS / NexusHR"]
         Accounts[Administer accounts, roles & data scope]
         Jobs[Create & publish job requisitions]
         ATS[Screen CVs & manage ATS pipeline]
@@ -390,7 +390,7 @@ source-code boundaries inside the application tier.
 ### View 2 — one command, end to end
 
 Advancing a candidate one stage, as specified in
-[sequence 3](docs/sequence_diagrams.md#3-chuyển-application-sang-giai-đoạn-tiếp-theo)
+[sequence 3](docs/sequence_diagrams.md#3-advance-an-application-to-the-next-stage)
 and implemented in
 [RecruitmentPipelineService.cs](src/backend/src/Qlns.BusinessLogic/Modules/Recruitment/Applications/RecruitmentPipelineService.cs).
 

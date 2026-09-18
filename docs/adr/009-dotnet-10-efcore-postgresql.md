@@ -1,30 +1,30 @@
-# ADR-009 — .NET 10, ASP.NET Core, EF Core và PostgreSQL
+# ADR-009 — .NET 10, ASP.NET Core, EF Core and PostgreSQL
 
-- **Trạng thái:** Accepted 2026-09-15
+- **Status:** Accepted 2026-09-15
 - **Owner:** Project Owner
-- **Liên quan:** [ADR-001](001-three-tier-three-layer.md), [ADR-005](005-postgresql-system-of-record.md), constraint C4
+- **Related:** [ADR-001](001-three-tier-three-layer.md), [ADR-005](005-postgresql-system-of-record.md), constraint C4
 
-## Bối cảnh
+## Context
 
-Rủi ro R3 ghi nhận nguy cơ "stack được chọn theo sơ đồ mà không qua decision process": một vài công nghệ đã xuất hiện
-trong prototype và file DDL trước khi có ai quyết định chính thức.
+Risk R3 records the danger of "a stack chosen from a diagram rather than through a decision process": several
+technologies had appeared in the prototypes and the DDL files before anyone had formally decided on them.
 
-## Quyết định
+## Decision
 
-Backend dùng .NET 10 với ASP.NET Core và EF Core; database là PostgreSQL; frontend dùng React với Vite. Được Project Owner
-chấp thuận ngày 2026-09-15. Phiên bản patch của package phải được pin trước release.
+The backend uses .NET 10 with ASP.NET Core and EF Core; the database is PostgreSQL; the frontend uses React with Vite.
+Approved by the Project Owner on 2026-09-15. Package patch versions must be pinned before release.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Node.js/NestJS** — loại bỏ: đội hiện có kinh nghiệm .NET sâu hơn, và mô hình transaction/unit-of-work của EF Core khớp
-  với yêu cầu atomic của [ADR-005](005-postgresql-system-of-record.md).
-- **Dapper thay EF Core** — loại bỏ như lựa chọn mặc định: cần change tracking và transaction thuận tiện; vẫn dùng SQL thô
-  ở những truy vấn EF diễn đạt kém.
-- **SQL Server** — loại bỏ: partial (filtered) index, `jsonb` và exclusion constraint của PostgreSQL được dùng trực tiếp
-  trong canonical schema.
+- **Node.js/NestJS** — rejected: the team has deeper .NET experience, and EF Core's transaction and unit-of-work model
+  matches the atomicity requirements of [ADR-005](005-postgresql-system-of-record.md).
+- **Dapper instead of EF Core** — rejected as the default: change tracking and convenient transactions are wanted. Raw
+  SQL is still used where EF expresses a query poorly.
+- **SQL Server** — rejected: the canonical schema uses PostgreSQL partial (filtered) indexes, `jsonb` and exclusion
+  constraints directly.
 
-## Hệ quả
+## Consequences
 
-- Migration đầu tiên chỉ sinh được sau khi cài .NET 10 SDK và review model/schema drift.
-- Phụ thuộc `jsonb`, partial unique index và `timestamptz` khiến việc đổi sang database khác là một thay đổi lớn, không
-  phải đổi connection string.
+- The first migration can only be generated once the .NET 10 SDK is installed and the model/schema drift reviewed.
+- Depending on `jsonb`, partial unique indexes and `timestamptz` makes switching database a major change rather than a
+  connection-string edit.

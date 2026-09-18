@@ -5,7 +5,7 @@ Target: .NET 10, ASP.NET Core, Entity Framework Core and PostgreSQL.
 **Status:** every one of the 79 operations in [`docs/api/openapi.yaml`](../../docs/api/openapi.yaml) is `code-complete` — controller,
 endpoint authorization policy, business workflow, transactional persistence (audit + outbox in the same transaction) and
 unit tests (1 347 passing). What is still missing before an operation counts as `implemented` is listed in
-[API_REFERENCE §7](../../docs/api/API_REFERENCE.md#7-trạng-thái-triển-khai): integration tests against PostgreSQL, EF Core
+[API_REFERENCE §7](../../docs/api/API_REFERENCE.md#7-implementation-status): integration tests against PostgreSQL, EF Core
 migrations and the background worker host.
 
 ## Modular 3-layer backend
@@ -110,68 +110,68 @@ Worker entry points exposed by services (no worker host yet): `EmployeeMovementS
 
 ## Local testing
 
-Ba mức, từ nhanh nhất tới gần production nhất.
+Three levels, from the fastest to the closest to production.
 
-**1. Unit test — không cần database, không cần token**
+**1. Unit tests — no database, no token**
 
 ```bash
 dotnet test Qlns.sln
-dotnet test Qlns.sln --filter FullyQualifiedName~Recruitment.Offers    # một feature
+dotnet test Qlns.sln --filter FullyQualifiedName~Recruitment.Offers    # a single feature
 ```
 
-**2. Gọi HTTP thật trên PostgreSQL với token phát triển**
+**2. Real HTTP against PostgreSQL with a development token**
 
 ```bash
-# PostgreSQL (port 5433 để không đụng container sẵn có ở 5432)
+# PostgreSQL (port 5433, so it does not clash with an existing container on 5432)
 docker run -d --name qlns-pg -e POSTGRES_USER=qlns_app -e POSTGRES_PASSWORD=change-me \
   -e POSTGRES_DB=qlns -p 5433:5432 postgres:17
-docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/schema.sql      # v1.2 — 28 bảng
-docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/seed_roles.sql  # dữ liệu tham chiếu, bắt buộc
+docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/schema.sql      # v1.2 — 28 tables
+docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/seed_roles.sql  # reference data, mandatory
 docker exec -i qlns-pg psql -U qlns_app -d qlns < ../../database/seed_dev.sql
 
-# API — launchSettings.json đã đặt sẵn Development và http://localhost:5080
+# API — launchSettings.json already sets Development and http://localhost:5080
 dotnet run --project src/Qlns.Api
 
-# Đăng nhập thật (ADM-01). Mọi tài khoản trong seed_dev.sql dùng mật khẩu Qlns@2026.
+# Real sign-in (ADM-01). Every account in seed_dev.sql uses the password Qlns@2026.
 curl -s -X POST http://localhost:5080/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"email":"hr.manager@qlns.local","password":"Qlns@2026"}'
 
-# Hoặc lối tắt persona chỉ có ở Development, bỏ qua mật khẩu:
+# Or the Development-only persona shortcut, which skips the password:
 curl "http://localhost:5080/dev/token?persona=hr-manager"
 ```
 
-Tài khoản trong seed: `hr.manager@`, `hr.officer@`, `eng.manager@` (Line Manager, scope phòng ban 2 và 4), `dev.nguyen@`
-(Employee), `it.admin@`, `recruiter@`, `admin@` (Super Admin) — tất cả ở `@qlns.local`. `ceo@qlns.local` được seed với
-`must_change_password` và **không** có vai trò nào: dùng nó để kiểm chứng phiên hạn chế và ranh giới 401 / 403.
+Seeded accounts: `hr.manager@`, `hr.officer@`, `eng.manager@` (Line Manager, scoped to departments 2 and 4), `dev.nguyen@`
+(Employee), `it.admin@`, `recruiter@` and `admin@` (Super Admin) — all at `@qlns.local`. `ceo@qlns.local` is seeded with
+`must_change_password` and **no** roles: use it to exercise the restricted session and the 401 / 403 boundaries.
 
-Persona khả dụng (khớp `seed_dev.sql` và ma trận vai trò trong `docs/user_stories.md` §6.1): `hr-manager`, `hr-officer`,
-`line-manager` (kiêm Hiring Manager / Interviewer, scope phòng ban 2 và 4), `recruiter`, `employee`, `it-admin`.
-Token phản hồi Offer của ứng viên lấy bằng `GET /dev/offer-token?offerId=` sau khi Offer đã `send`.
+Available personas (matching `seed_dev.sql` and the role matrix in `docs/user_stories.md` §6.1): `hr-manager`, `hr-officer`,
+`line-manager` (also acting as Hiring Manager / Interviewer, scoped to departments 2 and 4), `recruiter`, `employee`, `it-admin`.
+The candidate's offer-response token comes from `GET /dev/offer-token?offerId=` once the offer has been sent.
 
-> Cổng local là **5080**, không phải cổng mặc định 5000 của .NET, vì trên macOS cổng 5000 bị AirPlay Receiver chiếm và trả 403 cho mọi request. `servers` trong `docs/api/openapi.yaml` đã trỏ đúng 5080. Đổi cổng tại `Properties/launchSettings.json`, nhớ đổi kèm `Documents:PublicBaseUrl` trong `appsettings.Development.json` để signed URL trỏ đúng.
+> The local port is **5080**, not .NET's default 5000, because on macOS AirPlay Receiver occupies 5000 and answers 403 to every request. The `servers` entry in `docs/api/openapi.yaml` already points at 5080. Change the port in `Properties/launchSettings.json`, and remember to change `Documents:PublicBaseUrl` in `appsettings.Development.json` too, so signed URLs still resolve.
 
-Công cụ gửi request có sẵn: `CoreHr.http` (REST Client), `tests/smoke/corehr_smoke.py` và `tests/smoke/identity_smoke.py`
-(phủ toàn bộ ADM-01/ADM-02: đăng nhập, luân chuyển refresh token, phát hiện replay, khoá tạm, buộc đổi mật khẩu, cấp/thu
-hồi vai trò — tự tạo tài khoản dùng một lần nên chạy lại được nhiều lần). Các module Recruitment,
-Contracts, Probation và Offboarding chưa có collection riêng; dùng `/openapi/v1.json` do `MapOpenApi` sinh ra hoặc Postman import
-`docs/api/openapi.yaml`.
+Request tooling available: `CoreHr.http` (REST Client), plus `tests/smoke/corehr_smoke.py` and `tests/smoke/identity_smoke.py`
+(which cover all of ADM-01/ADM-02: sign-in, refresh-token rotation, replay detection, lockout, forced password change, and
+granting and revoking roles — they create their own throwaway accounts, so they can be re-run freely). The Recruitment,
+Contracts, Probation and Offboarding modules have no collection of their own; use the `/openapi/v1.json` document produced by `MapOpenApi`, or import
+`docs/api/openapi.yaml` into Postman.
 
-**3. Integration test** — `tests/Qlns.IntegrationTests` chưa tồn tại. `docs/architecture.md` §5.6 coi đây là điều kiện bắt buộc trước khi một operation được tính là `implemented`, vì các invariant mạnh nhất (partial unique index `ux_offers_one_open_per_application`, `ux_contracts_primary_active`, `ux_offboarding_open_case`, `ux_probation_review_contract`; conditional update theo version; các truy vấn EF phức tạp như cửa sổ cảnh báo hết hạn hay đếm task chặn) chỉ có thể kiểm chứng trên PostgreSQL thật. Ngăn xếp đề xuất: `WebApplicationFactory` cộng Testcontainers.
+**3. Integration tests** — `tests/Qlns.IntegrationTests` does not exist yet. `docs/architecture.md` §5.6 treats it as a precondition for an operation counting as `implemented`, because the strongest invariants (the partial unique indexes `ux_offers_one_open_per_application`, `ux_contracts_primary_active`, `ux_offboarding_open_case` and `ux_probation_review_contract`; conditional updates on version; and the more complex EF queries such as the expiry alert window or counting blocking tasks) can only be verified against a real PostgreSQL. Proposed stack: `WebApplicationFactory` plus Testcontainers.
 
-**Xác thực.** Token do chính API phát hành: `Authentication:Jwt:SigningKey` là **bắt buộc** — thiếu nó `AddIdentityAccess`
-ném lỗi ngay khi khởi động thay vì chạy với một API nửa vời. `appsettings.Development.json` đã có khóa phát triển sẵn;
-môi trường thật phải đặt qua user secrets hoặc biến môi trường `Authentication__Jwt__SigningKey` (tối thiểu 32 ký tự).
+**Authentication.** The token is issued by the API itself: `Authentication:Jwt:SigningKey` is **mandatory** — without it `AddIdentityAccess`
+throws at startup rather than running a half-configured API. `appsettings.Development.json` already carries a development key;
+a real environment must set it through user secrets or the `Authentication__Jwt__SigningKey` environment variable (at least 32 characters).
 
-Lối tắt persona `/dev/token` vẫn được giữ cho smoke test: nó chỉ hoạt động khi môi trường là Development **và**
-`Authentication:DevelopmentSigningKey` có giá trị, và bộ xử lý bearer khi đó nhận **cả hai** issuer. Ngoài Development,
-`/dev/token`, `/dev/document-content` và `/dev/offer-token` không được đăng ký. Không có nhánh dự phòng sang OIDC
-authority bên ngoài: federation sẽ thay cả cụm endpoint đăng nhập, nên nó cần một ADR mới chứ không phải một `if`.
+The `/dev/token` persona shortcut is kept for the smoke tests: it only works when the environment is Development **and**
+`Authentication:DevelopmentSigningKey` has a value, in which case the bearer handler accepts **both** issuers. Outside Development,
+`/dev/token`, `/dev/document-content` and `/dev/offer-token` are not registered. There is no fallback to an external OIDC
+authority: federation would replace the whole sign-in endpoint group, so it needs a new ADR rather than an `if`.
 
 ## Decisions taken while implementing (not in the contract)
 
-- Schema v1.1 deltas (`offers.currency`, `contracts.currency`, `interview_panelists`, `contract_addenda.version` as ETag) — see [database/README §2.6](../../database/README.md#26-delta-v11--phát-hiện-khi-triển-khai).
-- Schema v1.2 deltas (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`, and `user_roles.role_code` now a foreign key) — see [database/README §2.7](../../database/README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ).
+- Schema v1.1 deltas (`offers.currency`, `contracts.currency`, `interview_panelists`, `contract_addenda.version` as ETag) — see [database/README §2.6](../../database/README.md#26-delta-v11--surfaced-during-implementation).
+- Schema v1.2 deltas (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`, and `user_roles.role_code` now a foreign key) — see [database/README §2.7](../../database/README.md#27-delta-v12--moving-authentication-in-house).
 - The role → permission matrix is data, not code: `seed_roles.sql` owns it, sign-in resolves it with `user_roles ⋈ role_permissions`. The persona map in `DevelopmentAuthentication` is a Development-only duplicate of the same matrix.
 - An administrator cannot disable, reset or re-grant their own account — it would either lock the organization out of administration or let someone escalate without a second pair of eyes.
 - Sign-in with an unknown e-mail still runs one password verification (against `IPasswordHasher.DummyHash`) so that response time cannot be used to enumerate accounts; a disabled account is reported only after the password verified.

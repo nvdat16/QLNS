@@ -1,19 +1,19 @@
 # 📑 HRMS Database Design
 
-> **Trạng thái:** Design artifact mô tả **canonical schema — 28 bảng (v1.2)**, bao phủ hai phân hệ nghiệp vụ (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access. ERD Mermaid ở mục 1 phủ đủ 28 bảng của v1.2, gồm `interview_panelists` (delta v1.1) và bốn bảng định danh của delta v1.2 — xem [README §2.6](README.md#26-delta-v11--phát-hiện-khi-triển-khai) và [§2.7](README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ). Backend đã code-complete trên toàn bộ các bảng này, nhưng EF Core migration pipeline chưa tồn tại và database runtime chưa được xác minh bằng integration test.
+> **Status:** a design artifact describing the **canonical schema — 28 tables (v1.2)**, covering the two business modules (Core HR including Contracts, and Recruitment) plus the Identity & Access module. The Mermaid ERD in section 1 covers all 28 v1.2 tables, including `interview_panelists` (delta v1.1) and the four identity tables of delta v1.2 — see [README §2.6](README.md#26-delta-v11--surfaced-during-implementation) and [§2.7](README.md#27-delta-v12--moving-authentication-in-house). The backend is code-complete across all of these tables, but the EF Core migration pipeline does not exist and the database runtime has not been verified by an integration test.
 
 > [!IMPORTANT]
-> [`schema.sql`](schema.sql) là **canonical schema contract** và là nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. Tài liệu này mô tả mục đích nghiệp vụ và invariant của từng bảng. Khi hai bên lệch nhau, `schema.sql` thắng và tài liệu này phải được sửa.
+> [`schema.sql`](schema.sql) is the **canonical schema contract** and the single source of truth for data types, constraints, indexes and exclusion constraints. This document describes the business purpose and the invariants of each table. Where the two disagree, `schema.sql` wins and this document must be corrected.
 
 > [!NOTE]
-> Attendance & Leave **không thuộc phạm vi triển khai**. DDL 13 bảng của nhóm này được giữ tại [docs/deferred/attendance_leave/](../docs/deferred/attendance_leave/README.md) để dùng lại sau, không nằm trong canonical schema.
+> Attendance & Leave is **not part of the delivery scope**. Its 13-table DDL is kept at [docs/deferred/attendance_leave/](../docs/deferred/attendance_leave/README.md) for later reuse and is not part of the canonical schema.
 
 > [!NOTE]
-> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Lưu ý: *Departments & Organizational Hierarchy* vẫn **trong** phạm vi, nên `departments.parent_department_id`, quan hệ cha con và quy tắc chống vòng lặp đều được giữ — chỉ màn hình/endpoint trình bày dạng cây bị loại.
+> **Delivery scope** follows the bold leaf functions under Recruitment and Core HR on the [`topdown-approach.png`](../topdown-approach.png) map; the authoritative source is [section 2 of the root README](../README.md#2-delivery-scope--seven-pillars-two-selected). Out of scope for this delivery: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart and Suspension & Return to Work. Note that *Departments & Organizational Hierarchy* stays **in** scope, so `departments.parent_department_id`, the parent-child relationship and the cycle-prevention rule are all kept — only the tree screen and endpoint are dropped.
 
-## Bản đồ bảng theo phân hệ
+## Table Map by Module
 
-| Phân hệ | Bảng | Số lượng |
+| Module | Tables | Count |
 | :--- | :--- | :---: |
 | **Core HR — Organization & Profile** | `departments`, `positions`, `employees` | 3 |
 | **Core HR — Lifecycle** | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | 6 |
@@ -22,29 +22,29 @@
 | **Recruitment — delta v1.1** | `interview_panelists` | 1 |
 | **Identity & Access (ADM)** | `users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens` | 6 |
 | **Platform (audit, outbox)** | `audit_logs`, `outbox_messages` | 2 |
-| **Tổng** | | **28** |
+| **Total** | | **28** |
 
-Sáu bảng Identity & Access là **aggregate do hệ thống này sở hữu**: `users` + `user_credentials` mang danh tính và mật khẩu, `user_roles` + `roles` + `role_permissions` mang phân quyền và data scope, `refresh_tokens` mang phiên dài hạn thu hồi được. Chúng **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](../docs/adr/011-in-house-identity.md)).
+The six Identity & Access tables are an **aggregate owned by this system**: `users` plus `user_credentials` carry the identity and the password, `user_roles` plus `roles` plus `role_permissions` carry authorization and data scope, and `refresh_tokens` carries the revocable long-lived session. They **do have an administration API**, at `/api/v1/auth/*` and `/api/v1/admin/*` ([ADR-011](../docs/adr/011-in-house-identity.md)).
 
-Hai bảng Platform còn lại là **cơ chế xuyên suốt bắt buộc**, ghi cùng transaction với thay đổi nghiệp vụ, và **không** có API: không endpoint tra cứu audit log, không endpoint xem và retry delivery.
+The two remaining platform tables are a **mandatory crosscutting mechanism**, written in the same transaction as the business change, and have **no** API: no endpoint browses the audit log, and none inspects or retries a delivery.
 
-## Quy ước chung của canonical schema
+## Canonical Schema Conventions
 
-- Khóa chính: `bigint GENERATED ALWAYS AS IDENTITY`, trừ `outbox_messages` (`uuid`).
-- Thời gian: `timestamptz`, lưu UTC. Trường chỉ mang ý nghĩa ngày dùng `date`.
-- Mọi aggregate có thể sửa đều có cột `version bigint` làm nguồn cho `ETag`/`If-Match`.
-- Tiền: `numeric(15,2)`.
-- Tập giá trị trạng thái được chặn bằng `CHECK`, không chỉ bằng validation ở tầng ứng dụng.
-- Quy tắc "chỉ một bản ghi đang mở" được chặn bằng partial `UNIQUE INDEX` (ví dụ `ux_offboarding_open_case`, `ux_offers_one_open_per_application`).
+- Primary keys: `bigint GENERATED ALWAYS AS IDENTITY`, except `outbox_messages` (`uuid`).
+- Time: `timestamptz`, stored in UTC. A field that means a calendar date uses `date`.
+- Every mutable aggregate has a `version bigint` column as the source of its `ETag` / `If-Match`.
+- Money: `numeric(15,2)`.
+- Status value sets are enforced by `CHECK`, not only by application-layer validation.
+- The "only one open record" rule is enforced by a partial `UNIQUE INDEX` (for example `ux_offboarding_open_case`, `ux_offers_one_open_per_application`).
 
 ---
 
 ## 1. Overall Entity–Relationship Diagram (Mermaid ERD)
 
-Sơ đồ dưới đây phủ **cả 28 bảng canonical của v1.2** và được sinh theo đúng `schema.sql`. Để đọc được, mỗi entity chỉ liệt kê
-khóa chính, khóa ngoại, khóa duy nhất và các cột mang ý nghĩa phân biệt (trạng thái, mốc vòng đời, `version` dùng làm ETag);
-đặc tả đầy đủ từng trường nằm ở [§2](#2-employee-records-module--field-level-view)–[§5](#5-identity--access--platform-tables).
-Cột `created_at` / `updated_at` có ở hầu hết bảng và được lược bỏ khỏi sơ đồ.
+The diagram below covers **all 28 canonical v1.2 tables** and is derived directly from `schema.sql`. To stay readable, each entity lists only
+its primary key, foreign keys, unique keys and the columns that carry meaning (status, lifecycle timestamps, and the `version` used as an ETag);
+the full per-field specification is in [§2](#2-employee-records-module--field-level-view)–[§5](#5-identity--access--platform-tables).
+The `created_at` / `updated_at` columns exist on most tables and are omitted from the diagram.
 
 ```mermaid
 erDiagram
@@ -414,19 +414,19 @@ erDiagram
 ```
 
 > [!NOTE]
-> `audit_logs` và `outbox_messages` không có khóa ngoại tới các aggregate nghiệp vụ — chúng tham chiếu bằng
-> `entity_type` + `entity_id` / `aggregate_type` + `aggregate_id` dạng chuỗi, để bản ghi audit sống lâu hơn dòng dữ liệu
-> mà nó mô tả. Các quan hệ vẽ ở trên chỉ gồm khóa ngoại thật trong `schema.sql`; riêng `users ||--o{ audit_logs` là
-> khóa ngoại của `actor_user_id`, không phải của đối tượng bị tác động.
+> `audit_logs` and `outbox_messages` have no foreign key to a business aggregate — they reference it as strings through
+> `entity_type` + `entity_id` and `aggregate_type` + `aggregate_id`, so an audit record outlives the row it describes.
+> The relationships drawn above are only the real foreign keys in `schema.sql`; `users ||--o{ audit_logs` in particular is
+> the foreign key of `actor_user_id`, not of the affected object.
 >
-> `*` đánh dấu giá trị **reserved, ngoài phạm vi đợt này**: `employees.status = 'suspended'` và
-> `employee_events.event_type IN ('suspension','return_to_work')` tồn tại trong schema nhưng không endpoint nào đặt được.
+> `*` marks a value that is **reserved and out of scope in this delivery**: `employees.status = 'suspended'` and
+> `employee_events.event_type IN ('suspension','return_to_work')` exist in the schema but no endpoint can set them.
 ---
 
 ## 2. Employee Records Module — field-level view
 
 > [!NOTE]
-> Bảng cột trong §2 và §3 là **bản mô tả lịch sử ở mức ý niệm** (`INTEGER`/`TIMESTAMP`/`SERIAL`). Canonical v1 dùng `bigint identity`, `timestamptz` và bổ sung `version`, `created_by`/`approved_by`, object-storage key thay cho `file_url` công khai. Luôn đối chiếu [`schema.sql`](schema.sql) trước khi sinh migration.
+> The column tables in §2 and §3 are a **historical conceptual description** (`INTEGER`/`TIMESTAMP`/`SERIAL`). Canonical v1 uses `bigint identity` and `timestamptz`, and adds `version`, `created_by`/`approved_by`, and an object-storage key in place of a public `file_url`. Always check [`schema.sql`](schema.sql) before generating a migration.
 
 ### 2.1. `departments` Table (Departments)
 | Column | Data Type | Constraints | Description |
@@ -460,14 +460,14 @@ erDiagram
 | `phone` | `VARCHAR(20)` | `NULL` | Contact phone number |
 | `address` | `TEXT` | `NULL` | Permanent or temporary address |
 | `hire_date` | `DATE` | `NOT NULL` | Employment start date |
-| `status` | `VARCHAR(30)` | `NOT NULL`, `DEFAULT 'probation'`, `CHECK ck_employee_status` | Employment status: `probation`, `active`, `terminated`. Giá trị `suspended` vẫn nằm trong CHECK nhưng là **reserved** — Suspension & Return to Work ngoài phạm vi, không endpoint nào đặt được. |
+| `status` | `VARCHAR(30)` | `NOT NULL`, `DEFAULT 'probation'`, `CHECK ck_employee_status` | Employment status: `probation`, `active`, `terminated`. The value `suspended` is still inside the CHECK but is **reserved** — Suspension & Return to Work is out of scope and no endpoint can set it. |
 | `department_id` | `INTEGER` | `FOREIGN KEY` -> `departments(id)`, `NOT NULL` | Assigned department |
 | `position_id` | `INTEGER` | `FOREIGN KEY` -> `positions(id)`, `NOT NULL` | Assigned position |
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Creation timestamp |
 | `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |
 
 > [!NOTE]
-> Tập giá trị canonical của `employees.status` là `ck_employee_status` trong [`schema.sql`](schema.sql): `probation`, `active`, `suspended`, `terminated` (bảng phía trên là bản mô tả lịch sử — xem [mục 6, ý 1](#6-điều-kiện-trước-khi-sinh-migration)). Trong đó **`suspended` là giá trị reserved**: nghiệp vụ *Suspension & Return to Work* nằm **ngoài phạm vi** đợt giao hàng này, nên **không endpoint nào đặt được** giá trị đó. Giá trị được giữ trong DDL để tập trạng thái ổn định khi phạm vi mở rộng. Vì vậy tiền điều kiện của offboarding là nhân viên đang `active` hoặc `probation`.
+> The canonical value set of `employees.status` is `ck_employee_status` in [`schema.sql`](schema.sql): `probation`, `active`, `suspended`, `terminated` (the table above is a historical description — see [section 6, point 1](#6-preconditions-before-generating-a-migration)). Of these, **`suspended` is a reserved value**: the *Suspension & Return to Work* business function is **out of scope** for this delivery, so **no endpoint can set it**. The value is kept in the DDL so the status set stays stable when the scope grows. Offboarding therefore requires an employee who is `active` or `probation`.
 
 ### 2.4. `onboarding_tasks` Table
 | Column | Data Type | Constraints | Description |
@@ -522,7 +522,7 @@ erDiagram
 | `created_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Record creation timestamp |
 
 > [!NOTE]
-> `ck_employee_event_type` trong [`schema.sql`](schema.sql) vẫn cho phép `suspension` và `return_to_work`, nhưng đây là **giá trị reserved, ngoài phạm vi** đợt giao hàng này: *Suspension & Return to Work* không được triển khai và **không endpoint nào đặt được** hai loại sự kiện đó. Do đó không có quy tắc đối chiếu "cặp `suspension`/`return_to_work` phải cân".
+> `ck_employee_event_type` in [`schema.sql`](schema.sql) still permits `suspension` and `return_to_work`, but these are **reserved, out-of-scope values** for this delivery: *Suspension & Return to Work* is not implemented and **no endpoint can set** either event type. There is therefore no reconciliation rule requiring `suspension`/`return_to_work` to come in balanced pairs.
 
 ---
 
@@ -551,7 +551,7 @@ erDiagram
 | `updated_at` | `TIMESTAMP` | `DEFAULT CURRENT_TIMESTAMP` | Last updated timestamp |
 
 > [!NOTE]
-> `target_headcount`, `salary_min` và `salary_max` là **dữ liệu khai báo**, không phải cơ chế kiểm soát: *Headcount & Budget Validation* nằm ngoài phạm vi đợt này, nên hệ thống không tự kiểm tra định biên hay ngân sách lương khi phê duyệt requisition — HR Manager quyết định thủ công. Tương tự, *Recruitment Channel Management* ngoài phạm vi: không có cột/danh sách kênh đăng tin, chỉ còn một kênh careers mặc định.
+> `target_headcount`, `salary_min` and `salary_max` are **declared data**, not a control mechanism: *Headcount & Budget Validation* is out of scope for this delivery, so the system does not check headcount or salary budget when a requisition is approved — the HR Manager decides manually. Likewise *Recruitment Channel Management* is out of scope: there is no channel column or list, only the single default careers channel.
 
 ### 3.2. `candidates` Table
 
@@ -663,112 +663,112 @@ Invariant `ck_resume_completed_has_candidate`: a `completed` intake always has a
 
 ## 4. Core HR Lifecycle Module (canonical)
 
-### 4.1. `probation_reviews` — Đánh giá & xác nhận hết thử việc (EMP-06)
+### 4.1. `probation_reviews` — probation review & confirmation (EMP-06)
 
-Một hợp đồng thử việc có đúng một phiếu đánh giá (`ux_probation_review_contract`). Kết quả chỉ được áp dụng vào `employees.status` thông qua một `employee_events` đã `approved`, không sửa trực tiếp.
+A probation contract has exactly one review (`ux_probation_review_contract`). The outcome only reaches `employees.status` through an `approved` `employee_events` row; it is never written directly.
 
 | Column | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `bigint` | `PK identity` | Khóa chính |
-| `employee_id` | `bigint` | `FK employees(id)`, `NOT NULL` | Nhân viên đang thử việc |
-| `contract_id` | `bigint` | `FK contracts(id)`, `UNIQUE`, `NOT NULL` | Hợp đồng thử việc được đánh giá |
-| `review_due_date` | `date` | `NOT NULL` | Hạn phải hoàn tất đánh giá (trước ngày hết hạn HĐ) |
-| `reviewer_user_id` | `bigint` | `FK users(id)`, `NULL` | Quản lý trực tiếp thực hiện đánh giá |
+| `id` | `bigint` | `PK identity` | Primary key |
+| `employee_id` | `bigint` | `FK employees(id)`, `NOT NULL` | The employee on probation |
+| `contract_id` | `bigint` | `FK contracts(id)`, `UNIQUE`, `NOT NULL` | The probation contract being reviewed |
+| `review_due_date` | `date` | `NOT NULL` | The deadline for completing the review (before the contract expires) |
+| `reviewer_user_id` | `bigint` | `FK users(id)`, `NULL` | The line manager performing the review |
 | `status` | `varchar(30)` | `CHECK`, default `pending` | `pending` → `in_review` → `decided` \| `cancelled` |
 | `outcome` | `varchar(30)` | `CHECK`, `NULL` | `confirmed` \| `extended` \| `terminated` |
-| `overall_score` | `numeric(3,1)` | `CHECK 0..5`, `NULL` | Điểm tổng đánh giá |
-| `strengths` / `improvements` | `text` | `NULL` | Nhận xét định tính |
-| `effective_date` | `date` | `NULL` | Ngày hiệu lực của kết quả |
-| `decided_by` / `decided_at` | `bigint` / `timestamptz` | `NULL` | Người và thời điểm ra quyết định |
-| `employee_event_id` | `bigint` | `FK employee_events(id)`, `NULL` | Sự kiện nhân sự được sinh ra từ kết quả |
+| `overall_score` | `numeric(3,1)` | `CHECK 0..5`, `NULL` | The overall review score |
+| `strengths` / `improvements` | `text` | `NULL` | Qualitative comments |
+| `effective_date` | `date` | `NULL` | The effective date of the outcome |
+| `decided_by` / `decided_at` | `bigint` / `timestamptz` | `NULL` | Who decided, and when |
+| `employee_event_id` | `bigint` | `FK employee_events(id)`, `NULL` | The employee event created from the outcome |
 | `version` | `bigint` | `NOT NULL` default 1 | Optimistic concurrency |
 
-**Invariant:** `ck_probation_decided` — khi `status = 'decided'` thì `outcome`, `decided_by`, `decided_at` và `effective_date` đều bắt buộc.
+**Invariant:** `ck_probation_decided` — when `status = 'decided'`, `outcome`, `decided_by`, `decided_at` and `effective_date` are all required.
 
-### 4.2. `offboarding_cases` — Hồ sơ thôi việc & bàn giao (EMP-07)
+### 4.2. `offboarding_cases` — the separation case & handover (EMP-07)
 
 | Column | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `bigint` | `PK identity` | Khóa chính |
-| `employee_id` | `bigint` | `FK employees(id)`, `NOT NULL` | Nhân viên thôi việc |
-| `employee_event_id` | `bigint` | `FK employee_events(id)`, `NULL` | Sự kiện `termination` tương ứng |
+| `id` | `bigint` | `PK identity` | Primary key |
+| `employee_id` | `bigint` | `FK employees(id)`, `NOT NULL` | The leaving employee |
+| `employee_event_id` | `bigint` | `FK employee_events(id)`, `NULL` | The matching `termination` event |
 | `separation_type` | `varchar(40)` | `CHECK`, `NOT NULL` | `resignation` \| `mutual_agreement` \| `dismissal` \| `contract_expiry` \| `retirement` |
-| `notice_received_on` | `date` | `NULL` | Ngày nhận đơn/thông báo, dùng đối chiếu thời hạn báo trước |
-| `last_working_date` | `date` | `NOT NULL` | Ngày làm việc cuối cùng |
-| `handover_to_employee_id` | `bigint` | `FK employees(id)`, `CHECK <> employee_id` | Người nhận bàn giao |
-| `exit_interview_at` | `timestamptz` | `NULL` | Thời điểm phỏng vấn thôi việc |
+| `notice_received_on` | `date` | `NULL` | When the notice was received, used to check the notice period |
+| `last_working_date` | `date` | `NOT NULL` | The last working date |
+| `handover_to_employee_id` | `bigint` | `FK employees(id)`, `CHECK <> employee_id` | Who receives the handover |
+| `exit_interview_at` | `timestamptz` | `NULL` | When the exit interview takes place |
 | `final_settlement_status` | `varchar(30)` | `CHECK`, default `pending` | `pending` \| `calculated` \| `paid` \| `waived` |
 | `status` | `varchar(30)` | `CHECK`, default `draft` | `draft` → `pending_approval` → `approved` → `in_progress` → `completed` \| `cancelled` |
-| `reason` | `text` | `NOT NULL` | Lý do thôi việc |
-| `created_by` / `approved_by` / `approved_at` / `completed_at` | | | Lưu vết phê duyệt và hoàn tất |
+| `reason` | `text` | `NOT NULL` | The reason for leaving |
+| `created_by` / `approved_by` / `approved_at` / `completed_at` | | | The approval and completion trail |
 
-**Invariant:** `ux_offboarding_open_case` — mỗi nhân viên chỉ có tối đa một case đang mở (`draft`/`pending_approval`/`approved`/`in_progress`).
+**Invariant:** `ux_offboarding_open_case` — an employee has at most one open case (`draft`/`pending_approval`/`approved`/`in_progress`).
 
-### 4.3. `offboarding_tasks` — Checklist bàn giao & thu hồi
+### 4.3. `offboarding_tasks` — the handover & recovery checklist
 
 | Column | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `id` | `bigint` | `PK identity` | Khóa chính |
-| `offboarding_case_id` | `bigint` | `FK offboarding_cases(id) ON DELETE CASCADE` | Case thôi việc |
-| `template_key` | `varchar(100)` | `UNIQUE(case, template_key)` | Chống sinh trùng task khi xử lý lại |
+| `id` | `bigint` | `PK identity` | Primary key |
+| `offboarding_case_id` | `bigint` | `FK offboarding_cases(id) ON DELETE CASCADE` | The offboarding case |
+| `template_key` | `varchar(100)` | `UNIQUE(case, template_key)` | Prevents duplicate tasks when the case is reprocessed |
 | `category` | `varchar(30)` | `CHECK` | `it` \| `admin` \| `hr` \| `manager` \| `finance` |
-| `task_name` / `description` | `varchar(255)` / `text` | | Ví dụ: thu hồi laptop, khóa tài khoản AD/Git, thu thẻ, chốt công nợ |
-| `assigned_to_user_id` | `bigint` | `FK users(id)`, `NULL` | Người chịu trách nhiệm |
-| `due_at` | `timestamptz` | `NULL` | Hạn hoàn thành |
-| `blocks_last_working_day` | `boolean` | default `false` | Task chặn: chưa xong thì không được đóng case |
+| `task_name` / `description` | `varchar(255)` / `text` | | For example: recover the laptop, lock the AD/Git accounts, collect the badge, settle debts |
+| `assigned_to_user_id` | `bigint` | `FK users(id)`, `NULL` | The owner |
+| `due_at` | `timestamptz` | `NULL` | The due date |
+| `blocks_last_working_day` | `boolean` | default `false` | A blocking task: the case cannot be closed while it is outstanding |
 | `status` | `varchar(30)` | `CHECK`, default `pending` | `pending` → `in_progress` → `completed` |
 
 ---
 
 ## 5. Identity & Access + Platform Tables
 
-Tám bảng này không thuộc một phân hệ nghiệp vụ nào nhưng mọi phân hệ đều phụ thuộc. Đặc tả DDL đầy đủ ở [`schema.sql`](schema.sql).
+These eight tables belong to no single business module, yet every module depends on them. The full DDL specification is in [`schema.sql`](schema.sql).
 
-| Bảng | Mục đích | Invariant chính |
+| Table | Purpose | Key invariant |
 | :--- | :--- | :--- |
-| `users` | Danh tính ứng dụng. `external_subject` mang tiền tố `local|` cho tài khoản do QLNS cấp | `external_subject` và `email` là `UNIQUE`; `status IN (active, disabled)`; `version` là ETag của mọi lệnh quản trị |
-| `user_credentials` | Mật khẩu nội bộ và bộ đếm khoá tạm | 1–0..1 với `users` (tài khoản có thể chưa có mật khẩu); `failed_attempts >= 0`; `password_hash` tự mang tham số thuật toán |
-| `user_roles` | Gán vai trò kèm **data scope** | `ck_user_roles_scope`: scope `department` bắt buộc có `data_scope_id > 0`; `self`/`organization` bắt buộc `= 0`; `role_code` tham chiếu `roles(code)` |
-| `roles` | Danh mục vai trò (dữ liệu tham chiếu) | Nạp từ [`seed_roles.sql`](seed_roles.sql); `is_assignable = false` để nghỉ hưu một vai trò mà không mất vết lịch sử |
-| `role_permissions` | Ma trận vai trò → permission (dữ liệu tham chiếu) | PK `(role_code, permission)`; đăng nhập resolve permission bằng `user_roles ⋈ role_permissions` |
-| `refresh_tokens` | Phiên dài hạn **thu hồi được** | `token_hash` là SHA-256 của token và là `UNIQUE` — token gốc không bao giờ được lưu; `expires_at > issued_at`; `revoked_at` và `revoked_reason` luôn cùng có hoặc cùng không |
-| `audit_logs` | Nhật ký mọi hành động tạo/sửa/duyệt/từ chối, ghi cùng transaction nghiệp vụ | `result IN (succeeded, rejected, failed)`; index theo `entity` và theo `actor`; lần đăng nhập thất bại cũng phải có dòng |
-| `outbox_messages` | Transactional outbox cho email/notification/integration | Ghi cùng transaction nghiệp vụ; index partial trên bản ghi chưa xử lý |
+| `users` | The application identity. `external_subject` carries a `local|` prefix for accounts issued by QLNS | `external_subject` and `email` are `UNIQUE`; `status IN (active, disabled)`; `version` is the ETag of every administrative command |
+| `user_credentials` | The local password and the lockout counters | 1–0..1 with `users` (an account may have no password); `failed_attempts >= 0`; `password_hash` carries its own algorithm parameters |
+| `user_roles` | Role grants with their **data scope** | `ck_user_roles_scope`: a `department` scope requires `data_scope_id > 0`; `self`/`organization` require `= 0`; `role_code` references `roles(code)` |
+| `roles` | The role catalogue (reference data) | Loaded from [`seed_roles.sql`](seed_roles.sql); `is_assignable = false` retires a role without losing its history |
+| `role_permissions` | The role → permission matrix (reference data) | PK `(role_code, permission)`; sign-in resolves permissions with `user_roles ⋈ role_permissions` |
+| `refresh_tokens` | The **revocable** long-lived session | `token_hash` is the SHA-256 of the token and is `UNIQUE` — the original token is never stored; `expires_at > issued_at`; `revoked_at` and `revoked_reason` are always both set or both null |
+| `audit_logs` | The log of every create, update, approve and reject, written in the business transaction | `result IN (succeeded, rejected, failed)`; indexed by entity and by actor; a failed sign-in must also leave a row |
+| `outbox_messages` | The transactional outbox for e-mail, notifications and integrations | Written in the business transaction; a partial index over the unprocessed rows |
 
 ### 5.1. `user_credentials` Table (Local sign-in secret)
 | Column | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `user_id` | `BIGINT` | `PRIMARY KEY`, `FK users(id) ON DELETE CASCADE` | Một dòng cho mỗi tài khoản đăng nhập được bằng mật khẩu |
-| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Dạng `pbkdf2-sha512$<vòng>$<salt>$<hash>` — tham số nằm trong chính chuỗi nên nâng work factor không cần migration |
-| `password_algorithm` | `VARCHAR(40)` | `NOT NULL`, default `pbkdf2-sha512` | Dùng để lọc/ước lượng khối lượng khi đổi thuật toán |
-| `must_change_password` | `BOOLEAN` | `NOT NULL`, default `false` | Bật khi mật khẩu do admin đặt; phiên cấp ra khi đó không có permission |
-| `password_updated_at` | `TIMESTAMPTZ` | `NOT NULL`, default `now()` | Phục vụ chính sách tuổi mật khẩu về sau |
-| `failed_attempts` | `INTEGER` | `NOT NULL`, default 0, `>= 0` | Đếm số lần sai liên tiếp; reset khi đăng nhập thành công |
-| `locked_until` | `TIMESTAMPTZ` | `NULL` | Cuối cửa sổ khoá tạm (5 lần sai ⇒ 15 phút) |
-| `last_login_at` | `TIMESTAMPTZ` | `NULL` | Lần đăng nhập thành công gần nhất |
-| `version` | `BIGINT` | `NOT NULL`, default 1 | Chốt đồng thời của lệnh đổi mật khẩu |
+| `user_id` | `BIGINT` | `PRIMARY KEY`, `FK users(id) ON DELETE CASCADE` | One row per account that can sign in with a password |
+| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Of the form `pbkdf2-sha512$<iterations>$<salt>$<hash>` — the parameters live in the string, so raising the work factor needs no migration |
+| `password_algorithm` | `VARCHAR(40)` | `NOT NULL`, default `pbkdf2-sha512` | Used to filter and size the work when the algorithm changes |
+| `must_change_password` | `BOOLEAN` | `NOT NULL`, default `false` | Set when an administrator chose the password; the session issued then carries no permissions |
+| `password_updated_at` | `TIMESTAMPTZ` | `NOT NULL`, default `now()` | Supports a password-age policy later |
+| `failed_attempts` | `INTEGER` | `NOT NULL`, default 0, `>= 0` | Consecutive failures; reset on a successful sign-in |
+| `locked_until` | `TIMESTAMPTZ` | `NULL` | The end of the lockout window (5 failures ⇒ 15 minutes) |
+| `last_login_at` | `TIMESTAMPTZ` | `NULL` | The most recent successful sign-in |
+| `version` | `BIGINT` | `NOT NULL`, default 1 | The concurrency anchor of the change-password command |
 
 ### 5.2. `refresh_tokens` Table (Rotating session tokens)
 | Column | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | `BIGINT` | `PRIMARY KEY`, Auto Increment | Primary key |
-| `user_id` | `BIGINT` | `NOT NULL`, `FK users(id) ON DELETE CASCADE` | Chủ sở hữu phiên |
-| `token_hash` | `VARCHAR(64)` | `NOT NULL`, `UNIQUE` | SHA-256 hex của token; **không** lưu token gốc nên dump bảng này không replay được. Dùng `varchar` thay vì `char` để tham số `text` khớp trực tiếp với unique index trên đường đăng nhập nóng |
-| `issued_at` | `TIMESTAMPTZ` | `NOT NULL`, default `now()` | Thời điểm phát hành |
-| `expires_at` | `TIMESTAMPTZ` | `NOT NULL`, `> issued_at` | Mặc định 14 ngày |
-| `revoked_at` | `TIMESTAMPTZ` | `NULL` | Luôn đi kèm `revoked_reason` |
+| `user_id` | `BIGINT` | `NOT NULL`, `FK users(id) ON DELETE CASCADE` | The owner of the session |
+| `token_hash` | `VARCHAR(64)` | `NOT NULL`, `UNIQUE` | The SHA-256 hex of the token; the original is **not** stored, so a dump of this table cannot be replayed. `varchar` rather than `char`, so a `text` parameter matches the unique index directly on the hot sign-in path |
+| `issued_at` | `TIMESTAMPTZ` | `NOT NULL`, default `now()` | When it was issued |
+| `expires_at` | `TIMESTAMPTZ` | `NOT NULL`, `> issued_at` | 14 days by default |
+| `revoked_at` | `TIMESTAMPTZ` | `NULL` | Always accompanied by `revoked_reason` |
 | `revoked_reason` | `VARCHAR(40)` | `NULL`, CHECK enum | `rotated`, `logout`, `password_changed`, `reuse_detected`, `revoked_by_admin`, `account_disabled` |
-| `replaced_by_token_id` | `BIGINT` | `NULL`, `FK refresh_tokens(id)` | Nối chuỗi luân chuyển; phục vụ điều tra khi phát hiện replay |
-| `client_ip` | `VARCHAR(45)` | `NULL` | Dấu vết client, đủ cho IPv6 |
-| `user_agent` | `VARCHAR(255)` | `NULL` | Dấu vết client, bị cắt bớt nếu dài hơn |
+| `replaced_by_token_id` | `BIGINT` | `NULL`, `FK refresh_tokens(id)` | Links the rotation chain; used to investigate a detected replay |
+| `client_ip` | `VARCHAR(45)` | `NULL` | A client trace, wide enough for IPv6 |
+| `user_agent` | `VARCHAR(255)` | `NULL` | A client trace, truncated if longer |
 
-`CREATE INDEX ix_refresh_tokens_active ON refresh_tokens(user_id, expires_at) WHERE revoked_at IS NULL` — thao tác nóng là "thu hồi mọi token còn hiệu lực của một tài khoản", nên index partial đúng theo hình dạng câu lệnh đó.
+`CREATE INDEX ix_refresh_tokens_active ON refresh_tokens(user_id, expires_at) WHERE revoked_at IS NULL` — the hot operation is "revoke every valid token of one account", so the partial index matches the shape of that statement.
 
 ---
 
-## 6. Điều kiện trước khi sinh migration
+## 6. Preconditions Before Generating a Migration
 
-1. `employees.work_email` là **nullable** với partial unique index `ux_employees_work_email` (case-insensitive): nhân viên do offer-acceptance handoff tạo ra chưa có email công vụ; `ck_employee_active_requires_work_email` chặn chuyển `active` khi còn trống. `employee_code` lấy từ sequence `employee_code_seq`. §2.3 phía trên là bản mô tả lịch sử và vẫn ghi `email NOT NULL` — canonical thắng.
-2. ~~Chốt Identity Provider~~ — đã chốt: xác thực làm nội bộ ([ADR-011](../docs/adr/011-in-house-identity.md)). Việc còn lại là chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và đưa `seed_roles.sql` vào quy trình triển khai của mọi môi trường.
-3. Cần integration test trên PostgreSQL thật cho từng invariant chặn-ghi: một offer đang mở mỗi đơn ứng tuyển, một hợp đồng chính đang hiệu lực, một phiếu thử việc mỗi hợp đồng, một case thôi việc đang mở, `application_stage_events` duy nhất theo phiên bản.
-4. Cần test cho luồng áp dụng `employee_events` đúng `effective_date` và cho tính idempotent của offer-acceptance handoff.
+1. `employees.work_email` is **nullable**, with the case-insensitive partial unique index `ux_employees_work_email`: an employee created by the offer-acceptance handoff has no work e-mail yet, and `ck_employee_active_requires_work_email` blocks the move to `active` while it is empty. `employee_code` comes from the `employee_code_seq` sequence. §2.3 above is a historical description and still says `email NOT NULL` — the canonical schema wins.
+2. ~~Choose an Identity Provider~~ — settled: authentication is in house ([ADR-011](../docs/adr/011-in-house-identity.md)). What remains is deciding where the `Authentication:Jwt:SigningKey` secret is managed, and putting `seed_roles.sql` into the deployment procedure of every environment.
+3. Integration tests against a real PostgreSQL are needed for each write-blocking invariant: one open offer per application, one active primary contract, one probation review per contract, one open offboarding case, and uniqueness of `application_stage_events` per version.
+4. Tests are needed for applying `employee_events` on the right `effective_date`, and for the idempotency of the offer-acceptance handoff.

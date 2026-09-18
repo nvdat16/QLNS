@@ -1,37 +1,39 @@
-# ADR-010 — Thu hẹp phạm vi giao hàng về hai trụ cột Recruitment và Core HR
+# ADR-010 — Narrowing the delivery scope to the Recruitment and Core HR pillars
 
-- **Trạng thái:** Accepted 2026-09-17 — **owner và phần alternatives/consequences đầy đủ vẫn chờ Project Owner xác nhận**
-- **Owner:** chưa có
-- **Liên quan:** [ADR-011](011-in-house-identity.md)
+- **Status:** Accepted 2026-09-17 — **the owner and the full alternatives/consequences still await Project Owner confirmation**
+- **Owner:** none yet
+- **Related:** [ADR-011](011-in-house-identity.md)
 
-## Bối cảnh
+## Context
 
-Bản đồ phân rã chức năng `topdown-approach.png` (cập nhật 2026-09-17) có bảy trụ cột. Thiết kế ban đầu trải rộng hơn năng
-lực giao hàng của đợt này, trong đó Attendance & Leave đã được đặc tả đầy đủ (SRS, 13 story, DDL 13 bảng, 24 endpoint).
+The `topdown-approach.png` function map (updated 2026-09-17) has seven pillars. The original design spread wider than
+this delivery can carry, and Attendance & Leave in particular had already been specified in full (SRS, 13 stories, DDL
+for 13 tables, 24 endpoints).
 
-## Quyết định
+## Decision
 
-Phạm vi giao hàng là **đúng các chức năng lá in đậm** dưới hai trụ cột Recruitment (18 lá) và Core HR (16 lá, gồm nhánh
-Contract Management).
+The delivery scope is **exactly the leaf functions printed in bold** under the two pillars Recruitment (18 leaves) and
+Core HR (16 leaves, including the Contract Management branch).
 
-Ngoài phạm vi: Reports & Analytics, Performance Management, Compensation & Benefits, Attendance & Leave Management, phần
-còn lại của System Administration, cộng **bốn chức năng lá không in đậm nằm ngay trong hai trụ cột được chọn** — Headcount
-& Budget Validation, Recruitment Channel Management, Organizational Chart, Suspension & Return to Work.
+Out of scope: Reports & Analytics, Performance Management, Compensation & Benefits, Attendance & Leave Management, the
+remainder of System Administration, and the **four non-bold leaf functions sitting inside the two selected pillars** —
+Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart, and Suspension & Return to Work.
 
-Authorization, audit log và transactional outbox **vẫn là cơ chế bắt buộc** của mọi command; chỉ các màn hình/endpoint
-quản trị chúng mới nằm ngoài phạm vi.
+Authorization, audit logging and the transactional outbox **remain mandatory** for every command; only the screens and
+endpoints that administer them are out of scope.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Xoá hẳn thiết kế Attendance & Leave** — loại bỏ: phí phạm một đặc tả hoàn chỉnh. Thay vào đó đưa nguyên vẹn vào
-  `docs/deferred/attendance_leave/` kèm cảnh báo không được tham chiếu từ tài liệu authoritative.
-- **Giữ bốn chức năng lá không in đậm vì "đằng nào cũng gần xong"** — loại bỏ: mỗi cái kéo theo màn hình, endpoint và
-  quy tắc nghiệp vụ riêng.
+- **Delete the Attendance & Leave design outright** — rejected: it would waste a complete specification. It was moved
+  intact to `docs/deferred/attendance_leave/` with a warning that authoritative documents must not reference it.
+- **Keep the four non-bold leaf functions because "they are nearly done anyway"** — rejected: each brings its own
+  screens, endpoints and business rules.
 
-## Hệ quả
+## Consequences
 
-- Việc thu hẹp phạm vi **không đổi DDL**: phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu.
-- `employees.status = 'suspended'` và `employee_events.event_type IN ('suspension','return_to_work')` trở thành **giá trị
-  reserved**: tồn tại trong schema, không action endpoint nào đặt được ([ADR-006](006-explicit-commands-and-state-machines.md)).
-- Tiền điều kiện của offboarding vì thế là nhân viên đang `active` hoặc `probation`.
-- Rủi ro R2b: thiết kế trong `deferred/` sẽ drift khỏi canonical nếu module đó quay lại phạm vi.
+- Narrowing the scope **does not change the DDL**: what was dropped is screens and endpoints, not data structures.
+- `employees.status = 'suspended'` and `employee_events.event_type IN ('suspension','return_to_work')` become **reserved
+  values**: present in the schema, settable by no action endpoint
+  ([ADR-006](006-explicit-commands-and-state-machines.md)).
+- Offboarding therefore requires an employee who is `active` or `probation`.
+- Risk R2b: the design under `deferred/` will drift from the canonical schema if that module ever returns.

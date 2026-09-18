@@ -2,39 +2,39 @@
 
 ## 1. Introduction and Goals
 
-QLNS là hệ thống quản trị nguồn nhân lực (HRMS) kết hợp quản lý tuyển dụng (ATS), hướng tới một luồng dữ liệu xuyên suốt từ yêu cầu tuyển dụng, ứng viên, phỏng vấn và offer đến hồ sơ nhân viên, hợp đồng, onboarding, thử việc và thôi việc. Phạm vi giao hàng của đợt này là các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ `topdown-approach.png`; danh sách đầy đủ những gì trong và ngoài phạm vi ở [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected).
+QLNS is a human resource management system (HRMS) combined with recruitment management (ATS), aiming at one continuous data flow from the hiring request, the candidate, the interview and the offer through to the employee record, the contract, onboarding, probation and separation. The delivery scope of this release is the bold leaf functions under Recruitment and Core HR on the `topdown-approach.png` map; the full list of what is in and out is in [section 2 of the README](../README.md#2-delivery-scope--seven-pillars-two-selected).
 
-Mục tiêu kiến trúc là tạo ranh giới rõ giữa giao diện, quy tắc nghiệp vụ và dữ liệu; bảo vệ dữ liệu nhân sự nhạy cảm; đồng thời cho phép phát triển từng phần mà không biến UI prototype thành nguồn business rule.
+The architectural goal is to draw a clear boundary between the interface, the business rules and the data; to protect sensitive HR data; and to allow incremental development without the UI prototype becoming a source of business rules.
 
 ### 1.1 Stakeholders
 
 | Role | Concern |
 |---|---|
-| Ban lãnh đạo / Nhà tài trợ | số liệu nhân sự đáng tin cậy, hiệu quả đầu tư, giảm rủi ro vận hành |
-| HR Director / HR Manager | quy trình đúng thẩm quyền, truy vết quyết định, dữ liệu nhân sự nhất quán |
-| Recruiter | pipeline ứng viên, lịch phỏng vấn, scorecard và offer trên một luồng thống nhất |
-| Hiring / Line Manager | tác vụ phê duyệt rõ ràng, dữ liệu đúng phạm vi quản lý |
-| HR Officer / C&B | hồ sơ, hợp đồng, onboarding, thử việc và thôi việc chính xác |
-| Employee / Candidate | trải nghiệm dễ dùng, trạng thái minh bạch, dữ liệu cá nhân được bảo vệ |
-| Application engineer | contract rõ, module độc lập, môi trường phát triển tái lập được |
-| Architect / Reviewer | ngăn drift giữa yêu cầu, schema, API và implementation |
-| Security / Legal | least privilege, audit, retention và tuân thủ pháp luật Việt Nam |
-| SRE / Operations | triển khai, quan sát, sao lưu và phục hồi có thể kiểm chứng |
+| Executive board / sponsor | trustworthy HR figures, return on investment, lower operational risk |
+| HR Director / HR Manager | a process with the right authority, traceable decisions, consistent HR data |
+| Recruiter | the candidate pipeline, interview scheduling, scorecards and offers in one unified flow |
+| Hiring / Line Manager | clear approval tasks, data limited to what they manage |
+| HR Officer / C&B | accurate records, contracts, onboarding, probation and separation |
+| Employee / Candidate | an easy experience, transparent status, personal data protected |
+| Application engineer | a clear contract, independent modules, a reproducible development environment |
+| Architect / Reviewer | no drift between requirements, schema, API and implementation |
+| Security / Legal | least privilege, audit, retention and compliance with Vietnamese law |
+| SRE / Operations | deployment, observability, backup and verifiable recovery |
 
 ### 1.2 Quality goals (measurable — arc42 §1.2)
 
 | # | Quality goal | Scenario | Measure | Priority |
 |---|---|---|---|---|
-| Q1 | **Bảo mật dữ liệu nhân sự** | người dùng yêu cầu hồ sơ, hợp đồng hoặc hành động ngoài phạm vi | 100% API nghiệp vụ yêu cầu authenticated actor; 100% test ngoài quyền trả `401/403`; không trả trường restricted | 1 |
-| Q2 | **Toàn vẹn và truy vết** | lỗi xảy ra giữa một workflow nhiều bước | transaction rollback không để lại trạng thái dở dang; 100% command nhạy cảm có audit actor, time, target, result | 1 |
-| Q3 | **Chính xác workflow** | client gửi transition, phê duyệt hoặc version không hợp lệ | 100% transition ngoài state machine bị từ chối; conflict đồng thời trả `409`; không cập nhật trực tiếp `status` | 1 |
-| Q4 | **Khả dụng sử dụng** | người dùng hoàn thành tìm hồ sơ, chuyển vòng hoặc duyệt phép | các tác vụ ưu tiên đạt success rate ≥ 90% trong usability test; WCAG 2.1 AA cho luồng thiết yếu | 2 |
-| Q5 | **Hiệu năng tương tác** | tải danh sách có filter/pagination trong tải mục tiêu | p95 API đọc ≤ 500 ms và command ≤ 800 ms, không tính provider ngoài; quy mô tải phải được chốt trước production | 2 |
-| Q6 | **Dễ bảo trì** | thêm module hoặc thay provider tích hợp | không sửa domain module không liên quan; dependency fitness tests và contract tests đều pass | 2 |
-| Q7 | **Khả năng phục hồi tích hợp** | email/calendar timeout hoặc cùng một command được gửi lặp | business transaction vẫn nhất quán; message trùng không tạo side effect trùng; retry hữu hạn có đối soát | 2 |
-| Q8 | **Phục hồi dữ liệu** | mất database node hoặc thao tác khôi phục | đạt RPO/RTO được phê duyệt và restore drill pass; giá trị cụ thể là Open Decision | 3 |
+| Q1 | **HR data security** | a user requests a profile, a contract or an action outside their scope | 100% of business APIs require an authenticated actor; 100% of out-of-scope tests return `401/403`; no restricted field is returned | 1 |
+| Q2 | **Integrity and traceability** | a failure occurs midway through a multi-step workflow | the transaction rolls back leaving no half-finished state; 100% of sensitive commands record the audit actor, time, target and result | 1 |
+| Q3 | **Workflow correctness** | the client sends an invalid transition, approval or version | 100% of transitions outside the state machine are rejected; a concurrent conflict returns `409`; `status` is never updated directly | 1 |
+| Q4 | **Usability** | a user completes a profile search, a stage transition or an approval | priority tasks reach a success rate ≥ 90% in usability testing; WCAG 2.1 AA on the essential flows | 2 |
+| Q5 | **Interactive performance** | loading a filtered and paginated list at the target load | p95 ≤ 500 ms for reads and ≤ 800 ms for commands, excluding external providers; the load profile must be settled before production | 2 |
+| Q6 | **Maintainability** | adding a module or swapping an integration provider | unrelated module domains are untouched; the dependency fitness tests and the contract tests all pass | 2 |
+| Q7 | **Integration resilience** | an e-mail/calendar timeout, or the same command sent twice | the business transaction stays consistent; a duplicate message creates no duplicate side effect; retries are bounded and reconciled | 2 |
+| Q8 | **Data recovery** | losing a database node, or a restore operation | the approved RPO/RTO are met and the restore drill passes; the concrete values are an open decision | 3 |
 
-Q1–Q3 là các mục tiêu định hình kiến trúc. Mọi quyết định làm suy giảm chúng phải có ADR riêng.
+Q1–Q3 are the architecture-shaping goals. Any decision that weakens one of them requires its own ADR.
 
 ---
 
@@ -42,16 +42,16 @@ Q1–Q3 là các mục tiêu định hình kiến trúc. Mọi quyết định l
 
 | # | Constraint | Type | Implication |
 |---|---|---|---|
-| C1 | Hiện trạng gồm UI/UX prototype, frontend React và backend .NET 10 **code-complete** cho cả 79 operation; chưa có integration test, migration và runtime đã xác minh | Project | phân biệt code-complete với implemented, integrated và production-ready; chỉ integration test trên PostgreSQL thật mới nâng được trạng thái |
-| C2 | Frontend không truy cập database trực tiếp | Security | mọi query/command đi qua Backend API và server-side authorization |
-| C3 | PostgreSQL là database chuẩn; `database/schema.sql` là canonical contract tạm thời | Technical | schema phải được review, chuyển thành EF Core migration và kiểm thử constraint trước khi dùng |
-| C4 | React/Vite, ASP.NET Core .NET 10, EF Core và PostgreSQL | Technical | được Project Owner chấp thuận ngày 2026-09-15; package patch phải được pin trước release |
-| C5 | Không dùng distributed transaction/2-phase commit với provider ngoài | Technical | business state commit độc lập; outbox, idempotency và reconciliation cho side effect |
-| C6 | Dữ liệu nhân sự và ứng viên là confidential/restricted | Legal/Security | least privilege, encryption, audit, masking, retention và controlled export |
-| C7 | Quy tắc lao động, hợp đồng, thuế và bảo hiểm cần HR/Legal phê duyệt | Legal | tài liệu kỹ thuật không tự suy diễn quy định pháp lý |
-| C8 | Giao diện chính dùng tiếng Việt, thuật ngữ kỹ thuật có thể kèm tiếng Anh | Product | glossary và trạng thái nghiệp vụ phải nhất quán |
-| C9 | Documentation-first | Organisational | thay đổi feature phải cập nhật SRS, kiến trúc, API/schema và ADR liên quan |
-| C10 | SLA, tải, cloud/on-premises, RPO/RTO chưa được chốt | Organisational | deployment và capacity design giữ vendor-neutral; không cam kết production sớm |
+| C1 | The current state is UI/UX prototypes, a React frontend and a .NET 10 backend that is **code-complete** across all 79 operations; there are no integration tests, no migrations and no verified runtime | Project | distinguish code-complete from implemented, integrated and production-ready; only integration tests against a real PostgreSQL can raise the status |
+| C2 | The frontend never reaches the database directly | Security | every query and command goes through the backend API and server-side authorization |
+| C3 | PostgreSQL is the standard database; `database/schema.sql` is the interim canonical contract | Technical | the schema must be reviewed, turned into an EF Core migration and constraint-tested before use |
+| C4 | React/Vite, ASP.NET Core on .NET 10, EF Core and PostgreSQL | Technical | approved by the Project Owner on 2026-09-15; package patch versions must be pinned before release |
+| C5 | No distributed transaction or two-phase commit with an external provider | Technical | business state commits independently; outbox, idempotency and reconciliation handle the side effects |
+| C6 | Employee and candidate data is confidential/restricted | Legal/Security | least privilege, encryption, audit, masking, retention and controlled export |
+| C7 | Labour, contract, tax and insurance rules need HR/Legal approval | Legal | technical documents do not infer legal regulations on their own |
+| C8 | The user interface is primarily in Vietnamese; technical terms may carry an English equivalent | Product | the glossary and the business statuses must stay consistent |
+| C9 | Documentation-first | Organisational | a feature change must update the SRS, the architecture, the API/schema and the related ADRs |
+| C10 | SLA, load, cloud versus on-premises, and RPO/RTO are not settled | Organisational | deployment and capacity design stay vendor-neutral; no early production commitments |
 
 ---
 
@@ -89,22 +89,22 @@ flowchart LR
     style storage fill:#999,color:#fff
 ```
 
-Không còn Identity Provider bên ngoài trong context: QLNS tự phát hành, xác thực và thu hồi phiên của mình (phân hệ `[ADM]`). Đây là thay đổi so với baseline đầu tiên — lý do và hệ quả ở [ADR-011](adr/011-in-house-identity.md).
+There is no longer an external Identity Provider in the context: QLNS issues, validates and revokes its own sessions (the `[ADM]` module). This is a change from the first baseline — the reasoning and consequences are in [ADR-011](adr/011-in-house-identity.md).
 
 
 ### 3.2 External interfaces
 
 | Interface | Direction | Protocol / contract | Contract owner | Failure mode |
 |---|---|---|---|---|
-| Web API | in/out | HTTPS, REST/JSON, OpenAPI | QLNS Backend | RFC 7807-style error, `Retry-After` khi phù hợp |
-| ~~Identity~~ | — | **Không còn là interface ngoài.** Access token do chính QLNS phát hành và ký (HS256, `Authentication:Jwt:SigningKey`) | QLNS Backend — module ADM | fail closed; token invalid → `401` |
+| Web API | in/out | HTTPS, REST/JSON, OpenAPI | QLNS backend | RFC 7807-style error, `Retry-After` where appropriate |
+| ~~Identity~~ | — | **No longer an external interface.** The access token is issued and signed by QLNS itself (HS256, `Authentication:Jwt:SigningKey`) | QLNS backend — the ADM module | fail closed; an invalid token → `401` |
 | Email/Calendar | out | Provider API | Notification/Calendar adapter | delivery state + bounded retry + reconciliation |
 | Document storage | both | object API; signed/authorized download | Document adapter | unavailable → no metadata corruption |
 | Database | both | PostgreSQL protocol | Persistence layer | transaction rollback; readiness degraded |
 
-Định danh giờ nằm **trong** hệ thống: `POST /api/v1/auth/login` phát hành access token mang đúng những claim mà mọi module nghiệp vụ đã đọc từ trước (`qlns_user_id`, `qlns_employee_id`, `data_scope`, `department_id`, `permission`), nên không module nghiệp vụ nào phải thay đổi. Quyền và phạm vi dữ liệu được resolve lại từ `user_roles ⋈ role_permissions` ở mỗi lần đăng nhập và mỗi lần làm mới phiên, vì vậy vai trò bị thu hồi hết hiệu lực trong tối đa một chu kỳ access token (mặc định 30 phút).
+Identity now lives **inside** the system: `POST /api/v1/auth/login` issues an access token carrying exactly the claims every business module already read (`qlns_user_id`, `qlns_employee_id`, `data_scope`, `department_id`, `permission`), so no business module had to change. Authority and data scope are re-resolved from `user_roles ⋈ role_permissions` at every sign-in and every refresh, so a revoked role stops taking effect within at most one access-token lifetime (30 minutes by default).
 
-`Authentication:Jwt:SigningKey` là **bắt buộc**: thiếu nó host dừng ngay khi khởi động chứ không chạy ở trạng thái nửa vời. Cố tình **không** có nhánh dự phòng sang một OIDC authority bên ngoài — federation sẽ thay thế cả cụm endpoint đăng nhập chứ không chỉ một dòng cấu hình, nên nó phải là một ADR mới, không phải một nhánh `if` im lặng. Hệ thống không nhận webhook từ bên ngoài, nên không có interface inbound nào khác ngoài Web API.
+`Authentication:Jwt:SigningKey` is **mandatory**: without it the host stops at startup rather than running half-configured. There is deliberately **no** fallback to an external OIDC authority — federation would replace the whole sign-in endpoint group rather than one configuration line, so it has to be a new ADR, not a silent `if` branch. The system accepts no inbound webhooks, so there is no inbound interface other than the web API.
 
 ---
 
@@ -121,7 +121,7 @@ Không còn Identity Provider bên ngoài trong context: QLNS tự phát hành, 
 | Q7 reliability | timeout, bounded retry, idempotency, outbox and reconciliation after commit | §6.5, §8, ADR-007 |
 | Q8 recovery | versioned migration, encrypted backup, restore drill and documented RPO/RTO | §7, §10 |
 
-**The one-sentence strategy:** *phát triển theo vertical slice trên một modular monolith, giữ business rules ở backend, PostgreSQL làm system of record và cô lập mọi hệ thống ngoài qua port/adapter.*
+**The one-sentence strategy:** *develop vertical slices on a modular monolith, keep the business rules in the backend, use PostgreSQL as the system of record, and isolate every external system behind a port and adapter.*
 
 ### 4.1 Strategy in one picture
 
@@ -208,12 +208,12 @@ React Web Application → ASP.NET Core API ─┬→ Business/Data Layer → Pos
                          .NET Background Worker → Provider adapters
 ```
 
-- **React Web Application:** trình bày giao diện, điều hướng, local UI state và gọi API; không phải security boundary và không sở hữu business invariant.
-- **ASP.NET Core Backend API:** entry point duy nhất cho dữ liệu nghiệp vụ; xác thực/ủy quyền, thực thi use case, workflow và transaction.
-- **.NET Background Worker:** xử lý tác vụ bất đồng bộ hoặc theo lịch sau khi business state đã được commit; không nhận request trực tiếp từ người dùng.
-- **PostgreSQL:** system of record. `database/schema.sql` hiện là canonical contract; migration/runtime database chưa được xác minh.
-- **Private Object Storage:** giữ nội dung file; PostgreSQL chỉ giữ metadata và quyền tham chiếu.
-- Màu xanh dương là code-complete (có code và unit test, chưa có integration test), tím là thiết kế đề xuất chưa có code, xanh lá là contract dữ liệu, xám là hệ thống ngoài.
+- **React web application:** renders the interface, handles navigation and local UI state, and calls the API; it is not a security boundary and owns no business invariant.
+- **ASP.NET Core backend API:** the single entry point for business data; authentication and authorization, use case execution, workflow and transactions.
+- **.NET background worker:** handles asynchronous or scheduled work after the business state has been committed; it takes no direct user requests.
+- **PostgreSQL:** the system of record. `database/schema.sql` is currently the canonical contract; the migration and runtime database are not verified.
+- **Private object storage:** holds file content; PostgreSQL keeps only the metadata and the access reference.
+- Blue is code-complete (code and unit tests exist, integration tests do not), purple is a proposed design with no code, green is a data contract, grey is an external system.
 
 <a id="c4-level-3-web"></a>
 
@@ -265,7 +265,7 @@ flowchart TB
     class api,observe external
 ```
 
-Prototype HTML trong `uiux/` là nguồn tham khảo thiết kế cho các feature/component trên; frontend thật là ứng dụng React tại `src/frontend`, không phải các file prototype đó. Mỗi feature chỉ phụ thuộc `shared` và `client`; feature không import trực tiếp internals của feature khác. Route guard giúp trải nghiệm người dùng, nhưng Backend API vẫn phải kiểm tra quyền cho mọi request.
+The HTML prototypes under `uiux/` are design reference for the features and components above; the real frontend is the React application at `src/frontend`, not those prototype files. Each feature depends only on `shared` and `client`; a feature never imports another feature's internals. Route guards help the user experience, but the backend API still checks authority on every request.
 
 <a id="c4-level-3-backend"></a>
 
@@ -306,7 +306,7 @@ flowchart TB
             contractRepo["Contract Repositories<br/><i>[Code-complete]</i>"]
             auditRepo["Audit & Outbox Repositories<br/><i>[Code-complete]</i>"]
             uow["EF Core DbContext & Unit of Work<br/><i>[Component — Code-complete]</i>"]
-            objectAdapter["Object Storage Adapter<br/><i>[Component — Dev adapter]</i><br/>FileSystemDocumentStorage; object store thật chưa có"]
+            objectAdapter["Object Storage Adapter<br/><i>[Component — Dev adapter]</i><br/>FileSystemDocumentStorage; no real object store yet"]
             admRepo["Identity Repositories &amp; Crypto Adapters<br/><i>[Code-complete]</i><br/>PBKDF2 hasher, JWT issuer, refresh-token store"]
         end
     end
@@ -352,13 +352,13 @@ flowchart TB
     class web,db,objects external
 ```
 
-Ba **tier runtime** là: Presentation Tier (React Web), Application Tier (ASP.NET Core API + .NET Worker) và Data Tier (PostgreSQL). Chúng là ranh giới triển khai/mạng; Worker không tạo tier thứ tư. Ba **layer source code** bên trong ASP.NET Core application tier là Presentation, Business Logic và Data Access:
+The three **runtime tiers** are: the presentation tier (the React web app), the application tier (the ASP.NET Core API plus the .NET worker) and the data tier (PostgreSQL). They are deployment and network boundaries; the worker does not create a fourth tier. The three **source layers** inside the ASP.NET Core application tier are presentation, business logic and data access:
 
-- Presentation chỉ chuyển HTTP contract thành command/query, gọi Business Logic và map kết quả sang DTO/Problem Details.
-- Business Logic sở hữu use case, domain workflow, authorization theo tài nguyên và các repository/adapter contract; không phụ thuộc ASP.NET Core hoặc EF Core.
-- Data Access triển khai contract của Business Logic bằng EF Core/provider adapter. `Qlns.Api` chỉ tham chiếu Data Access tại composition root để đăng ký dependency.
-- Các module ghi dữ liệu phải đi qua Unit of Work và cùng transaction ghi audit/outbox. `Audit & Outbox Policies` và `Audit & Outbox Repositories` là cơ chế xuyên suốt bắt buộc cho mọi module, không phải một chức năng nghiệp vụ: chúng ghi `audit_logs`/`outbox_messages` nhưng không có API tra cứu hay điều khiển trong đợt này (§3.3).
-- Không có component nhận webhook từ provider ngoài: mọi request vào hệ thống đi qua `HTTP Pipeline` từ Web Application (kể cả endpoint phản hồi offer của ứng viên, dùng token ngắn hạn).
+- Presentation only turns the HTTP contract into commands and queries, calls the business logic, and maps the result to a DTO or Problem Details.
+- Business logic owns the use cases, the domain workflow, resource-level authorization and the repository/adapter contracts; it depends on neither ASP.NET Core nor EF Core.
+- Data access implements the business layer's contracts with EF Core and provider adapters. `Qlns.Api` references data access only at the composition root, to register dependencies.
+- Every module that writes data goes through the unit of work and writes its audit and outbox rows in the same transaction. `Audit & Outbox Policies` and `Audit & Outbox Repositories` are a mandatory crosscutting mechanism for every module, not a business function: they write `audit_logs` and `outbox_messages` but expose no lookup or control API in this delivery (§3.3).
+- No component receives webhooks from an external provider: every request into the system passes through the `HTTP Pipeline` from the web application — including the candidate's offer-response endpoint, which uses a short-lived token.
 
 <a id="c4-level-3-worker"></a>
 
@@ -412,22 +412,22 @@ flowchart LR
     class db,comms,observe external
 ```
 
-Worker vẫn bắt buộc trong phạm vi này vì ba nhóm việc thuộc chức năng đã chọn: áp dụng `employee_events` đã approved đúng `effective_date`, cảnh báo hợp đồng sắp hết hạn cùng xử lý offer quá hạn, và gửi outbox (email/lịch phỏng vấn, offer, thông báo onboarding). Không có job đồng bộ job board hay e-signature.
+The worker remains mandatory within this scope because of three groups of work belonging to the selected functions: applying approved `employee_events` on their `effective_date`; alerting on contracts nearing expiry and processing expired offers; and dispatching the outbox (interview e-mails and calendar invitations, offers, onboarding notifications). There is no job-board synchronisation or e-signature job.
 
-Worker chưa có implementation đã xác minh. Mọi handler phải idempotent, claim công việc an toàn khi chạy nhiều instance, retry hữu hạn và chuyển dead-letter để đối soát; không giữ database transaction trong khi gọi provider ngoài.
+The worker has no verified implementation. Every handler must be idempotent, claim work safely when several instances run, retry a bounded number of times and dead-letter for reconciliation; a database transaction is never held open while an external provider is being called.
 
 ### 5.5 Business modules and data ownership
 
-Hai module nghiệp vụ được chọn triển khai trước — **Core HR** (gồm Contracts) và **Recruitment** — cùng phân hệ định danh `[ADM]` đều đã có bảng trong canonical schema v1.2 (28 bảng). Attendance & Leave nằm ngoài phạm vi; thiết kế của nó được giữ tại [deferred/attendance_leave/](deferred/attendance_leave/README.md).
+The two business modules selected for the first delivery — **Core HR** (including Contracts) and **Recruitment** — together with the `[ADM]` identity module all have tables in the canonical v1.2 schema (28 tables). Attendance & Leave is out of scope; its design is kept at [deferred/attendance_leave/](deferred/attendance_leave/README.md).
 
 | Module | Responsibilities | Canonical tables | Current evidence |
 |---|---|---|---|
-| Core HR — Profile & Organization | employee, department, position | `employees`, `departments`, `positions` | UI prototype + canonical schema + OpenAPI + story có AC |
-| Core HR — Lifecycle | onboarding, events, documents, probation, offboarding | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | UI prototype (onboarding) + canonical schema + OpenAPI + story có AC |
-| Core HR — Contracts | contract lifecycle, expiry alert, addendum | `contracts`, `contract_addenda` | UI prototype + canonical schema + OpenAPI + story có AC |
-| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + story có AC + backend code-complete (REC-01 … REC-06) |
-| Identity & Access (ADM) | tài khoản, thông tin đăng nhập, vai trò/data scope, luân chuyển refresh token — **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](adr/011-in-house-identity.md)) | `users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens` | canonical schema v1.2 + OpenAPI + story có AC + backend code-complete (ADM-01, ADM-02) |
-| Audit & Outbox | audit trail và delivery state — **cơ chế xuyên suốt bắt buộc của mọi command, không có API quản trị trong đợt này** | `audit_logs`, `outbox_messages` | canonical schema v1.2 + ghi cùng transaction nghiệp vụ trong mọi repository |
+| Core HR — Profile & Organization | employee, department, position | `employees`, `departments`, `positions` | UI prototype + canonical schema + OpenAPI + stories with AC + backend code-complete (EMP-01, EMP-02) |
+| Core HR — Lifecycle | onboarding, events, documents, probation, offboarding | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | UI prototype (onboarding) + canonical schema + OpenAPI + stories with AC + backend code-complete (EMP-03 … EMP-07) |
+| Core HR — Contracts | contract lifecycle, expiry alerts, addenda | `contracts`, `contract_addenda` | UI prototype + canonical schema + OpenAPI + stories with AC + backend code-complete (CON-01 … CON-03) |
+| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + stories with AC + backend code-complete (REC-01 … REC-06) |
+| Identity & Access (ADM) | accounts, credentials, roles and data scope, refresh-token rotation — **with an administration API** at `/api/v1/auth/*` and `/api/v1/admin/*` ([ADR-011](adr/011-in-house-identity.md)) | `users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens` | canonical schema v1.2 + OpenAPI + stories with AC + backend code-complete (ADM-01, ADM-02) |
+| Audit & Outbox | the audit trail and delivery state — **a mandatory crosscutting mechanism of every command, with no administration API in this delivery** | `audit_logs`, `outbox_messages` | canonical schema v1.2 + written in the business transaction by every repository |
 
 
 ### 5.6 Target code structure
@@ -450,25 +450,25 @@ src/backend/
 ├── src/Qlns.BusinessLogic/       # module services/domain + repository contracts
 ├── src/Qlns.DataAccess/          # module repositories + EF Core/adapters
 ├── tests/Qlns.BusinessLogic.UnitTests/
-├── tests/smoke/                  # corehr_smoke.py, identity_smoke.py — HTTP thật trên PostgreSQL
-├── src/Qlns.Worker/              # proposed — background processing container, chưa tồn tại
+├── tests/smoke/                  # corehr_smoke.py, identity_smoke.py — real HTTP against PostgreSQL
+├── src/Qlns.Worker/              # proposed — background processing container, does not exist yet
 └── tests/Qlns.IntegrationTests/  # proposed — required before any operation counts as implemented
 
 docs/api/openapi.yaml             # contract-first OpenAPI 3.0.3 (62 paths, 79 operations, 17 tags)
 database/schema.sql               # canonical schema contract before EF migrations (28 tables, v1.2)
 ```
 
-Ba thư mục ghi `proposed` ở trên chưa tồn tại trong repository; mọi thứ còn lại đã có code. Không có `Qlns.Worker` nghĩa là ba điểm vào worker (`EmployeeMovementService.ApplyDueEventsAsync`, `OfferService.ExpireDueOffersAsync`, `ContractService.ExpireDueContractsAsync`) và outbox dispatcher hiện chỉ gọi được từ test, chưa có host chạy theo lịch.
+The three directories marked `proposed` above do not exist in the repository; everything else has code. The absence of `Qlns.Worker` means the three worker entry points (`EmployeeMovementService.ApplyDueEventsAsync`, `OfferService.ExpireDueOffersAsync`, `ContractService.ExpireDueContractsAsync`) and the outbox dispatcher are currently callable only from tests, with no host running them on a schedule.
 
-`tests/Qlns.IntegrationTests/` chưa tồn tại nhưng là điều kiện bắt buộc trước slice đầu tiên: các invariant quan trọng nhất của Core HR (một offer đang mở mỗi đơn, một hợp đồng chính đang hiệu lực, một case thôi việc đang mở, áp dụng biến động đúng ngày hiệu lực) là partial unique index và conditional update ở database, không thể verify bằng repository giả lập.
+`tests/Qlns.IntegrationTests/` does not exist yet but is a precondition for the first slice: the most important Core HR invariants (one open offer per application, one active primary contract, one open offboarding case, applying a movement on the right effective date) are partial unique indexes and conditional updates in the database, and cannot be verified against a faked repository.
 
-Một use case mới nằm trong module sở hữu nghiệp vụ, cùng command/query, policy và test. Không đặt business rule trong route, component UI hoặc database trigger tổng quát.
+A new use case belongs to the module that owns the business, together with its command/query, its policy and its tests. Business rules are never placed in a route, a UI component or a general-purpose database trigger.
 
 ---
 
 ## 6. Runtime View
 
-Các sequence dưới đây mô tả các runtime scenario có ý nghĩa kiến trúc. Sequence nghiệp vụ chi tiết theo từng User Story được quản lý tại [Sequence Diagrams](sequence_diagrams.md).
+The sequences below describe the runtime scenarios that matter architecturally. The detailed business sequences per user story are maintained in [Sequence Diagrams](sequence_diagrams.md).
 
 ### 6.1 Read employee list — happy path
 
@@ -481,7 +481,7 @@ sequenceDiagram
     participant Z as Authorization
     participant D as PostgreSQL
 
-    U->>W: Mở danh sách nhân viên
+    U->>W: Open the employee list
     W->>A: GET /api/employees?filter&page
     A->>Z: authorize(actor, employee.read, scope)
     Z-->>A: allowed + data scope
@@ -502,13 +502,13 @@ sequenceDiagram
     participant Z as Authorization
     participant D as PostgreSQL
 
-    U->>W: Mở hồ sơ ngoài phạm vi
+    U->>W: Open a profile outside their scope
     W->>A: GET /api/employees/{id}
     A->>Z: authorize(actor, employee.read, target)
     Z-->>A: denied
     A-->>W: 403 Problem Details + correlationId
     W-->>U: Forbidden state
-    Note over A,D: Database không trả dữ liệu nghiệp vụ cho request bị từ chối
+    Note over A,D: The database returns no business data for a denied request
 ```
 
 ### 6.3 Advance recruitment stage — success and conflict
@@ -626,15 +626,15 @@ flowchart TB
 
 | Rule | Reason |
 |---|---|
-| Browser chỉ truy cập Public Edge; database/object storage không public | giảm attack surface và ngăn client bypass API |
-| Web, API và worker là artifact versioned/immutable | rollback và trace release rõ ràng |
-| Migration chạy như release step riêng, không dùng ORM auto-create production | kiểm soát compatibility và rollback/roll-forward |
-| Business commit và outbox write nằm trong cùng DB transaction | không mất side effect sau commit |
-| Secret đến từ secret manager/reference theo môi trường | không đóng gói credential trong source/image |
-| Readiness kiểm tra dependency thiết yếu; liveness chỉ kiểm tra process | tránh route traffic vào instance chưa sẵn sàng |
-| Backup phải có restore drill; RPO/RTO do ADR phê duyệt | backup không được xem là hữu ích nếu chưa phục hồi thử |
+| The browser reaches only the public edge; the database and object storage are not public | reduces the attack surface and stops a client bypassing the API |
+| Web, API and worker are versioned, immutable artifacts | clear rollback and release tracing |
+| Migrations run as a separate release step; ORM auto-create is never used in production | controlled compatibility and rollback/roll-forward |
+| The business commit and the outbox write are in the same database transaction | no side effect is lost after the commit |
+| Secrets come from a secret manager or an environment-specific reference | no credential is baked into source or image |
+| Readiness checks the essential dependencies; liveness only checks the process | avoids routing traffic to an instance that is not ready |
+| A backup must have a restore drill; RPO/RTO are approved by an ADR | a backup counts for nothing until a restore has been tried |
 
-Docker Compose ba service có thể dùng cho local development sau này, nhưng hiện không tồn tại và không phải production topology.
+A three-service Docker Compose file may be useful for local development later, but it does not exist today and is not a production topology.
 
 ---
 
@@ -642,20 +642,20 @@ Docker Compose ba service có thể dùng cho local development sau này, nhưng
 
 | Concept | Rule | Detail |
 |---|---|---|
-| **Identity** | mọi business request có authenticated actor do server xác lập | actor gồm user/employee ID, roles, permissions, data scope, correlation ID |
-| **Authorization** | deny-by-default tại application boundary; UI hiding không phải security | RBAC kết hợp own/direct-report/department/organization scope |
-| **Validation** | DTO validation ở delivery; invariant/state rule ở domain/application | lỗi field dùng `422`; conflict state/version dùng `409` |
-| **Error handling** | error envelope/Problem Details nhất quán; không lộ stack, SQL, secret | lỗi có stable code, safe message, fields và correlation ID |
-| **Workflow** | command tường minh; không patch `status` tùy ý | transition kiểm tra actor, current state, target, guards và version |
-| **Transaction** | application service sở hữu transaction boundary | update aggregate, audit và outbox liên quan phải nguyên tử |
-| **Audit** | mọi thay đổi nhạy cảm ghi actor, action, target, server time, result | audit khác operational log và không chứa toàn payload nhạy cảm |
-| **Persistence** | owner module là writer duy nhất cho bảng của mình | module khác dùng application interface/reference, không dùng bảng như API ngầm |
-| **Time** | instant lưu UTC; business date giữ semantic riêng; UI theo organization timezone | timezone mặc định đề xuất `Asia/Ho_Chi_Minh`, cần xác nhận |
-| **Money** | dùng decimal/numeric và currency; không dùng floating point | calculation/rounding ở backend |
-| **Integration** | timeout, bounded retry, idempotency và reconciliation | lỗi gửi không rollback business state đã commit |
-| **Logging** | structured log, redaction bắt buộc | không log token, CV, hợp đồng, salary hoặc payload restricted |
-| **UI state** | Loading, Empty, Forbidden, Validation, Conflict, Unavailable, Success | không fallback im lặng sang demo data khi API lỗi |
-| **Accessibility** | keyboard, label, focus, contrast và lỗi gắn field | kiểm chứng WCAG 2.1 AA cho luồng thiết yếu |
+| **Identity** | every business request carries an authenticated actor established by the server | the actor holds the user/employee ID, roles, permissions, data scope and correlation ID |
+| **Authorization** | deny by default at the application boundary; hiding something in the UI is not security | RBAC combined with own / direct-report / department / organization scope |
+| **Validation** | DTO validation at delivery; invariants and state rules in the domain and application | field errors use `422`; state and version conflicts use `409` |
+| **Error handling** | a consistent Problem Details envelope; never expose a stack trace, SQL or a secret | an error carries a stable code, a safe message, the offending fields and a correlation ID |
+| **Workflow** | explicit commands; `status` is never patched arbitrarily | a transition checks the actor, the current state, the target, the guards and the version |
+| **Transaction** | the application service owns the transaction boundary | the aggregate update, the audit record and the outbox row must be atomic together |
+| **Audit** | every sensitive change records the actor, action, target, server time and result | an audit record is not an operational log and does not carry the whole sensitive payload |
+| **Persistence** | the owning module is the only writer of its tables | another module uses the application interface or a reference, never the table as an implicit API |
+| **Time** | instants are stored in UTC; a business date keeps its own semantics; the UI follows the organization timezone | the proposed default timezone is `Asia/Ho_Chi_Minh`, pending confirmation |
+| **Money** | use decimal/numeric with a currency; never floating point | calculation and rounding happen in the backend |
+| **Integration** | timeout, bounded retry, idempotency and reconciliation | a delivery failure never rolls back committed business state |
+| **Logging** | structured logs with mandatory redaction | never log a token, a CV, a contract, a salary or a restricted payload |
+| **UI state** | loading, empty, forbidden, validation, conflict, unavailable, success | never fall back silently to demo data when the API fails |
+| **Accessibility** | keyboard, labels, focus, contrast and errors bound to their field | verified against WCAG 2.1 AA on the essential flows |
 
 ---
 
@@ -663,33 +663,33 @@ Docker Compose ba service có thể dùng cho local development sau này, nhưng
 
 ## 9. Architecture Decisions (ADR index)
 
-Mỗi ADR là một file riêng tại [`docs/adr/`](adr/README.md); bảng dưới đây chỉ là chỉ mục. Quy ước trạng thái và danh sách
-ADR mà code đã phụ thuộc trong khi vẫn còn `Proposed` nằm ở [`docs/adr/README.md`](adr/README.md).
+Each ADR is its own file under [`docs/adr/`](adr/README.md); the table below is only an index. The status vocabulary and the
+list of ADRs the code already depends on while they are still `Proposed` are in [`docs/adr/README.md`](adr/README.md).
 
 | ADR | Decision | Status |
 |---|---|---|
-| [ADR-001](adr/001-three-tier-three-layer.md) | Kiến trúc 3-tier React – ASP.NET Core API – PostgreSQL và backend 3-layer | Accepted 2026-09-15 |
-| [ADR-002](adr/002-modular-monolith.md) | Backend modular monolith trước microservices | Proposed |
-| [ADR-003](adr/003-backend-enforces-authorization.md) | Backend thực thi authorization và business rules | Proposed |
-| [ADR-004](adr/004-contract-first-openapi.md) | REST/JSON, DTO và contract-first OpenAPI 3.0.3 | Accepted 2026-09-15 |
-| [ADR-005](adr/005-postgresql-system-of-record.md) | PostgreSQL system of record và versioned migration | Proposed |
-| [ADR-006](adr/006-explicit-commands-and-state-machines.md) | Explicit commands và state transitions | Proposed |
-| [ADR-007](adr/007-ports-adapters-and-outbox.md) | Ports/adapters, outbox và reliable delivery | Proposed |
-| [ADR-008](adr/008-feature-based-react-frontend.md) | Feature-based React frontend và shared API client | Accepted 2026-09-15 |
-| [ADR-009](adr/009-dotnet-10-efcore-postgresql.md) | .NET 10, ASP.NET Core, EF Core và PostgreSQL | Accepted 2026-09-15 |
-| [ADR-010](adr/010-delivery-scope-two-pillars.md) | Thu hẹp phạm vi giao hàng về các chức năng lá in đậm dưới Recruitment và Core HR theo `topdown-approach.png` | Accepted 2026-09-17 |
-| [ADR-011](adr/011-in-house-identity.md) | Xác thực và quản trị tài khoản làm **nội bộ** thay vì tích hợp Identity Provider bên ngoài | Accepted 2026-09-18 |
+| [ADR-001](adr/001-three-tier-three-layer.md) | Three-tier React – ASP.NET Core API – PostgreSQL, with a three-layer backend | Accepted 2026-09-15 |
+| [ADR-002](adr/002-modular-monolith.md) | A modular monolith backend before microservices | Proposed |
+| [ADR-003](adr/003-backend-enforces-authorization.md) | The backend enforces authorization and business rules | Proposed |
+| [ADR-004](adr/004-contract-first-openapi.md) | REST/JSON, DTOs and a contract-first OpenAPI 3.0.3 document | Accepted 2026-09-15 |
+| [ADR-005](adr/005-postgresql-system-of-record.md) | PostgreSQL as the system of record, with versioned migrations | Proposed |
+| [ADR-006](adr/006-explicit-commands-and-state-machines.md) | Explicit commands and state transitions | Proposed |
+| [ADR-007](adr/007-ports-adapters-and-outbox.md) | Ports/adapters, a transactional outbox and reliable delivery | Proposed |
+| [ADR-008](adr/008-feature-based-react-frontend.md) | A feature-based React frontend with a shared API client | Accepted 2026-09-15 |
+| [ADR-009](adr/009-dotnet-10-efcore-postgresql.md) | .NET 10, ASP.NET Core, EF Core and PostgreSQL | Accepted 2026-09-15 |
+| [ADR-010](adr/010-delivery-scope-two-pillars.md) | Narrowing the delivery scope to the bold leaf functions under Recruitment and Core HR per `topdown-approach.png` | Accepted 2026-09-17 |
+| [ADR-011](adr/011-in-house-identity.md) | Authentication and account administration **in house**, rather than integrating an external Identity Provider | Accepted 2026-09-18 |
 
-**Nợ quản trị.** Năm ADR còn `Proposed` — 002, 003, 005, 006, 007 — đã được code hiện thực hóa đầy đủ. Nếu một trong số
-chúng bị bác bỏ thì phần code tương ứng phải viết lại, không phải chỉnh cấu hình. Chi tiết ở [`docs/adr/README.md`](adr/README.md#nợ-quản-trị-đang-mở).
+**Governance debt.** Five ADRs are still `Proposed` — 002, 003, 005, 006 and 007 — yet the code implements all of them in full.
+Rejecting any one of them would mean rewriting code, not adjusting configuration. The detail is in [`docs/adr/README.md`](adr/README.md#open-governance-debt).
 
-**Open decisions:** object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency. (Identity
-Provider đã được chốt: xác thực và quản trị tài khoản làm nội bộ — [ADR-011](adr/011-in-house-identity.md).) EF Core
-migration là công cụ migration mục tiêu nhưng migration đầu tiên chỉ được sinh sau khi cài .NET 10 SDK và review
+**Open decisions:** object storage; the worker/queue; the hosting platform; the SLA; RPO/RTO; retention and data residency.
+(The Identity Provider question is settled: authentication and account administration are in house — [ADR-011](adr/011-in-house-identity.md).)
+EF Core migrations are the intended migration tool, but the first migration can only be generated once the .NET 10 SDK is installed and the model/schema drift reviewed.
 model/schema drift.
 
-Không ADR nào chuyển sang Accepted chỉ vì công nghệ xuất hiện trong prototype, sơ đồ, file DDL hay source code. ADR
-Accepted phải có owner, ngày phê duyệt, alternatives và consequences.
+No ADR becomes Accepted merely because a technology appears in a prototype, a diagram, a DDL file or the source code. An
+Accepted ADR must have an owner, an approval date, alternatives and consequences.
 
 ---
 
@@ -698,17 +698,17 @@ Accepted phải có owner, ngày phê duyệt, alternatives và consequences.
 
 | # | Source | Stimulus | Environment | Response | Measure |
 |---|---|---|---|---|---|
-| QR1 | Người dùng ngoài quyền | đọc hồ sơ/hợp đồng restricted | production | request bị từ chối trước khi trả dữ liệu | 100% authorization tests trả `401/403`; không rò field restricted |
-| QR2 | Hai recruiter | cùng chuyển một application | concurrent requests | đúng một transition commit | request còn lại trả `409` hoặc idempotent result; không có transition trùng |
-| QR3 | HR Officer | onboard lại cùng application | retry sau timeout | trả cùng employee hoặc conflict xác định | không tạo employee/task trùng |
-| QR4 | Provider | email/calendar timeout | sau business commit | retry hữu hạn, business state giữ nguyên | không rollback trạng thái đã commit; có delivery/reconciliation record trong `outbox_messages` |
-| QR5 | HR User | tải danh sách nhân viên | tải mục tiêu, warm service | trả page được scope/filter | p95 ≤ 500 ms; query bounded; không N+1 |
-| QR6 | Security / Legal | truy vết thay đổi hợp đồng | retention window | `audit_logs` chứa actor, time, before/after reference và result (truy cập trực tiếp trên database; không có API tra cứu trong đợt này) | 100% command hợp đồng có audit record trong cùng transaction |
-| QR7 | Operations | database unavailable | runtime | readiness fail, request không ghi dở dang | rollback hoàn toàn; `5xx` an toàn + correlation ID |
-| QR8 | Operations | restore từ backup | recovery drill | hệ thống phục hồi nhất quán | đạt RPO/RTO sau khi ADR tương ứng được Accepted |
-| QR9 | Keyboard user | hoàn thành một luồng ưu tiên | desktop/tablet | thao tác không cần chuột | 100% control thiết yếu keyboard-accessible, focus visible |
+| QR1 | A user outside their scope | reads a restricted profile or contract | production | the request is denied before any data is returned | 100% of authorization tests return `401/403`; no restricted field leaks |
+| QR2 | Two recruiters | advance the same application | concurrent requests | exactly one transition commits | the other request returns `409` or an idempotent result; no duplicate transition |
+| QR3 | An HR Officer | onboards the same application again | retry after a timeout | the same employee is returned, or a deterministic conflict | no duplicate employee or tasks are created |
+| QR4 | A provider | e-mail/calendar timeout | after the business commit | bounded retries, business state unchanged | committed state is never rolled back; a delivery/reconciliation record exists in `outbox_messages` |
+| QR5 | An HR user | loads the employee list | target load, warm service | a scoped and filtered page is returned | p95 ≤ 500 ms; bounded query; no N+1 |
+| QR6 | Security / Legal | traces a contract change | retention window | `audit_logs` holds the actor, time, before/after reference and result (read directly from the database; there is no lookup API in this delivery) | 100% of contract commands write an audit record in the same transaction |
+| QR7 | Operations | the database is unavailable | runtime | readiness fails and no request writes partial state | a complete rollback; a safe `5xx` plus a correlation ID |
+| QR8 | Operations | restores from a backup | recovery drill | the system comes back consistent | the RPO/RTO are met, once the corresponding ADR is Accepted |
+| QR9 | A keyboard user | completes a priority flow | desktop/tablet | the flow needs no mouse | 100% of essential controls are keyboard-accessible with a visible focus |
 
-Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **provisional** và phải được benchmark lại trước production.
+Any budget set without load data or infrastructure is **provisional** and must be re-benchmarked before production.
 
 ---
 
@@ -716,47 +716,47 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 
 | # | Risk | Impact | Likelihood | Mitigation | Owner |
 |---|---|---|---|---|---|
-| R1 | UI prototype bị hiểu nhầm là frontend đã hoàn thành | High | High | nhãn Design-only, acceptance criteria và không dùng mock data fallback production | Product + Architecture |
-| R1b | `code-complete` bị hiểu nhầm là API đã chạy được trên môi trường thật | High | High | `x-implementation-status` trên từng operation; cả 79 operation đang ở `code-complete`, **chưa operation nào** đạt `implemented` vì `tests/Qlns.IntegrationTests` và EF Core migration chưa tồn tại | Architecture |
-| R2 | Canonical schema chưa được chuyển thành EF migration có version | High | High | migration plan và constraint/invariant integration tests trên PostgreSQL thật | Data + Backend |
-| R2b | Thiết kế Attendance & Leave đã tách ra `deferred/` có thể drift khỏi canonical (bảng `employees`, `users`, error model) nếu module đó quay lại phạm vi | Medium | Medium | ghi rõ phụ thuộc trong `deferred/attendance_leave/README.md`; review lại toàn bộ fragment trước khi ghép về | Architecture |
-| R3 | Stack được chọn theo sơ đồ mà không qua decision process | Medium | High | ADR framework/version và proof-of-concept vertical slice | Architecture |
-| R4 | Business rule rò vào UI/router | High | Medium | application/domain boundary, code review và architecture fitness tests | Backend lead |
-| R5 | RBAC chỉ ẩn nút, thiếu data scope server-side | Critical | Medium | deny-by-default policy tests cho từng role/scope | Security |
-| R6 | Candidate-to-employee handoff tạo dữ liệu trùng | High | Medium | source link, unique/business key, lock/version và idempotency test | Core HR + Recruitment |
-| R6b | Kết quả thử việc / đóng case thôi việc sinh trùng `employee_events` khi retry | High | Medium | liên kết một-một (`probation_reviews.employee_event_id`, `offboarding_cases.employee_event_id`) và idempotency test | Core HR |
-| R7 | Provider failure làm sai trạng thái nghiệp vụ | High | Medium | outbox, delivery state, bounded retry và reconciliation | Integration owner |
-| R8 | Dữ liệu nhạy cảm xuất hiện trong log/export/test | Critical | Medium | classification, DTO allowlist, redaction, synthetic test data, export audit | Security + Data |
-| R9 | Mermaid/C4/ADR drift khỏi implementation tương lai | Medium | High | docs-first PR checklist và traceability/fitness gates | Architecture |
-| R10 | SLA/RPO/RTO không có owner | High | Medium | business impact analysis và ADR trước production design | Sponsor + Operations |
+| R1 | The UI prototype is mistaken for a finished frontend | High | High | design-only labels, acceptance criteria, and no mock-data fallback in production | Product + Architecture |
+| R1b | `code-complete` is mistaken for an API that runs in a real environment | High | High | `x-implementation-status` on each operation; all 79 operations are at `code-complete` and **none** has reached `implemented`, because `tests/Qlns.IntegrationTests` and the EF Core migrations do not exist | Architecture |
+| R2 | The canonical schema has not been turned into a versioned EF migration | High | High | a migration plan plus constraint and invariant integration tests against a real PostgreSQL | Data + Backend |
+| R2b | The Attendance & Leave design split into `deferred/` may drift from the canonical schema (the `employees` and `users` tables, the error model) if that module returns | Medium | Medium | record the dependencies in `deferred/attendance_leave/README.md`; review every fragment before merging it back | Architecture |
+| R3 | The stack was chosen from a diagram rather than through a decision process | Medium | High | an ADR per framework and version, plus a proof-of-concept vertical slice | Architecture |
+| R4 | Business rules leak into the UI or the router | High | Medium | the application/domain boundary, code review and architecture fitness tests | Backend lead |
+| R5 | RBAC only hides buttons and lacks a server-side data scope | Critical | Medium | deny-by-default policy tests per role and scope | Security |
+| R6 | The candidate-to-employee handoff creates duplicate data | High | Medium | the source link, a unique business key, locking/versioning and idempotency tests | Core HR + Recruitment |
+| R6b | A probation outcome or a closed offboarding case creates duplicate `employee_events` on retry | High | Medium | the one-to-one links (`probation_reviews.employee_event_id`, `offboarding_cases.employee_event_id`) plus idempotency tests | Core HR |
+| R7 | A provider failure corrupts the business state | High | Medium | outbox, delivery state, bounded retries and reconciliation | Integration owner |
+| R8 | Sensitive data appears in logs, exports or tests | Critical | Medium | classification, a DTO allowlist, redaction, synthetic test data and export auditing | Security + Data |
+| R9 | The Mermaid diagrams, C4 views and ADRs drift from the future implementation | Medium | High | a docs-first PR checklist plus traceability and fitness gates | Architecture |
+| R10 | SLA, RPO and RTO have no owner | High | Medium | a business impact analysis and an ADR before the production design | Sponsor + Operations |
 
-**Accepted technical debt:** chưa có. Mọi technical debt chỉ được Accepted khi có owner, impact, expiry/revisit condition và quyết định phê duyệt.
+**Accepted technical debt:** none. Technical debt is only Accepted once it has an owner, an impact, an expiry or revisit condition, and an approval decision.
 
 ---
 
 ## 12. Architecture Fitness Functions
 
-Các gate dưới đây là target bắt buộc. Hiện mới có unit test ở tầng nghiệp vụ và một link-check cho tài liệu; những gate chưa có executable job vẫn phải giữ trạng thái Planned.
+The gates below are mandatory targets. Today there are only business-layer unit tests; any gate without an executable job must stay Planned.
 
 | Test / Gate | Rule enforced | Fails when | Status / planned location |
 |---|---|---|---|
-| `FrontendCannotAccessDatabase` | C2, §5.1 | frontend dependency/import chứa DB driver hoặc connection | Planned — `tests/architecture` |
-| `LayersPointInward` | §5.3 | domain phụ thuộc API, ORM hoặc provider SDK | Planned — `tests/architecture` |
-| `NoCrossModuleTableWrites` | §5.5 | module ghi trực tiếp bảng do module khác sở hữu | Planned — architecture/integration tests |
-| `EveryBusinessEndpointRequiresAuthorization` | Q1 | endpoint nghiệp vụ thiếu policy/actor | Planned — security fitness tests |
-| `RestrictedFieldsAreAllowlisted` | Q1, §8 | response DTO vô tình expose salary/document/private field | Planned — contract tests |
-| `EveryStateChangeUsesACommand` | Q3 | API cho phép generic patch trạng thái | Planned — route/contract tests |
-| `EveryCommandWritesAudit` | Q2 | command nhạy cảm commit mà không có audit record | Planned — integration tests |
-| `OutboxIsAtomicWithBusinessChange` | Q2/Q7 | commit business state nhưng thiếu outbox hoặc ngược lại | Planned — DB integration tests |
-| `IdempotentCommandRetryConformance` | Q7 | cùng command gửi lại với `Idempotency-Key` tạo side effect lần hai | Planned — integration conformance tests |
-| `MigrationsUpgradeFromPreviousRelease` | C3 | migration fail hoặc schema không tương thích | Planned — CI database job |
-| `OpenApiBreakingChangeGate` | ADR-004 | contract breaking change không có version/ADR | Planned — CI contract diff |
-| `NoSensitiveDataInLogs` | §8 | log fixture chứa token, CV, salary hoặc restricted payload | Planned — security tests |
-| `CriticalFlowsMeetAccessibilityGate` | Q4 | axe/keyboard checks fail ở luồng ưu tiên | Planned — frontend CI |
-| `ReadPerformanceBudget` | Q5 | employee/recruitment list vượt provisional p95 budget | Planned — performance job |
-| `MarkdownLinksAndMermaidAreValid` | C9 | tài liệu có link nội bộ/anchor hỏng hoặc Mermaid không parse | Planned — chưa có job tự động; link và anchor hiện được kiểm thủ công trước khi merge (§5 của `docs/README.md`) |
+| `FrontendCannotAccessDatabase` | C2, §5.1 | a frontend dependency or import pulls in a DB driver or connection | Planned — `tests/architecture` |
+| `LayersPointInward` | §5.3 | the domain depends on the API, the ORM or a provider SDK | Planned — `tests/architecture` |
+| `NoCrossModuleTableWrites` | §5.5 | a module writes directly to a table owned by another module | Planned — architecture/integration tests |
+| `EveryBusinessEndpointRequiresAuthorization` | Q1 | a business endpoint has no policy or no actor | Planned — security fitness tests |
+| `RestrictedFieldsAreAllowlisted` | Q1, §8 | a response DTO accidentally exposes a salary, document or private field | Planned — contract tests |
+| `EveryStateChangeUsesACommand` | Q3 | the API allows a generic status patch | Planned — route/contract tests |
+| `EveryCommandWritesAudit` | Q2 | a sensitive command commits without an audit record | Planned — integration tests |
+| `OutboxIsAtomicWithBusinessChange` | Q2/Q7 | business state commits without its outbox row, or the reverse | Planned — DB integration tests |
+| `IdempotentCommandRetryConformance` | Q7 | the same command resent with an `Idempotency-Key` produces a second side effect | Planned — integration conformance tests |
+| `MigrationsUpgradeFromPreviousRelease` | C3 | a migration fails, or the schema is incompatible | Planned — CI database job |
+| `OpenApiBreakingChangeGate` | ADR-004 | a breaking contract change without a version bump or an ADR | Planned — CI contract diff |
+| `NoSensitiveDataInLogs` | §8 | a log fixture contains a token, a CV, a salary or a restricted payload | Planned — security tests |
+| `CriticalFlowsMeetAccessibilityGate` | Q4 | axe or keyboard checks fail on a priority flow | Planned — frontend CI |
+| `ReadPerformanceBudget` | Q5 | the employee or recruitment list exceeds the provisional p95 budget | Planned — performance job |
+| `MarkdownLinksAndMermaidAreValid` | C9 | a document has a broken internal link or anchor, or Mermaid that will not parse | Planned — no automated job yet; links and anchors are checked by hand before merge (§5 of `docs/README.md`) |
 
-CI tương lai phải chạy các gate phù hợp trên mọi pull request. Một rule chỉ được đánh dấu **Enforced** khi test/job thực sự tồn tại, có thể fail và được required trong CI.
+Future CI must run the applicable gates on every pull request. A rule is only marked **Enforced** once its test or job actually exists, can fail, and is required in CI.
 
 ---
 

@@ -1,48 +1,54 @@
-# ADR-011 — Xác thực và quản trị tài khoản làm nội bộ
+# ADR-011 — Authentication and account administration in house
 
-- **Trạng thái:** Accepted 2026-09-18
+- **Status:** Accepted 2026-09-18
 - **Owner:** Architect
-- **Liên quan:** [ADR-003](003-backend-enforces-authorization.md), [ADR-010](010-delivery-scope-two-pillars.md)
+- **Related:** [ADR-003](003-backend-enforces-authorization.md), [ADR-010](010-delivery-scope-two-pillars.md)
 
-## Bối cảnh
+## Context
 
-Baseline đầu tiên để trống Identity Provider ("chưa chọn provider"). Hệ quả là hệ thống có đầy đủ authorization nhưng
-**không có đường đăng nhập nào** ngoài endpoint `/dev/token` chỉ chạy ở môi trường Development. Chọn một IdP bên ngoài lại
-là một quyết định mua sắm chưa có.
+The first baseline left the Identity Provider blank ("provider not yet chosen"). The consequence was a system with full
+authorization but **no way to sign in at all**, apart from a `/dev/token` endpoint that only exists in the Development
+environment. Choosing an external IdP, however, is a procurement decision nobody has made.
 
-## Quyết định
+## Decision
 
-Đưa hai chức năng lá *Account Management* và *Roles/Permissions & Data Access Scope* của trụ cột System Administration vào
-phạm vi, và tự phát hành phiên:
+Bring the two leaf functions *Account Management* and *Roles/Permissions & Data Access Scope* of the System
+Administration pillar into scope, and issue our own sessions:
 
-- Mật khẩu băm **PBKDF2-HMAC-SHA512**, 210 000 vòng, salt 128-bit mỗi mật khẩu, tham số nằm trong chính chuỗi hash
-  (`user_credentials.password_hash`) để nâng số vòng không cần migration.
-- Access token **JWT HS256** do chính API phát hành, ký bằng `Authentication:Jwt:SigningKey`, mặc định sống 30 phút.
-- Refresh token **dùng một lần**, chỉ lưu bản băm SHA-256 trong `refresh_tokens`, có phát hiện replay.
-- Ma trận vai trò → permission là **dữ liệu tham chiếu** trong `roles` / `role_permissions`, nạp từ `seed_roles.sql`.
+- Passwords hashed with **PBKDF2-HMAC-SHA512**, 210 000 iterations, a 128-bit per-password salt, with the parameters
+  encoded inside the hash string (`user_credentials.password_hash`) so the iteration count can be raised without a
+  migration.
+- The access token is a **JWT signed with HS256** issued by the API itself using `Authentication:Jwt:SigningKey`, valid
+  for 30 minutes by default.
+- The refresh token is **single-use**, stored only as a SHA-256 digest in `refresh_tokens`, with replay detection.
+- The role → permission matrix is **reference data** in `roles` / `role_permissions`, loaded from `seed_roles.sql`.
 
-`Authentication:Jwt:SigningKey` là bắt buộc: thiếu nó host dừng ngay khi khởi động chứ không chạy ở trạng thái nửa vời.
-Cố tình **không** có nhánh dự phòng sang một OIDC authority bên ngoài.
+`Authentication:Jwt:SigningKey` is required: without it the host stops at startup rather than running half-configured.
+There is deliberately **no** silent fallback to an external OIDC authority.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Tích hợp Keycloak / Entra ID** — loại bỏ: cần thêm một thành phần vận hành và một quyết định mua sắm chưa có.
-- **Chỉ làm đăng nhập, cấp tài khoản bằng SQL tay** — loại bỏ: không có vết audit cho hành vi nâng quyền.
+- **Integrate Keycloak or Entra ID** — rejected: it adds an operational component and requires a procurement decision
+  that has not been made.
+- **Build sign-in only and provision accounts by hand in SQL** — rejected: it leaves no audit trail for privilege
+  escalation.
 
-## Hệ quả
+## Consequences
 
-1. Hệ thống nay tự chịu trách nhiệm lưu mật khẩu. Giảm rủi ro bằng PBKDF2 210 000 vòng, khoá tạm 15 phút sau 5 lần sai, và
-   ghi audit mọi lần đăng nhập kể cả thất bại (`result = 'rejected'`).
-2. Access token stateless **không thu hồi được**, nên vòng đời 30 phút chính là giới hạn trên của việc thu hồi quyền;
-   refresh token là tạo tác thu hồi được.
-3. `Authentication:Jwt:SigningKey` trở thành secret hạng nhất của hệ thống.
-4. Claim trong token giữ **nguyên** hình dạng cũ (`qlns_user_id`, `qlns_employee_id`, `data_scope`, `department_id`,
-   `permission`), nên không module nghiệp vụ nào phải sửa. Nếu sau này federation với IdP ngoài, chỉ cần provider phát hành
-   đúng bộ claim đó và thay cụm `/api/v1/auth/*`; phần authorization không đổi. Vì federation thay cả cụm endpoint đăng
-   nhập chứ không phải một dòng cấu hình, nó phải là một ADR mới.
-5. Thêm bốn bảng vào canonical schema (delta v1.2): `roles`, `role_permissions`, `user_credentials`, `refresh_tokens`;
-   `user_roles.role_code` trở thành khóa ngoại tới `roles(code)`.
+1. The system now stores passwords itself. The risk is reduced by PBKDF2 at 210 000 iterations, a 15-minute lockout
+   after 5 failures, and an audit record for every sign-in attempt including the failures (`result = 'rejected'`).
+2. A stateless access token **cannot be revoked**, so its 30-minute lifetime is the upper bound on revoking authority;
+   the refresh token is the revocable artifact.
+3. `Authentication:Jwt:SigningKey` becomes a first-class secret of the system.
+4. The token claims keep **exactly** their previous shape (`qlns_user_id`, `qlns_employee_id`, `data_scope`,
+   `department_id`, `permission`), so no business module had to change. Should the system federate with an external IdP
+   later, that provider need only issue the same claim set and replace the `/api/v1/auth/*` group; the authorization
+   code stays as it is. Because federation replaces the whole sign-in endpoint group rather than one configuration
+   value, it must be its own ADR.
+5. Four tables are added to the canonical schema (delta v1.2): `roles`, `role_permissions`, `user_credentials` and
+   `refresh_tokens`; `user_roles.role_code` becomes a foreign key to `roles(code)`.
 
-## Chưa làm
+## Not done
 
-MFA, quên mật khẩu qua email (hiện chỉ có admin đặt lại), rate limit theo IP trước `POST /auth/login` (thuộc reverse proxy).
+MFA, a forgotten-password flow over e-mail (today only an administrator can reset), and per-IP rate limiting in front of
+`POST /auth/login` (a reverse-proxy concern).

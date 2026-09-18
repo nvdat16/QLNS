@@ -1,32 +1,38 @@
-# ADR-001 — Kiến trúc 3-tier và backend 3-layer
+# ADR-001 — Three-tier architecture with a three-layer backend
 
-- **Trạng thái:** Accepted 2026-09-15
+- **Status:** Accepted 2026-09-15
 - **Owner:** Architect
-- **Liên quan:** [ADR-002](002-modular-monolith.md), [ADR-003](003-backend-enforces-authorization.md), [ADR-009](009-dotnet-10-efcore-postgresql.md)
+- **Related:** [ADR-002](002-modular-monolith.md), [ADR-003](003-backend-enforces-authorization.md), [ADR-009](009-dotnet-10-efcore-postgresql.md)
 
-## Bối cảnh
+## Context
 
-Hệ thống phải phục vụ ba nhóm người dùng rất khác nhau (ứng viên bên ngoài, nhân viên nội bộ, quản trị) trên cùng một tập
-dữ liệu nhân sự nhạy cảm. Prototype ban đầu là HTML tĩnh với dữ liệu mô phỏng, nên nguy cơ lớn nhất là business rule trôi
-vào tầng trình bày và dữ liệu bị truy cập không qua kiểm soát.
+The system serves three very different audiences — external candidates, internal employees and administrators — over the
+same body of sensitive HR data. The starting point was a set of static HTML prototypes with simulated data, so the
+biggest risk was business rules drifting into the presentation layer and data being reached without a control point.
 
-## Quyết định
+## Decision
 
-Ba **runtime tier**: React Web (Presentation), ASP.NET Core API cộng .NET Worker (Application), PostgreSQL (Data). Bên
-trong Application Tier là ba **source layer**: `Qlns.Api` (Presentation), `Qlns.BusinessLogic` (Business), `Qlns.DataAccess`
-(Data Access). Dependency luôn hướng vào trong: Business Logic không tham chiếu ASP.NET Core hay EF Core; `Qlns.Api` chỉ
-chạm Data Access tại composition root để đăng ký dependency.
+Three **runtime tiers**: the React web application (presentation), the ASP.NET Core API plus the .NET worker
+(application), and PostgreSQL (data). Inside the application tier there are three **source layers**: `Qlns.Api`
+(presentation), `Qlns.BusinessLogic` (business) and `Qlns.DataAccess` (data access). Dependencies always point inward:
+the business layer references neither ASP.NET Core nor EF Core, and `Qlns.Api` touches the data layer only at the
+composition root to register dependencies.
 
-Worker **không** tạo tier thứ tư — nó nằm cùng Application Tier và chỉ khác ở chỗ không nhận request trực tiếp.
+The worker does **not** form a fourth tier — it sits in the application tier and differs only in that it takes no direct
+user requests.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Hai tier (client gọi thẳng database)** — loại bỏ: không thể thực thi permission và data scope phía server, vi phạm Q1.
-- **Hexagonal/Clean Architecture đầy đủ với project riêng cho domain** — loại bỏ ở giai đoạn này: thêm một ranh giới project
-  nữa mà chưa có nhu cầu thay thế persistence; ranh giới ports/adapters cần thiết đã có ở [ADR-007](007-ports-adapters-and-outbox.md).
+- **Two tiers, with the client reaching the database** — rejected: permission and data scope cannot be enforced
+  server-side, which violates Q1.
+- **Full hexagonal/clean architecture with a separate domain project** — rejected for now: it adds another project
+  boundary without a need to replace persistence. The ports/adapters boundary that is genuinely needed is covered by
+  [ADR-007](007-ports-adapters-and-outbox.md).
 
-## Hệ quả
+## Consequences
 
-- Mọi query và command bắt buộc đi qua Backend API; frontend không có connection string.
-- Business Logic test được bằng unit test thuần, không cần database — đây là lý do 1347 unit test hiện tại chạy không cần PostgreSQL.
-- Cái giá: một use case đơn giản vẫn phải đi qua ba lớp. Chấp nhận, vì đây là ranh giới bảo vệ Q1–Q3.
+- Every query and command must go through the backend API; the frontend has no connection string.
+- The business layer is testable with plain unit tests and no database — which is why the current 1347 unit tests run
+  without PostgreSQL.
+- The cost: even a trivial use case passes through three layers. Accepted, because this is the boundary that protects
+  Q1–Q3.

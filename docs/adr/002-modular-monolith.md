@@ -1,32 +1,35 @@
-# ADR-002 — Backend modular monolith trước microservices
+# ADR-002 — A modular monolith backend before microservices
 
-- **Trạng thái:** Proposed — **code đã đi theo quyết định này**, chờ Project Owner xác nhận
-- **Owner:** chưa có
-- **Liên quan:** [ADR-001](001-three-tier-three-layer.md), [ADR-007](007-ports-adapters-and-outbox.md)
+- **Status:** Proposed — **the code already follows this decision**, awaiting Project Owner confirmation
+- **Owner:** none yet
+- **Related:** [ADR-001](001-three-tier-three-layer.md), [ADR-007](007-ports-adapters-and-outbox.md)
 
-## Bối cảnh
+## Context
 
-Phạm vi giao hàng gồm bốn module (Recruitment, Core HR, Contracts, Identity & Access) có ràng buộc dữ liệu chặt với nhau:
-chấp nhận offer tạo nhân viên và hợp đồng trong **một** transaction, quyết định thử việc sinh `employee_events`, hoàn tất
-thôi việc sinh event termination. Đội phát triển là một nhóm nhỏ, chưa có hạ tầng vận hành phân tán.
+The delivery scope contains four modules (Recruitment, Core HR, Contracts, Identity & Access) whose data is tightly
+coupled: accepting an offer creates an employee and a contract in **one** transaction, a probation decision writes an
+`employee_events` row, and completing an offboarding case writes a termination event. The team is small and has no
+distributed operations platform.
 
-## Quyết định
+## Decision
 
-Một deployable duy nhất, chia module theo nghiệp vụ: `Modules/<Module>/<Feature>` lặp lại ở cả ba layer, tên module khớp
-OpenAPI tag. Mỗi bảng có đúng một module sở hữu; module khác muốn đọc/ghi thì đi qua interface của module chủ, không dùng
-bảng như API ngầm.
+A single deployable, divided into business modules: `Modules/<Module>/<Feature>` repeated across all three layers, with
+module names matching the OpenAPI tags. Each table has exactly one owning module; another module that needs to read or
+write it goes through the owner's interface rather than treating the table as an implicit API.
 
-Ngoại lệ được ghi nhận tường minh: các command cần một transaction duy nhất xuyên module (offer accept → employee +
-contract + onboarding_tasks) được phép ghi entity của module khác **qua entity của module đó**, không qua HTTP.
+One exception is recorded explicitly: commands that require a single transaction across modules (offer accept →
+employee + contract + onboarding_tasks) may write another module's entities **through that module's own entity types**,
+never over HTTP.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Microservices theo module** — loại bỏ: sẽ biến các invariant một-transaction ở trên thành saga, đổi lấy một bài toán
-  nhất quán phân tán mà quy mô hiện tại không cần.
-- **Monolith không chia module** — loại bỏ: mất khả năng tách về sau và mất ranh giới sở hữu dữ liệu.
+- **Microservices per module** — rejected: it would turn the single-transaction invariants above into sagas, buying a
+  distributed-consistency problem that the current scale does not require.
+- **A monolith with no module structure** — rejected: it forfeits both the option to split later and the notion of data
+  ownership.
 
-## Hệ quả
+## Consequences
 
-- Tách microservices sau này vẫn khả thi vì ranh giới module và quyền sở hữu bảng đã rõ, nhưng sẽ phải xử lý đúng những
-  transaction xuyên module đã liệt kê ở `src/backend/README.md`.
-- Cần một fitness function `NoCrossModuleTableWrites` để ranh giới không trôi; hiện vẫn `Planned`.
+- Splitting into services later remains feasible, because module boundaries and table ownership are already explicit —
+  but it will have to address exactly the cross-module transactions listed in `src/backend/README.md`.
+- A `NoCrossModuleTableWrites` fitness function is needed so the boundary does not erode; it is still `Planned`.

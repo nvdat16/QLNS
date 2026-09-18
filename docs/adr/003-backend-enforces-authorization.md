@@ -1,30 +1,34 @@
-# ADR-003 — Backend thực thi authorization và business rules
+# ADR-003 — The backend enforces authorization and business rules
 
-- **Trạng thái:** Proposed — **code đã đi theo quyết định này**, chờ Project Owner xác nhận
-- **Owner:** chưa có
-- **Liên quan:** [ADR-001](001-three-tier-three-layer.md), [ADR-011](011-in-house-identity.md), quality goal Q1
+- **Status:** Proposed — **the code already follows this decision**, awaiting Project Owner confirmation
+- **Owner:** none yet
+- **Related:** [ADR-001](001-three-tier-three-layer.md), [ADR-011](011-in-house-identity.md), quality goal Q1
 
-## Bối cảnh
+## Context
 
-Dữ liệu nhân sự là confidential/restricted (C6). UI prototype có sẵn các màn hình ẩn/hiện nút theo vai trò, và rủi ro R5
-trong sổ rủi ro chính là "RBAC chỉ ẩn nút, thiếu data scope server-side".
+HR data is classified confidential/restricted (constraint C6). The UI prototypes already show and hide buttons by role,
+and risk R5 in the register is precisely "RBAC only hides buttons, no server-side data scope".
 
-## Quyết định
+## Decision
 
-Deny-by-default tại application boundary. Mỗi endpoint nghiệp vụ gắn một policy yêu cầu permission dạng
-`<module>.<feature>.<verb>`; mỗi service kiểm tra thêm **data scope** (`self` / `department` / `organization`) trên chính
-tài nguyên được yêu cầu. Tài nguyên ngoài scope trả `404`, không phải `403`, để không tiết lộ sự tồn tại của bản ghi.
+Deny by default at the application boundary. Every business endpoint carries a policy requiring a permission of the form
+`<module>.<feature>.<verb>`; every service additionally checks the **data scope** (`self` / `department` /
+`organization`) against the requested resource. A resource outside the caller's scope returns `404`, not `403`, so that
+the existence of the record is not disclosed.
 
-Quyền do client gửi lên không bao giờ được tin. Route guard ở frontend chỉ phục vụ trải nghiệm.
+Permissions sent by the client are never trusted. Frontend route guards exist for user experience only.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Chỉ kiểm tra permission, bỏ data scope** — loại bỏ: một Line Manager sẽ đọc được hồ sơ toàn công ty.
-- **Row-level security của PostgreSQL** — loại bỏ ở giai đoạn này: scope phụ thuộc actor và quan hệ quản lý, biểu diễn
-  trong policy ứng dụng dễ test hơn; có thể xem lại như lớp phòng thủ thứ hai.
+- **Check permissions only, drop data scope** — rejected: a line manager would be able to read every profile in the
+  company.
+- **PostgreSQL row-level security** — rejected for now: scope depends on the actor and on reporting relationships, which
+  is easier to express and test in an application policy. Worth revisiting as a second line of defence.
 
-## Hệ quả
+## Consequences
 
-- Mọi service nhận `CoreHrActor` chứ không nhận `userId` trần.
-- Cần `EveryBusinessEndpointRequiresAuthorization` và bộ test deny-by-default theo từng vai trò/scope; hiện vẫn `Planned`.
-- Trả `404` cho tài nguyên ngoài scope khiến log khó đọc hơn một chút; bù lại bằng `correlationId` trong audit.
+- Every service takes a `CoreHrActor` rather than a bare `userId`.
+- `EveryBusinessEndpointRequiresAuthorization` and a deny-by-default test suite per role and scope are needed; both are
+  still `Planned`.
+- Returning `404` for out-of-scope resources makes logs slightly harder to read; the `correlationId` in the audit record
+  compensates.

@@ -1,30 +1,32 @@
-# ADR-008 — Feature-based React frontend và shared API client
+# ADR-008 — A feature-based React frontend with a shared API client
 
-- **Trạng thái:** Accepted 2026-09-15
+- **Status:** Accepted 2026-09-15
 - **Owner:** Frontend lead
-- **Liên quan:** [ADR-004](004-contract-first-openapi.md), quality goal Q4, Q6
+- **Related:** [ADR-004](004-contract-first-openapi.md), quality goals Q4 and Q6
 
-## Bối cảnh
+## Context
 
-Prototype trong `uiux/` được tổ chức theo *màn hình*, mỗi file HTML tự chứa dữ liệu và tương tác mô phỏng. Chuyển thẳng
-cách tổ chức đó sang React sẽ tạo ra các trang không dùng lại được gì của nhau.
+The prototypes under `uiux/` are organised by *screen*: each HTML file carries its own data and simulated interactions.
+Porting that structure straight into React would produce pages that share nothing.
 
-## Quyết định
+## Decision
 
-Tổ chức theo feature, không theo loại file: `src/features/<feature>/{api,hooks,components,pages}`. Mỗi feature chỉ được
-phụ thuộc `src/shared` (design system) và `src/api` (HTTP client, map Problem Details, xử lý token và correlation);
-feature không import internals của feature khác.
+Organise by feature rather than by file type: `src/features/<feature>/{api,hooks,components,pages}`. A feature may
+depend only on `src/shared` (the design system) and `src/api` (the HTTP client, Problem Details mapping, token handling
+and correlation); a feature never imports another feature's internals.
 
-Access token giữ **trong bộ nhớ**, refresh token giữ ở `localStorage`. Các lần renew đồng thời dùng chung một exchange
-đang bay, vì server coi refresh token là dùng một lần.
+The access token is held **in memory**; the refresh token lives in `localStorage`. Concurrent renewals share a single
+in-flight exchange, because the server treats a refresh token as single-use.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Tổ chức theo loại (`components/`, `pages/`, `hooks/` ở gốc)** — loại bỏ: một thay đổi nghiệp vụ sẽ rải khắp bốn thư mục.
-- **Giữ access token trong `localStorage` cho tiện** — loại bỏ: mọi script trong trang đọc được nó.
+- **Organise by type (`components/`, `pages/`, `hooks/` at the root)** — rejected: one business change would then be
+  spread across four directories.
+- **Keep the access token in `localStorage` for convenience** — rejected: every script on the page could read it.
 
-## Hệ quả
+## Consequences
 
-- Permission trong `session.user.permissions` chỉ quyết định việc render; server vẫn kiểm tra lại mọi request ([ADR-003](003-backend-enforces-authorization.md)).
-- Đóng tab là mất access token — đúng ý đồ; phiên được khôi phục bằng refresh token khi tải lại trang.
-- Prototype HTML trong `uiux/` giữ vai trò tham chiếu thiết kế, không phải nguồn code.
+- The permissions in `session.user.permissions` decide rendering only; the server re-checks every request
+  ([ADR-003](003-backend-enforces-authorization.md)).
+- Closing the tab drops the access token — by design; the session is restored from the refresh token on reload.
+- The HTML prototypes under `uiux/` remain design reference, not a code source.

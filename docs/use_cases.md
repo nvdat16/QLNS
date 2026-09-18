@@ -1,18 +1,18 @@
-# Use Cases — Tổng Quan và Các Chức Năng Quản Lý Chính
+# Use Cases — Overview and the Main Management Functions
 
-> **Trạng thái:** Proposed business design. Các mã trong ngoặc vuông truy vết tới `user_stories.md` hoặc `functional_specifications.md`. Backend trong `src/backend` đã **code-complete** cho mọi use case dưới đây, nhưng chưa use case nào đạt `implemented`: còn thiếu integration test trên PostgreSQL thật.
+> **Status:** Proposed business design. The codes in square brackets trace to `user_stories.md` or `functional_specifications.md`. The backend under `src/backend` is **code-complete** for every use case below, but no use case has reached `implemented`: integration tests against a real PostgreSQL are still missing.
 
-## Quy ước
+## Conventions
 
-- Đường liền từ actor tới use case: actor trực tiếp khởi tạo hoặc tham gia.
-- `<<include>>`: hành vi bắt buộc được dùng lại trong use case nguồn.
-- `<<extend>>`: hành vi có điều kiện hoặc tùy chọn.
-- Hệ thống ngoài được đặt ngoài biên QLNS.
-- Kiểm tra quyền và ghi audit là hành vi dùng chung; chi tiết policy vẫn thuộc requirements và kiến trúc.
+- A solid line from an actor to a use case: the actor directly initiates or takes part in it.
+- `<<include>>`: mandatory behaviour reused by the source use case.
+- `<<extend>>`: conditional or optional behaviour.
+- External systems are drawn outside the QLNS boundary.
+- Permission checking and audit logging are shared behaviour; the policy detail stays in the requirements and the architecture.
 
-## 1. Use Case Tổng Quát
+## 1. Overall Use Case Diagram
 
-Sơ đồ dưới đây thể hiện các actor và nhóm chức năng quản lý **thuộc phạm vi giao hàng** của QLNS: hai trụ cột Recruitment và Core HR (gồm Contract Management) theo `topdown-approach.png`, mục 2 của [README.md](../README.md). Các phần tiếp theo phân rã từng nhóm thành use case chi tiết.
+The diagram below shows the actors and the management function groups **within the delivery scope** of QLNS: the two pillars Recruitment and Core HR (including Contract Management) per `topdown-approach.png`, section 2 of [README.md](../README.md). The following sections break each group into detailed use cases.
 
 
 ```mermaid
@@ -25,7 +25,7 @@ flowchart LR
     User([Employee / Candidate])
     Admin([Super Admin])
 
-    subgraph HRMS["QLNS / HRMS"]
+    subgraph HRMS["QLNS / NexusHR"]
         Identity[Sign in & manage the session]
         Accounts[Administer accounts, roles & data scope]
         Jobs[Create, approve & publish job requisitions]
@@ -62,56 +62,56 @@ flowchart LR
     User --> Lifecycle
 ```
 
-Phạm vi đợt này **có** use case đăng nhập và quản trị tài khoản/vai trò (mục 6, phân hệ `[ADM]`), nhưng không có use case báo cáo, phân tích, cấu hình hệ thống hay tra cứu nhật ký kiểm toán; cũng không có use case xem cây tổ chức trực quan và tạm hoãn/trở lại làm việc. Ghi nhật ký kiểm toán và gửi thông báo qua outbox vẫn là hành vi bắt buộc của mọi use case nghiệp vụ, chỉ các màn hình và API tra cứu tương ứng là ngoài phạm vi. Actor **Super Admin** sở hữu đúng nhóm use case định danh và **không** có quyền đọc dữ liệu nghiệp vụ nào.
+This delivery **does** include sign-in and account/role administration (section 6, the `[ADM]` module), but it has no use case for reporting, analytics, system configuration or audit-log lookup; nor for viewing the org chart or for suspending and returning an employee to work. Writing an audit record and sending notifications through the outbox remain mandatory behaviour in every business use case; only the corresponding screens and lookup APIs are out of scope. The **Super Admin** actor owns exactly the identity use cases and has **no** right to read any business data.
 
 ---
 
-## 2. Quản lý tuyển dụng ATS
+## 2. Recruitment (ATS)
 
 ```mermaid
 flowchart LR
-    Candidate(["👤 Ứng viên"])
-    HiringManager(["👤 Trưởng bộ phận"])
+    Candidate(["👤 Candidate"])
+    HiringManager(["👤 Hiring Manager"])
     Recruiter(["👤 Recruiter"])
     HRManager(["👤 HR Manager"])
-    Interviewer(["👤 Người phỏng vấn"])
-    Careers["Hệ thống ngoài<br/>Cổng Careers (kênh mặc định)"]
-    Communication["Hệ thống ngoài<br/>Email / Calendar"]
+    Interviewer(["👤 Interviewer"])
+    Careers["External system<br/>Careers portal (default channel)"]
+    Communication["External system<br/>E-mail / Calendar"]
 
-    subgraph QLNS_ATS["QLNS — Quản lý Tuyển dụng"]
+    subgraph QLNS_ATS["QLNS — Recruitment"]
         direction TB
-        UC_REQ_DRAFT(["Tạo requisition nháp<br/>[REC-01.1]"])
-        UC_REQ_SUBMIT(["Gửi requisition phê duyệt<br/>[REC-01.2]"])
-        UC_REQ_DECIDE(["Phê duyệt / Từ chối requisition<br/>[REC-01.3]"])
-        UC_PUBLISH(["Đăng / Cập nhật / Đóng tin tuyển dụng<br/>[REC-01.4]"])
-        UC_APPROVED_CHECK(["Kiểm tra requisition đã Approved"])
-        UC_UPLOAD(["Nộp / Upload CV an toàn<br/>[REC-02.1]"])
-        UC_SCAN(["Kiểm tra file và malware"])
-        UC_PARSE(["Bóc tách CV và xác nhận dữ liệu<br/>[REC-02.2]"])
-        UC_PIPELINE(["Xem pipeline theo giai đoạn<br/>[REC-03.1]"])
-        UC_ADVANCE(["Chuyển ứng viên một giai đoạn<br/>[REC-03.2]"])
-        UC_REJECT(["Từ chối ứng viên có lý do<br/>[REC-03.3]"])
-        UC_ELIGIBILITY(["Kiểm tra điều kiện chuyển vòng"])
-        UC_INTERVIEW(["Xếp / Đổi / Hủy lịch phỏng vấn<br/>[REC-04.1]"])
-        UC_SCORE(["Nộp scorecard<br/>[REC-05.1]"])
-        UC_OFFER(["Lập và phê duyệt Offer<br/>[REC-06.1]"])
-        UC_ACCEPT(["Phản hồi Offer<br/>[REC-06.2]"])
-        UC_HANDOFF(["Khởi tạo hồ sơ và onboarding"])
-        UC_AUTH(["Xác thực quyền và data scope"])
-        UC_AUDIT(["Ghi lịch sử / Audit"])
+        UC_REQ_DRAFT(["Draft a requisition<br/>[REC-01.1]"])
+        UC_REQ_SUBMIT(["Submit a requisition for approval<br/>[REC-01.2]"])
+        UC_REQ_DECIDE(["Approve / reject a requisition<br/>[REC-01.3]"])
+        UC_PUBLISH(["Publish / update / close a posting<br/>[REC-01.4]"])
+        UC_APPROVED_CHECK(["Check the requisition is approved"])
+        UC_UPLOAD(["Submit / upload a CV safely<br/>[REC-02.1]"])
+        UC_SCAN(["Check the file and scan for malware"])
+        UC_PARSE(["Parse the CV and confirm the data<br/>[REC-02.2]"])
+        UC_PIPELINE(["View the pipeline by stage<br/>[REC-03.1]"])
+        UC_ADVANCE(["Advance a candidate one stage<br/>[REC-03.2]"])
+        UC_REJECT(["Reject a candidate with a reason<br/>[REC-03.3]"])
+        UC_ELIGIBILITY(["Check the transition is eligible"])
+        UC_INTERVIEW(["Schedule / reschedule / cancel an interview<br/>[REC-04.1]"])
+        UC_SCORE(["Submit a scorecard<br/>[REC-05.1]"])
+        UC_OFFER(["Draft and approve an offer<br/>[REC-06.1]"])
+        UC_ACCEPT(["Respond to an offer<br/>[REC-06.2]"])
+        UC_HANDOFF(["Create the employee record and onboarding"])
+        UC_AUTH(["Verify permission and data scope"])
+        UC_AUDIT(["Write the history / audit record"])
 
         UC_REQ_SUBMIT -. "<<include>>" .-> UC_AUTH
         UC_REQ_DECIDE -. "<<include>>" .-> UC_AUTH
         UC_PUBLISH -. "<<include>>" .-> UC_APPROVED_CHECK
         UC_UPLOAD -. "<<include>>" .-> UC_SCAN
-        UC_PARSE -. "<<extend>> khi file sạch" .-> UC_UPLOAD
+        UC_PARSE -. "<<extend>> when the file is clean" .-> UC_UPLOAD
         UC_ADVANCE -. "<<include>>" .-> UC_ELIGIBILITY
         UC_ADVANCE -. "<<include>>" .-> UC_AUTH
         UC_ADVANCE -. "<<include>>" .-> UC_AUDIT
         UC_REJECT -. "<<include>>" .-> UC_AUDIT
         UC_SCORE -. "<<include>>" .-> UC_AUTH
         UC_OFFER -. "<<include>>" .-> UC_AUTH
-        UC_HANDOFF -. "<<extend>> khi Accepted" .-> UC_ACCEPT
+        UC_HANDOFF -. "<<extend>> when accepted" .-> UC_ACCEPT
     end
 
     HiringManager --> UC_REQ_DRAFT
@@ -135,45 +135,45 @@ flowchart LR
     UC_OFFER --> Communication
 ```
 
-### Ranh giới nghiệp vụ chính
+### Key business boundaries
 
-- Requisition chỉ được đăng sau khi HR Manager phê duyệt; phê duyệt là quyết định của người có thẩm quyền, hệ thống không tự kiểm tra định biên hay quỹ lương.
-- Tin tuyển dụng chỉ phát hành trên một cổng careers mặc định; việc chọn và quản lý nhiều kênh đăng tin không thuộc phạm vi.
-- Application chỉ tiến đúng một stage; nhảy/lùi stage và ghi đè version cũ bị từ chối.
-- Vào vòng phỏng vấn cần lịch hợp lệ; vào Offer cần đánh giá đủ điều kiện.
-- Candidate-to-employee handoff phải idempotent, không tạo trùng nhân viên, hợp đồng hoặc checklist.
+- A requisition can only be published after the HR Manager approves it; approval is a human decision, and the system does not check headcount or salary budget by itself.
+- A posting is published to a single default careers portal; selecting and managing multiple channels is out of scope.
+- An application advances exactly one stage at a time; skipping, going backwards and overwriting an older version are all rejected.
+- Entering the interview round requires a valid schedule; reaching the offer stage requires an eligible evaluation.
+- The candidate-to-employee handoff must be idempotent: no duplicate employee, contract or checklist.
 
-## 3. Quản lý hồ sơ và vòng đời nhân sự
+## 3. Employee Records and Lifecycle
 
 ```mermaid
 flowchart LR
-    Employee(["👤 Nhân viên"])
+    Employee(["👤 Employee"])
     HROfficer(["👤 HR Officer"])
     HRManager(["👤 HR Manager"])
     LineManager(["👤 Line Manager"])
-    TaskOwner(["👤 IT / Admin / Task Owner"])
-    ObjectStorage["Hệ thống ngoài<br/>Private Object Storage"]
+    TaskOwner(["👤 IT / Admin / task owner"])
+    ObjectStorage["External system<br/>Private object storage"]
 
     subgraph QLNS_CORE["QLNS — Core HR & Employee Lifecycle"]
         direction TB
-        UC_SEARCH(["Tìm kiếm / Lọc danh bạ<br/>[EMP-01.1]"])
-        UC_VIEW(["Xem hồ sơ theo phạm vi<br/>[EMP-01.2]"])
-        UC_SELF_CHANGE(["Đề nghị sửa thông tin cá nhân"])
-        UC_ORG_MGMT(["Quản lý phòng ban, chức danh, phân công và reporting line<br/>[EMP-02.1]"])
-        UC_ONBOARD(["Theo dõi onboarding checklist<br/>[EMP-03.1]"])
-        UC_TASK(["Nhận và hoàn thành onboarding task"])
-        UC_MOVEMENT(["Tạo đề xuất biến động nhân sự<br/>[EMP-04.1]"])
-        UC_MOVEMENT_DECIDE(["Phê duyệt / Hủy biến động"])
-        UC_APPLY(["Áp dụng biến động đúng ngày hiệu lực"])
-        UC_DOCUMENT(["Upload / Phiên bản hóa tài liệu<br/>[EMP-05.1]"])
-        UC_DOWNLOAD(["Truy cập tài liệu bằng URL có hạn"])
-        UC_PROBATION(["Đánh giá kết quả thử việc<br/>[EMP-06.1]"])
-        UC_PROBATION_DECIDE(["Quyết định hết thử việc<br/>[EMP-06.2]"])
-        UC_OFFBOARD(["Khởi tạo hồ sơ thôi việc<br/>[EMP-07.1]"])
-        UC_OFFBOARD_TASK(["Bàn giao, thu hồi tài sản / tài khoản<br/>[EMP-07.2]"])
-        UC_OFFBOARD_CLOSE(["Đóng case & vô hiệu hóa tài khoản"])
-        UC_AUTH(["Xác thực quyền, field và data scope"])
-        UC_AUDIT(["Ghi audit trước / sau"])
+        UC_SEARCH(["Search / filter the directory<br/>[EMP-01.1]"])
+        UC_VIEW(["View a profile within scope<br/>[EMP-01.2]"])
+        UC_SELF_CHANGE(["Request a change to own details"])
+        UC_ORG_MGMT(["Manage departments, positions, assignments and reporting lines<br/>[EMP-02.1]"])
+        UC_ONBOARD(["Track the onboarding checklist<br/>[EMP-03.1]"])
+        UC_TASK(["Receive and complete an onboarding task"])
+        UC_MOVEMENT(["Propose an employee movement<br/>[EMP-04.1]"])
+        UC_MOVEMENT_DECIDE(["Approve / cancel a movement"])
+        UC_APPLY(["Apply the movement on its effective date"])
+        UC_DOCUMENT(["Upload / version a document<br/>[EMP-05.1]"])
+        UC_DOWNLOAD(["Access a document through a time-limited URL"])
+        UC_PROBATION(["Review the probation outcome<br/>[EMP-06.1]"])
+        UC_PROBATION_DECIDE(["Decide the probation outcome<br/>[EMP-06.2]"])
+        UC_OFFBOARD(["Open an offboarding case<br/>[EMP-07.1]"])
+        UC_OFFBOARD_TASK(["Hand over, recover assets and accounts<br/>[EMP-07.2]"])
+        UC_OFFBOARD_CLOSE(["Close the case & disable the account"])
+        UC_AUTH(["Verify permission, field and data scope"])
+        UC_AUDIT(["Write the before/after audit record"])
 
         UC_SEARCH -. "<<include>>" .-> UC_AUTH
         UC_VIEW -. "<<include>>" .-> UC_AUTH
@@ -183,17 +183,17 @@ flowchart LR
         UC_TASK -. "<<include>>" .-> UC_AUDIT
         UC_MOVEMENT -. "<<include>>" .-> UC_AUTH
         UC_MOVEMENT_DECIDE -. "<<include>>" .-> UC_AUDIT
-        UC_APPLY -. "<<extend>> khi Approved và đến hạn" .-> UC_MOVEMENT_DECIDE
+        UC_APPLY -. "<<extend>> when approved and due" .-> UC_MOVEMENT_DECIDE
         UC_DOCUMENT -. "<<include>>" .-> UC_AUTH
         UC_DOWNLOAD -. "<<extend>>" .-> UC_DOCUMENT
         UC_DOWNLOAD -. "<<include>>" .-> UC_AUDIT
         UC_PROBATION -. "<<include>>" .-> UC_AUTH
         UC_PROBATION_DECIDE -. "<<include>>" .-> UC_PROBATION
         UC_PROBATION_DECIDE -. "<<include>>" .-> UC_AUDIT
-        UC_MOVEMENT -. "<<extend>> sinh sự kiện từ kết quả" .-> UC_PROBATION_DECIDE
+        UC_MOVEMENT -. "<<extend>> event created from the outcome" .-> UC_PROBATION_DECIDE
         UC_OFFBOARD -. "<<include>>" .-> UC_AUTH
         UC_OFFBOARD -. "<<include>>" .-> UC_OFFBOARD_TASK
-        UC_OFFBOARD_CLOSE -. "<<extend>> khi task chặn đã xong" .-> UC_OFFBOARD_TASK
+        UC_OFFBOARD_CLOSE -. "<<extend>> when blocking tasks are done" .-> UC_OFFBOARD_TASK
         UC_OFFBOARD_CLOSE -. "<<include>>" .-> UC_AUDIT
     end
 
@@ -220,53 +220,53 @@ flowchart LR
     UC_DOWNLOAD --> ObjectStorage
 ```
 
-### Ranh giới nghiệp vụ chính
+### Key business boundaries
 
-- Nhân viên chỉ xem/sửa trường được phép của chính mình; HR vẫn bị giới hạn bởi data scope và field allowlist.
-- Phòng ban, chức danh, trạng thái và quản lý trực tiếp không được sửa thẳng trên hồ sơ; phải qua employee event.
-- Phân cấp phòng ban cha – con, ràng buộc chống chu trình và ràng buộc xóa phòng ban vẫn được kiểm soát ở tầng dữ liệu, nhưng không có use case hiển thị cây tổ chức.
-- Event đã áp dụng không bị xóa/sửa lịch sử; thay đổi ngược dùng compensating event.
-- Tài liệu luôn private, được kiểm tra an toàn và chỉ tải qua quyền truy cập có thời hạn.
-- Mỗi hợp đồng thử việc có đúng một phiếu đánh giá; kết quả chỉ vào hồ sơ qua employee event đã phê duyệt.
-- Phiếu đánh giá thử việc quá hạn là rủi ro pháp lý, không chỉ là trễ quy trình — phải cảnh báo riêng.
-- Mỗi nhân viên chỉ có một case thôi việc đang mở; không đóng case khi còn task chặn hoặc chưa chốt công nợ.
-- Tài khoản chỉ bị vô hiệu hóa đúng ngày làm việc cuối, không sớm hơn, để nhân viên còn hoàn thành bàn giao.
+- An employee may view and edit only the permitted fields of their own record; HR is still bounded by data scope and a field allowlist.
+- Department, position, status and direct manager are never edited on the profile itself; they change through an employee event.
+- The parent-child department hierarchy, the cycle-prevention rule and the delete constraints are still enforced at the data layer, but there is no use case that renders the org tree.
+- An applied event is never deleted or rewritten; a reversal uses a compensating event.
+- Documents are always private, safety-checked and downloaded only through time-limited access.
+- Each probation contract has exactly one review; the outcome reaches the employee record only through an approved employee event.
+- An overdue probation review is a legal risk, not merely a late process step — it needs its own alert.
+- An employee has at most one open offboarding case; a case cannot be closed while a blocking task is outstanding or the final settlement is unresolved.
+- The account is disabled exactly on the last working date and not earlier, so the employee can finish the handover.
 
-## 4. Quản lý hợp đồng lao động
+## 4. Employment Contract Management
 
 ```mermaid
 flowchart LR
-    Employee(["👤 Nhân viên"])
+    Employee(["👤 Employee"])
     HROfficer(["👤 HR Officer / C&B"])
     HRManager(["👤 HR Manager"])
-    Worker(["⚙️ Background Worker"])
-    ESign["Hệ thống ngoài<br/>E-signature"]
-    Notification["Hệ thống ngoài<br/>Email / Notification"]
+    Worker(["⚙️ Background worker"])
+    ESign["External system<br/>E-signature"]
+    Notification["External system<br/>E-mail / notification"]
 
     subgraph QLNS_CONTRACT["QLNS — Contract Management"]
         direction TB
-        UC_VIEW(["Xem hợp đồng được phép"])
-        UC_DRAFT(["Soạn hợp đồng nháp<br/>[CON-01.1]"])
-        UC_VALIDATE(["Kiểm tra số, thời hạn và overlap"])
-        UC_APPROVE(["Phê duyệt hợp đồng"])
-        UC_SIGN(["Gửi ký / Đối soát chữ ký"])
-        UC_ACTIVATE(["Thực thi / Kích hoạt hợp đồng"])
-        UC_MONITOR(["Quét hợp đồng sắp hết hạn<br/>[CON-02.1]"])
-        UC_ALERT(["Tạo cảnh báo không trùng"])
-        UC_ADDENDUM(["Soạn phụ lục hợp đồng<br/>[CON-03.1]"])
-        UC_ADDENDUM_EFFECT(["Áp dụng phụ lục và tạo employee event"])
-        UC_AUTH(["Kiểm tra quyền và field scope"])
-        UC_AUDIT(["Ghi audit và phiên bản"])
+        UC_VIEW(["View a permitted contract"])
+        UC_DRAFT(["Draft a contract<br/>[CON-01.1]"])
+        UC_VALIDATE(["Validate the number, term and overlap"])
+        UC_APPROVE(["Approve the contract"])
+        UC_SIGN(["Send for signature / reconcile the signature"])
+        UC_ACTIVATE(["Execute / activate the contract"])
+        UC_MONITOR(["Scan for contracts nearing expiry<br/>[CON-02.1]"])
+        UC_ALERT(["Raise a non-duplicated alert"])
+        UC_ADDENDUM(["Draft a contract addendum<br/>[CON-03.1]"])
+        UC_ADDENDUM_EFFECT(["Make the addendum effective and create an employee event"])
+        UC_AUTH(["Check permission and field scope"])
+        UC_AUDIT(["Write the audit record and version"])
 
         UC_VIEW -. "<<include>>" .-> UC_AUTH
         UC_DRAFT -. "<<include>>" .-> UC_VALIDATE
         UC_APPROVE -. "<<include>>" .-> UC_AUTH
         UC_APPROVE -. "<<include>>" .-> UC_AUDIT
-        UC_SIGN -. "<<extend>> sau Approved" .-> UC_APPROVE
-        UC_ACTIVATE -. "<<extend>> khi có bằng chứng ký" .-> UC_SIGN
+        UC_SIGN -. "<<extend>> after approval" .-> UC_APPROVE
+        UC_ACTIVATE -. "<<extend>> once signature evidence exists" .-> UC_SIGN
         UC_MONITOR -. "<<include>>" .-> UC_ALERT
         UC_ADDENDUM -. "<<include>>" .-> UC_VALIDATE
-        UC_ADDENDUM_EFFECT -. "<<extend>> khi Approved/Signed" .-> UC_ADDENDUM
+        UC_ADDENDUM_EFFECT -. "<<extend>> when approved/signed" .-> UC_ADDENDUM
         UC_ADDENDUM_EFFECT -. "<<include>>" .-> UC_AUDIT
     end
 
@@ -282,52 +282,52 @@ flowchart LR
     UC_ALERT --> Notification
 ```
 
-### Ranh giới nghiệp vụ chính
+### Key business boundaries
 
-- Số hợp đồng/phụ lục là duy nhất; hợp đồng có thời hạn phải có ngày kết thúc sau ngày bắt đầu.
-- Mặc định một nhân viên chỉ có một hợp đồng chính đang hiệu lực.
-- Phụ lục không sửa nội dung hợp đồng gốc và phải giữ before/after, phê duyệt, chữ ký, phiên bản.
-- Lỗi gửi cảnh báo không rollback trạng thái hợp đồng; delivery được retry hữu hạn.
+- Contract and addendum numbers are unique; a fixed-term contract must end after it starts.
+- By default an employee has exactly one active primary contract.
+- An addendum never edits the original contract text and must preserve the before/after terms, the approval, the signature and the version.
+- A failed alert delivery never rolls back the contract state; delivery is retried a bounded number of times.
 
-## 5. Theo dõi vận hành hệ thống
+## 5. Operational Monitoring
 
-Đợt giao hàng này không có use case báo cáo hay phân tích. Quản trị tài khoản và vai trò được đặc tả ở mục 6; phần còn lại của trụ cột System Administration chỉ còn việc theo dõi tình trạng hoạt động của dịch vụ — đây là hạ tầng phục vụ triển khai và giám sát, không phải chức năng nghiệp vụ trên bản đồ chức năng.
+This delivery has no reporting or analytics use case. Account and role administration is specified in section 6; what remains of the System Administration pillar is monitoring service health — infrastructure for deployment and observability, not a business function on the function map.
 
 ```mermaid
 flowchart LR
-    Admin(["👤 System Administrator"])
-    Monitor["Hệ thống ngoài<br/>Monitoring / Load Balancer"]
+    Admin(["👤 System administrator"])
+    Monitor["External system<br/>Monitoring / load balancer"]
 
     subgraph QLNS_OPS["QLNS — Operations"]
         direction TB
-        UC_HEALTH(["Theo dõi health / readiness"])
+        UC_HEALTH(["Monitor health / readiness"])
     end
 
     Admin --> UC_HEALTH
     Monitor --> UC_HEALTH
 ```
 
-### Ranh giới nghiệp vụ chính
+### Key business boundaries
 
-- `GET /health/live` và `GET /health/ready` là endpoint hạ tầng, không trả dữ liệu nghiệp vụ và không yêu cầu quyền nghiệp vụ.
-- Quản lý tài khoản, vai trò và phạm vi dữ liệu **thuộc phạm vi** và được đặc tả riêng ở mục 6. Cấu hình tích hợp/thông báo (nằm trong `appsettings`) và màn hình tra cứu nhật ký kiểm toán vẫn ngoài phạm vi.
-- Ghi nhật ký kiểm toán trong cùng transaction với thay đổi nghiệp vụ và gửi thông báo qua transactional outbox **vẫn bắt buộc** với mọi use case ở các mục 2, 3 và 4; chỉ màn hình và API tra cứu/retry tương ứng là ngoài phạm vi.
+- `GET /health/live` and `GET /health/ready` are infrastructure endpoints: they return no business data and require no business permission.
+- Managing accounts, roles and data scope **is in scope** and is specified separately in section 6. Integration and notification configuration (which lives in `appsettings`) and the audit-log lookup screen remain out of scope.
+- Writing an audit record in the same transaction as the business change, and sending notifications through the transactional outbox, **remain mandatory** for every use case in sections 2, 3 and 4; only the corresponding lookup and retry screens and APIs are out of scope.
 
-## 6. Định danh & phân quyền
+## 6. Identity & Access
 
 ```mermaid
 flowchart LR
-    AnyUser(["👤 Người dùng nội bộ<br/>(mọi vai trò)"])
+    AnyUser(["👤 Internal user<br/>(any role)"])
     Admin(["👤 Super Admin"])
 
     subgraph QLNS_ADM["QLNS — Identity & Access"]
         direction TB
-        UC_SIGN_IN(["Đăng nhập bằng email & mật khẩu<br/>[ADM-01.1]"])
-        UC_SESSION(["Duy trì & kết thúc phiên<br/>[ADM-01.2]"])
-        UC_CHANGE_PWD(["Tự đổi mật khẩu<br/>[ADM-01.2]"])
-        UC_ACCOUNT_PROVISION(["Cấp tài khoản & vai trò<br/>[ADM-02.1]"])
-        UC_ACCOUNT_REVOKE(["Thu hồi & điều chỉnh quyền<br/>[ADM-02.2]"])
-        UC_AUDIT_WRITE(["Ghi nhật ký kiểm toán"])
+        UC_SIGN_IN(["Sign in with e-mail and password<br/>[ADM-01.1]"])
+        UC_SESSION(["Maintain & end the session<br/>[ADM-01.2]"])
+        UC_CHANGE_PWD(["Change own password<br/>[ADM-01.2]"])
+        UC_ACCOUNT_PROVISION(["Provision an account & grant roles<br/>[ADM-02.1]"])
+        UC_ACCOUNT_REVOKE(["Revoke & adjust authority<br/>[ADM-02.2]"])
+        UC_AUDIT_WRITE(["Write the audit record"])
     end
 
     AnyUser --> UC_SIGN_IN
@@ -344,28 +344,28 @@ flowchart LR
     UC_ACCOUNT_REVOKE -. "<<extend>>" .-> UC_SESSION
 ```
 
-### Ranh giới nghiệp vụ chính
+### Key business boundaries
 
-- `UC_SIGN_IN` là **tiền điều kiện của mọi use case** ở các mục 2, 3 và 4: những use case đó đều `<<include>>` `UC_AUTH`, và `UC_AUTH` giờ được hiện thực bởi chính hệ thống chứ không bởi Identity Provider bên ngoài.
-- Mọi lần đăng nhập, kể cả thất bại, đều ghi nhật ký kiểm toán — đây là use case duy nhất mà một lần **thất bại** cũng phải để lại vết.
-- `UC_ACCOUNT_REVOKE` `<<extend>>` `UC_SESSION`: vô hiệu hoá tài khoản hoặc đặt lại mật khẩu sẽ chấm dứt các phiên đang mở của tài khoản đó.
-- Super Admin **không** có quyền đọc hồ sơ, hợp đồng hay dữ liệu tuyển dụng; và không được tự vô hiệu hoá, đặt lại mật khẩu hay đổi vai trò của chính mình.
-- Ngoài phạm vi: tự đăng ký tài khoản, quên mật khẩu qua email, SSO/OIDC federation, xác thực hai yếu tố, uỷ quyền tạm thời.
+- `UC_SIGN_IN` is a **precondition of every use case** in sections 2, 3 and 4: they all `<<include>>` `UC_AUTH`, and `UC_AUTH` is now implemented by the system itself rather than by an external Identity Provider.
+- Every sign-in attempt, including the failures, writes an audit record — this is the only use case where a **failure** must also leave a trace.
+- `UC_ACCOUNT_REVOKE` `<<extend>>` `UC_SESSION`: disabling an account or resetting its password terminates that account's open sessions.
+- The Super Admin has **no** right to read profiles, contracts or recruitment data, and may not disable, reset or re-grant their own account.
+- Out of scope: self-registration, forgotten password over e-mail, SSO/OIDC federation, two-factor authentication, temporary delegation.
 
-## 7. Ma trận actor — nhóm chức năng
+## 7. Actor — Function Group Matrix
 
-| Actor | Định danh | Tuyển dụng | Core HR | Hợp đồng |
+| Actor | Identity | Recruitment | Core HR | Contracts |
 |---|---|---|---|---|
-| Candidate | — (dùng `X-Offer-Token`, không có tài khoản) | Nộp CV, phản hồi Offer | — | — |
-| Employee | Đăng nhập, đổi mật khẩu của mình | — | Hồ sơ cá nhân, thông tin phòng ban và quản lý trực tiếp, bàn giao khi thôi việc | Xem/ký hợp đồng |
-| Hiring/Line Manager | Đăng nhập, đổi mật khẩu của mình | Requisition, phỏng vấn | Cơ cấu đội ngũ, onboarding, đánh giá thử việc, xác nhận bàn giao | — |
-| Recruiter | Đăng nhập, đổi mật khẩu của mình | Pipeline, lịch, scorecard, Offer | — | — |
-| HR Officer / C&B | Đăng nhập, đổi mật khẩu của mình | Hỗ trợ tiếp nhận | Hồ sơ, onboarding, biến động, tài liệu, khởi tạo & đóng case thôi việc | Soạn hợp đồng/phụ lục |
-| HR Manager | Đăng nhập, đổi mật khẩu của mình | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc, quản lý phòng ban/chức danh | Phê duyệt hợp đồng/phụ lục |
-| Super Admin | **Cấp/thu hồi tài khoản, vai trò và phạm vi dữ liệu, đặt lại mật khẩu** | — | Vô hiệu hoá tài khoản đúng ngày làm việc cuối; không mặc định xem dữ liệu HR | — |
+| Candidate | — (uses `X-Offer-Token`, has no account) | Submit a CV, respond to an offer | — | — |
+| Employee | Sign in, change own password | — | Own profile, department and manager information, handover on leaving | View/sign own contract |
+| Hiring / Line Manager | Sign in, change own password | Requisitions, interviews | Team structure, onboarding, probation review, handover sign-off | — |
+| Recruiter | Sign in, change own password | Pipeline, scheduling, scorecards, offers | — | — |
+| HR Officer / C&B | Sign in, change own password | Support the handoff | Records, onboarding, movements, documents, opening and closing offboarding cases | Draft contracts and addenda |
+| HR Manager | Sign in, change own password | Approve requisitions and offers | Approve movements, decide probation outcomes, approve offboarding cases, manage departments and positions | Approve contracts and addenda |
+| Super Admin | **Grant and revoke accounts, roles and data scope; reset passwords** | — | Disable an account on the last working date; no default access to HR data | — |
 
-Ma trận có bốn nhóm chức năng: ba nhóm nghiệp vụ trong phạm vi, cộng nhóm định danh được bổ sung theo [ADR-011](adr/011-in-house-identity.md). Cột báo cáo vẫn không có (trụ cột Reports & Analytics ngoài phạm vi), và vai trò **Auditor** không có use case nào trong đợt này — nhật ký kiểm toán vẫn được ghi đầy đủ, nhưng không có màn hình hay API tra cứu.
+The matrix has four function groups: the three in-scope business groups plus the identity group added by [ADR-011](adr/011-in-house-identity.md). There is still no reporting column (the Reports & Analytics pillar is out of scope), and the **Auditor** role has no use case in this delivery — audit records are still written in full, but there is no screen or API to read them.
 
-Chấm công / nghỉ phép không còn là một cột ở đây vì nhóm chức năng đó nằm ngoài phạm vi triển khai; use case của nó được giữ tại [deferred/attendance_leave/use_cases_att.md](deferred/attendance_leave/use_cases_att.md).
+Attendance and leave is no longer a column here, because that function group is out of the delivery scope; its use cases are kept at [deferred/attendance_leave/use_cases_att.md](deferred/attendance_leave/use_cases_att.md).
 
-Super Admin không mặc nhiên có quyền đọc hồ sơ, lương hoặc hợp đồng: `ROLE_ADMIN` chỉ mang `admin.user.*`, `admin.role.read` và `corehr.organization.read`. Quyền quản trị và quyền dữ liệu nghiệp vụ phải tách biệt.
+The Super Admin does not implicitly gain the right to read profiles, salaries or contracts: `ROLE_ADMIN` carries only `admin.user.*`, `admin.role.read` and `corehr.organization.read`. Administrative authority and business-data authority are kept separate.

@@ -1,33 +1,33 @@
-# ADR-006 — Explicit commands và state transitions
+# ADR-006 — Explicit commands and state transitions
 
-- **Trạng thái:** Proposed — **code đã đi theo quyết định này**, chờ Project Owner xác nhận
-- **Owner:** chưa có
-- **Liên quan:** [ADR-004](004-contract-first-openapi.md), quality goal Q3
+- **Status:** Proposed — **the code already follows this decision**, awaiting Project Owner confirmation
+- **Owner:** none yet
+- **Related:** [ADR-004](004-contract-first-openapi.md), quality goal Q3
 
-## Bối cảnh
+## Context
 
-Gần như mọi thực thể nghiệp vụ trong hệ thống đều có vòng đời có điều kiện phê duyệt: requisition, application, offer,
-contract, addendum, employee event, probation review, offboarding case. Một `PATCH { "status": "approved" }` tổng quát sẽ
-xoá sạch mọi guard của các vòng đời đó.
+Nearly every business entity in the system has a lifecycle with approval conditions: requisitions, applications, offers,
+contracts, addenda, employee events, probation reviews and offboarding cases. A generic
+`PATCH { "status": "approved" }` would erase every guard on those lifecycles at once.
 
-## Quyết định
+## Decision
 
-Không endpoint nào cho phép client đặt trực tiếp trường `status`. Mỗi chuyển trạng thái là một action endpoint riêng
-(`/approve`, `/reject`, `/advance`, `/activate`, `/complete`, `/cancel`, …), bắt buộc `If-Match`, và được domain kiểm tra
-theo bốn yếu tố: actor, trạng thái hiện tại, trạng thái đích và guard nghiệp vụ.
+No endpoint lets a client set the `status` field directly. Each transition is its own action endpoint (`/approve`,
+`/reject`, `/advance`, `/activate`, `/complete`, `/cancel`, …), requires `If-Match`, and is checked by the domain
+against four things: the actor, the current state, the target state and the business guards.
 
-Transition ngoài state machine trả lỗi nghiệp vụ có `code` ổn định; xung đột phiên bản trả `409`.
+A transition outside the state machine returns a business error with a stable `code`; a version conflict returns `409`.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **REST thuần với PATCH trên trường `status`** — loại bỏ: guard sẽ phải suy diễn từ giá trị cũ và mới, và mọi trường mới
-  thêm vào DTO đều trở thành một lối đi vòng.
-- **Một endpoint `/transition` nhận trạng thái đích** — loại bỏ: mất khả năng gắn permission riêng cho từng hành động
-  (duyệt offer và gửi offer không cùng một quyền).
+- **Plain REST with `PATCH` on the `status` field** — rejected: guards would have to be inferred from the old and new
+  values, and every new DTO field would become another way around them.
+- **A single `/transition` endpoint taking the target state** — rejected: it loses the ability to attach a distinct
+  permission to each action (approving an offer and sending it are not the same right).
 
-## Hệ quả
+## Consequences
 
-- Số lượng endpoint lớn hơn — đây là phần chính khiến contract có 79 operation trên 62 path.
-- Giá trị reserved ngoài phạm vi (`suspended`, `suspension`, `return_to_work`) an toàn theo thiết kế: không có action
-  endpoint nào đặt được chúng, dù schema vẫn cho phép.
-- Cần gate `EveryStateChangeUsesACommand`; hiện `Planned`.
+- There are more endpoints — this is the main reason the contract has 79 operations across 62 paths.
+- The reserved out-of-scope values (`suspended`, `suspension`, `return_to_work`) are safe by construction: no action
+  endpoint can set them, even though the schema permits them.
+- An `EveryStateChangeUsesACommand` gate is needed; it is still `Planned`.

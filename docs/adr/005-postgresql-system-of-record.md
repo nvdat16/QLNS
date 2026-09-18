@@ -1,33 +1,37 @@
-# ADR-005 — PostgreSQL là system of record, migration có version
+# ADR-005 — PostgreSQL as the system of record, with versioned migrations
 
-- **Trạng thái:** Proposed — **code đã đi theo quyết định này**, chờ Project Owner xác nhận
-- **Owner:** chưa có
-- **Liên quan:** [ADR-009](009-dotnet-10-efcore-postgresql.md), constraint C3, quality goal Q2
+- **Status:** Proposed — **the code already follows this decision**, awaiting Project Owner confirmation
+- **Owner:** none yet
+- **Related:** [ADR-009](009-dotnet-10-efcore-postgresql.md), constraint C3, quality goal Q2
 
-## Bối cảnh
+## Context
 
-Dữ liệu nhân sự cần ACID thật: một offer được chấp nhận phải tạo nhân viên, hợp đồng và checklist onboarding hoặc không
-tạo gì cả. Nhiều invariant quan trọng nhất là *"chỉ một bản ghi đang mở"* — một offer mở mỗi đơn, một hợp đồng chính đang
-hiệu lực, một case thôi việc đang mở.
+HR data needs genuine ACID guarantees: an accepted offer must create the employee, the contract and the onboarding
+checklist, or create nothing at all. Several of the most important invariants are of the *"only one open record"* kind —
+one open offer per application, one active primary contract, one open offboarding case.
 
-## Quyết định
+## Decision
 
-PostgreSQL là nguồn sự thật duy nhất cho dữ liệu nghiệp vụ. Các invariant trên được thực thi bằng **partial unique index**
-ở database (`ux_offers_one_open_per_application`, `ux_contracts_primary_active`, `ux_offboarding_open_case`,
-`ux_probation_review_contract`), không chỉ bằng kiểm tra ở tầng ứng dụng. Cập nhật có tranh chấp dùng conditional update
-theo `version`.
+PostgreSQL is the single source of truth for business data. The invariants above are enforced by **partial unique
+indexes** in the database (`ux_offers_one_open_per_application`, `ux_contracts_primary_active`,
+`ux_offboarding_open_case`, `ux_probation_review_contract`), not only by application-level checks. Contended updates use
+a conditional update on `version`.
 
-`database/schema.sql` là canonical contract **tạm thời**, cho tới khi EF Core migration đầu tiên được sinh và phê duyệt.
-Khi đó migration trở thành nguồn triển khai và `schema.sql` phải được kiểm tra drift trong CI. Migration chạy như một
-release step riêng; không dùng ORM auto-create ở môi trường dùng chung.
+`database/schema.sql` is the **interim** canonical contract until the first EF Core migration is generated and approved.
+At that point the migration becomes the deployment source and `schema.sql` must be drift-checked in CI. Migrations run
+as a separate release step; ORM auto-create is never used in a shared environment.
 
-## Phương án đã cân nhắc
+## Alternatives considered
 
-- **Chỉ kiểm tra invariant ở tầng ứng dụng** — loại bỏ: hai request đồng thời sẽ cùng vượt qua kiểm tra rồi cùng ghi.
-- **Giữ `schema.sql` làm nguồn vĩnh viễn, không dùng migration** — loại bỏ: không nâng cấp được database đang có dữ liệu.
+- **Enforce the invariants in the application only** — rejected: two concurrent requests would both pass the check and
+  both write.
+- **Keep `schema.sql` as the permanent source and skip migrations** — rejected: it offers no way to upgrade a database
+  that already holds data.
 
-## Hệ quả
+## Consequences
 
-- Các invariant mạnh nhất **không thể** verify bằng repository giả lập, nên `tests/Qlns.IntegrationTests` trên PostgreSQL
-  thật là điều kiện bắt buộc để một operation đạt `implemented`. Project này chưa tồn tại — đó là rủi ro R2.
-- Bốn delta v1.1 và bốn delta v1.2 phải được mang nguyên vẹn sang migration đầu tiên (xem `database/README.md` §2.6, §2.7).
+- The strongest invariants **cannot** be verified against a faked repository, so `tests/Qlns.IntegrationTests` against a
+  real PostgreSQL is a precondition for any operation reaching `implemented`. That project does not exist yet — this is
+  risk R2.
+- The four v1.1 deltas and the four v1.2 deltas must be carried intact into the first migration (see
+  `database/README.md` §2.6 and §2.7).

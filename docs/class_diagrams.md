@@ -521,6 +521,11 @@ classDiagram
         +overlapsWith(Interview) bool
     }
 
+    class InterviewPanelist {
+        +long interviewId
+        +long userId
+    }
+
     class Evaluation {
         +long id
         +long interviewId
@@ -608,6 +613,7 @@ classDiagram
     Application "1" *-- "0..*" ApplicationStageEvent : lịch sử stage
     Application "1" *-- "0..*" Interview : phỏng vấn
     Application "1" *-- "0..*" Offer : offer
+    Interview "1" *-- "1..*" InterviewPanelist : hội đồng
     Interview "1" *-- "0..*" Evaluation : scorecard
     Application ..> ApplicationStage
     ApplicationStageEvent ..> ApplicationStage
@@ -620,6 +626,7 @@ classDiagram
 - **`Application`** — Unique (candidateId, jobPostingId): một ứng viên chỉ ứng tuyển một lần cho một vị trí. advanceTo() chỉ cho phép đi tiếp MỘT stage active; vào tech_interview cần có interview đã scheduled, vào offer_letter cần evaluation hợp lệ. aiScore trong [0,100] và do server tính.
 - **`Resume`** — Row tạo tại thời điểm intake, TRƯỚC khi có Candidate — vì vậy candidateId nullable. intakeStatus là state tổng hợp; malwareScanStatus và parserStatus là hai sub-state kỹ thuật điều khiển nó. intakeStatus='completed' bắt buộc có candidateId và confirmedAt. sizeBytes <= 10 MiB.
 - **`Evaluation`** — Unique (interviewId, evaluatorUserId, version): scorecard bất biến sau khi submit; sửa là tạo version mới, và cần unlock có lý do. Điểm tiêu chí trong [0,5] theo bước 0.5; overallScore do server tính.
+- **`InterviewPanelist`** — Bảng liên kết của delta v1.1, khóa chính (interviewId, userId). Một dòng cho mỗi phần tử của `InterviewWrite.interviewerUserIds`; `Interview.interviewerUserId` là người đầu tiên của hội đồng, giữ vai trò lead và **luôn** có mặt trong tập panelist. `Evaluation` được chấm theo từng panelist, nên hội đồng là tập hợp chứ không phải một người.
 - **`Offer`** — Partial unique index ux_offers_one_open_per_application: mỗi application chỉ có MỘT offer đang mở (draft/approved/sent/accepted).
 
 | Class | Bảng canonical | Trạng thái |
@@ -630,6 +637,7 @@ classDiagram
 | `Application` | `applications` | Partial — xem §6 |
 | `ApplicationStageEvent` | `application_stage_events` | Partial — xem §6 |
 | `Interview` | `interviews` | Design artifact |
+| `InterviewPanelist` | `interview_panelists` | Design artifact — delta v1.1 |
 | `Evaluation` | `evaluations` | Design artifact |
 | `Offer` | `offers` | Design artifact |
 

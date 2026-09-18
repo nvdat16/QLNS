@@ -1,14 +1,18 @@
--- QLNS canonical PostgreSQL schema — baseline v1.1
--- Scope: Core HR (incl. Contracts) and Recruitment — 24 tables.
+-- QLNS canonical PostgreSQL schema — baseline v1.2
+-- Scope: Core HR (incl. Contracts), Recruitment and Identity & Access (ADM) — 28 tables.
+-- v1.2 (see database/README.md §2.7): authentication and authorization moved in-house. New tables
+-- roles, role_permissions, user_credentials and refresh_tokens; user_roles.role_code now references
+-- roles(code). The external Identity Provider is no longer the source of accounts, roles or sign-in.
 -- v1.1 (implementation deltas, see database/README.md §2.6): offers.currency, contracts.currency,
 -- interview_panelists (interview panel), contract_addenda.version reinterpreted as the optimistic
 -- concurrency version (ETag) — the sibling-ordering unique constraint was dropped.
 -- Delivery scope follows the bold leaf functions under Recruitment and Core HR in
 -- topdown-approach.png; see section 2 of README.md. Out of scope for this delivery:
 -- Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart
--- and Suspension & Return to Work. The users / user_roles / audit_logs / outbox_messages
--- tables stay canonical: identity data plus the crosscutting audit and outbox mechanisms
--- are still mandatory, only the administration endpoints that managed them are out of scope.
+-- and Suspension & Return to Work. The identity tables (users, user_credentials, user_roles,
+-- roles, role_permissions, refresh_tokens) and the crosscutting audit_logs / outbox_messages
+-- mechanisms are canonical and mandatory; account, role and sign-in management is served by the
+-- ADM (Identity & Access) module. Audit-log browsing and outbox retry endpoints remain out of scope.
 -- Attendance & Leave DDL is parked out of scope in docs/deferred/attendance_leave/schema_attendance_leave.sql.
 -- Status: Proposed. This file is the canonical schema contract until EF Core
 -- migrations are generated and accepted. Times are stored in UTC (timestamptz).
@@ -39,6 +43,22 @@ CREATE TABLE positions (
     version bigint NOT NULL DEFAULT 1
 );
 
+-- Role catalogue and the role → permission matrix (functional_specifications.md §1.2). Reference data:
+-- rows are loaded from database/seed_roles.sql in every environment, dev and production alike.
+CREATE TABLE roles (
+    code varchar(80) PRIMARY KEY,
+    name varchar(255) NOT NULL,
+    description text,
+    is_assignable boolean NOT NULL DEFAULT true,
+    created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE role_permissions (
+    role_code varchar(80) NOT NULL REFERENCES roles(code) ON DELETE CASCADE,
+    permission varchar(120) NOT NULL,
+    PRIMARY KEY (role_code, permission)
+);
+
 CREATE TABLE users (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     external_subject varchar(255) NOT NULL UNIQUE,
@@ -51,9 +71,27 @@ CREATE TABLE users (
     CONSTRAINT ck_users_status CHECK (status IN ('active', 'disabled'))
 );
 
+-- Local sign-in secret of a user (ADM-01). One row per user that may sign in with a password;
+-- users provisioned without one cannot authenticate until a credential is issued.
+-- password_hash carries its own algorithm parameters: pbkdf2-sha512$<iterations>$<salt>$<hash>.
+CREATE TABLE user_credentials (
+    user_id bigint PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    password_hash varchar(255) NOT NULL,
+    password_algorithm varchar(40) NOT NULL DEFAULT 'pbkdf2-sha512',
+    must_change_password boolean NOT NULL DEFAULT false,
+    password_updated_at timestamptz NOT NULL DEFAULT now(),
+    failed_attempts integer NOT NULL DEFAULT 0,
+    locked_until timestamptz,
+    last_login_at timestamptz,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    version bigint NOT NULL DEFAULT 1,
+    CONSTRAINT ck_user_credentials_attempts CHECK (failed_attempts >= 0)
+);
+
 CREATE TABLE user_roles (
     user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_code varchar(80) NOT NULL,
+    role_code varchar(80) NOT NULL REFERENCES roles(code),
     data_scope_type varchar(30) NOT NULL DEFAULT 'organization',
     data_scope_id bigint NOT NULL DEFAULT 0,
     granted_at timestamptz NOT NULL DEFAULT now(),
@@ -64,6 +102,30 @@ CREATE TABLE user_roles (
         (data_scope_type IN ('self', 'organization') AND data_scope_id = 0)
     )
 );
+
+-- Rotating refresh tokens (ADM-01.2). Only the SHA-256 hash of the opaque token is stored; a token is
+-- single-use — refreshing revokes it with reason 'rotated' and links the successor. Presenting an already
+-- revoked token means theft: the whole family of the user is revoked with reason 'reuse_detected'.
+CREATE TABLE refresh_tokens (
+    id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id bigint NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token_hash varchar(64) NOT NULL UNIQUE,  -- varchar, not char: a bpchar column would not match a text parameter on the index
+    issued_at timestamptz NOT NULL DEFAULT now(),
+    expires_at timestamptz NOT NULL,
+    revoked_at timestamptz,
+    revoked_reason varchar(40),
+    replaced_by_token_id bigint REFERENCES refresh_tokens(id),
+    client_ip varchar(45),
+    user_agent varchar(255),
+    CONSTRAINT ck_refresh_tokens_window CHECK (expires_at > issued_at),
+    CONSTRAINT ck_refresh_tokens_revoked CHECK ((revoked_at IS NULL) = (revoked_reason IS NULL)),
+    CONSTRAINT ck_refresh_tokens_reason CHECK (
+        revoked_reason IS NULL OR
+        revoked_reason IN ('rotated', 'logout', 'password_changed', 'reuse_detected', 'revoked_by_admin', 'account_disabled')
+    )
+);
+
+CREATE INDEX ix_refresh_tokens_active ON refresh_tokens(user_id, expires_at) WHERE revoked_at IS NULL;
 
 CREATE TABLE job_postings (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

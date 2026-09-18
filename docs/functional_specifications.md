@@ -18,21 +18,23 @@ Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị ngu�
 
 | Vai trò (Role) | Mã quyền | Quyền hạn & Trách nhiệm chính |
 | :--- | :--- | :--- |
-| **Super Admin** | `ROLE_ADMIN` | Vai trò định danh vẫn được giữ trong `users`/`user_roles` để phục vụ kiểm tra quyền, nhưng **không có chức năng nghiệp vụ nào thuộc phạm vi đợt này**: tạo tài khoản, gán vai trò và cấu hình hệ thống do Identity Provider bên ngoài và tệp `appsettings` đảm nhiệm. |
+| **Super Admin** | `ROLE_ADMIN` | Quản trị tài khoản, vai trò và phạm vi dữ liệu trong phân hệ `[ADM]`: tạo/khoá tài khoản, cấp và thu hồi vai trò, đặt lại mật khẩu. **Không có quyền nghiệp vụ nào** — không xem được hồ sơ, hợp đồng hay dữ liệu tuyển dụng. Cấu hình tích hợp/thông báo/luồng phê duyệt vẫn nằm ở `appsettings`, ngoài phạm vi. |
 | **HR Director / Manager** | `ROLE_HR_MGR` | Phê duyệt đề xuất tuyển dụng, duyệt Offer letter, ký duyệt quyết định bổ nhiệm/điều chuyển/chấm dứt hợp đồng trên toàn tổ chức. |
 | **Talent Acquisition (Recruiter)** | `ROLE_RECRUITER` | Quản lý tin tuyển dụng (Job Posting), sàng lọc CV, xếp lịch phỏng vấn, theo dõi bảng Kanban ATS, gửi thư mời phỏng vấn & Offer. |
 | **Hiring Manager / Interviewer** | `ROLE_INTERVIEWER` | Tạo đề xuất tuyển dụng (Requisition), tham gia hội đồng phỏng vấn, chấm điểm ứng viên trên Scorecard, đưa ra khuyến nghị tuyển dụng. |
 | **HR Officer (C&B / Records)** | `ROLE_HR_OFFICER` | Quản lý danh bạ hồ sơ nhân viên, soạn thảo và theo dõi hợp đồng lao động, theo dõi danh mục công việc tiếp nhận (Onboarding Checklist). |
-| **Line Manager (Quản lý trực tiếp)** | `ROLE_LINE_MANAGER` | Thực hiện đánh giá hết thử việc, xác nhận bàn giao khi nhân viên thôi việc, đề xuất biến động nhân sự cho đội mình. Phạm vi dữ liệu giới hạn theo `data_scope_type = 'department'`. |
+| **Line Manager (Quản lý trực tiếp)** | `ROLE_LINE_MGR` | Thực hiện đánh giá hết thử việc, xác nhận bàn giao khi nhân viên thôi việc, đề xuất biến động nhân sự cho đội mình. Phạm vi dữ liệu giới hạn theo `data_scope_type = 'department'`. |
 | **Employee (Nhân viên)** | `ROLE_EMPLOYEE` | Xem thông tin hồ sơ cá nhân, xem phòng ban và quản lý trực tiếp của mình, tra cứu thông tin hợp đồng của chính mình, thực hiện bàn giao khi thôi việc. |
 
-Nguyên tắc phân quyền không thay đổi: mọi request đều phải được kiểm tra **permission** của vai trò và **data scope** (`data_scope_type`: toàn tổ chức / phòng ban / chính mình) ở phía server; quyền do client gửi lên không được tin cậy. Bảng `users` và `user_roles` vẫn nằm trong canonical schema như dữ liệu định danh và phạm vi dữ liệu, nhưng đợt này không có API quản trị người dùng và vai trò — việc cấp, thu hồi tài khoản và vai trò thực hiện ở Identity Provider bên ngoài.
+Nguyên tắc phân quyền không thay đổi: mọi request đều phải được kiểm tra **permission** của vai trò và **data scope** (`data_scope_type`: toàn tổ chức / phòng ban / chính mình) ở phía server; quyền do client gửi lên không được tin cậy.
+
+Mã vai trò là dữ liệu tham chiếu trong bảng `roles`; ma trận vai trò → permission nằm ở `role_permissions` và được triển khai qua [`database/seed_roles.sql`](../database/seed_roles.sql). Ngoài bảy vai trò trên còn `ROLE_IT_ADMIN` dành cho người thực hiện các task IT trong checklist onboarding/offboarding. Khi đăng nhập, permission được resolve bằng `user_roles ⋈ role_permissions` nên **thu hồi một vai trò có hiệu lực ngay ở lần làm mới phiên kế tiếp**, không cần triển khai lại code. Một tài khoản không có dòng `user_roles` nào vẫn đăng nhập được nhưng không gọi được endpoint nghiệp vụ nào (deny by default).
 
 ### 1.3. Phạm vi triển khai và nguyên tắc đặc tả
 
 - **Nguồn xác định phạm vi**: bản đồ phân rã chức năng `topdown-approach.png` (xem mục 2 của [README.md](../README.md)). Quy tắc đọc bản đồ: **chỉ những chức năng lá được in đậm dưới hai trụ cột Recruitment và Core HR thuộc phạm vi giao hàng**; các lá không in đậm và toàn bộ các trụ cột còn lại đều nằm ngoài phạm vi.
 - **Hai phân hệ được chọn triển khai**: Recruitment (18 chức năng lá) và Core HR (16 chức năng lá). Contract Management là một nhóm chức năng thuộc Core HR, không phải một trụ cột riêng; tài liệu này tách thành phân hệ riêng chỉ để trình bày chi tiết. Đây là phạm vi được ánh xạ đầy đủ xuống user story, canonical schema và API contract.
-- **Đã có ở mức thiết kế dữ liệu**: toàn bộ hai phân hệ trên, cùng dữ liệu định danh (`users`, `user_roles`), audit log và outbox. `database/schema.sql` là canonical schema contract v1 với **23 bảng**; DDL cũ (`init.sql`, `postgres_db.sql`, `dbml.txt`) đã được đánh dấu deprecated và schema chưa được quản lý bởi EF Core migration/runtime.
+- **Đã có ở mức thiết kế dữ liệu**: toàn bộ hai phân hệ trên, phân hệ định danh `[ADM]` (`users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens`), audit log và outbox. `database/schema.sql` là canonical schema contract v1.2 với **28 bảng**; DDL cũ (`init.sql`, `postgres_db.sql`, `dbml.txt`) đã được đánh dấu deprecated và schema chưa được quản lý bởi EF Core migration/runtime.
 - **Ngoài phạm vi triển khai — đã có thiết kế, đang tạm dừng**: chấm công và nghỉ phép. Đặc tả, user story, DDL và API contract của nhóm này được giữ tại [docs/deferred/attendance_leave/](deferred/attendance_leave/README.md) để dùng lại sau; không nằm trong canonical schema hay OpenAPI hiện hành.
 - Các phân hệ ngoài phạm vi **không** được đặc tả ở tài liệu này, kể cả ở mức tên gọi; ranh giới đầy đủ và lý do nằm ở mục [2.1](#21-ranh-giới-phạm-vi--những-gì-không-thuộc-đợt-này).
 - Mọi thao tác tạo, cập nhật, phê duyệt, từ chối và tải dữ liệu phải kiểm tra quyền theo vai trò, lưu người thực hiện và thời điểm thực hiện.
@@ -61,11 +63,16 @@ QLNS / NexusHR
 │   ├── [EMP-05] Quản lý Tài liệu & Văn bản Nhân sự (Employee Documents)
 │   ├── [EMP-06] Đánh giá & Xác nhận Hết Thử việc (Probation Review)
 │   └── [EMP-07] Thôi việc & Bàn giao (Offboarding & Handover)
-└── PHÂN HỆ 3: QUẢN LÝ HỢP ĐỒNG LAO ĐỘNG (CONTRACTS) — nhóm Contract Management thuộc Core HR
-    ├── [CON-01] Soạn thảo & Lưu trữ Hợp đồng (Contract Drafting & Storage)
-    ├── [CON-02] Giám sát Thời hạn & Cảnh báo Tự động (Expiration Alerts)
-    └── [CON-03] Quản lý Phụ lục Hợp đồng (Contract Addenda)
+├── PHÂN HỆ 3: QUẢN LÝ HỢP ĐỒNG LAO ĐỘNG (CONTRACTS) — nhóm Contract Management thuộc Core HR
+│   ├── [CON-01] Soạn thảo & Lưu trữ Hợp đồng (Contract Drafting & Storage)
+│   ├── [CON-02] Giám sát Thời hạn & Cảnh báo Tự động (Expiration Alerts)
+│   └── [CON-03] Quản lý Phụ lục Hợp đồng (Contract Addenda)
+└── PHÂN HỆ 4: ĐỊNH DANH & PHÂN QUYỀN (IDENTITY & ACCESS) — nhóm Account Management + Roles/Permissions thuộc System Administration
+    ├── [ADM-01] Đăng nhập & Quản lý Phiên (Password Sign-in & Session Management)
+    └── [ADM-02] Quản trị Tài khoản & Vai trò (Account & Role Administration)
 ```
+
+> Phân hệ 4 được bổ sung sau khi quyết định **không** dùng Identity Provider bên ngoài. Hai chức năng lá Account Management và Roles/Permissions & Data Access Scope của trụ cột System Administration vì thế chuyển vào phạm vi giao hàng; các chức năng còn lại của trụ cột đó (cấu hình luồng phê duyệt, thông báo, tích hợp, tra cứu audit trail) vẫn ngoài phạm vi.
 
 ### 2.1. Ranh giới phạm vi — những gì không thuộc đợt này
 
@@ -82,14 +89,14 @@ QLNS / NexusHR
 
 **b) Các trụ cột còn lại trên bản đồ chức năng**
 
-System Administration, Reports & Analytics, Performance Management, Compensation & Benefits và Attendance & Leave Management đều ngoài phạm vi và không được đặc tả ở tài liệu này. Thiết kế của Attendance & Leave được giữ nguyên tại [docs/deferred/attendance_leave/](deferred/attendance_leave/README.md).
+Reports & Analytics, Performance Management, Compensation & Benefits và Attendance & Leave Management đều ngoài phạm vi và không được đặc tả ở tài liệu này. System Administration **chỉ vào phạm vi ở hai chức năng lá** Account Management và Roles/Permissions & Data Access Scope (phân hệ `[ADM]`); phần còn lại của trụ cột — cấu hình luồng phê duyệt và uỷ quyền, cấu hình thông báo, cấu hình tích hợp, tra cứu audit trail — vẫn ngoài phạm vi. Thiết kế của Attendance & Leave được giữ nguyên tại [docs/deferred/attendance_leave/](deferred/attendance_leave/README.md).
 
 **c) Phân biệt bắt buộc: cơ chế xuyên suốt vẫn còn, API quản trị thì không**
 
 - Ghi audit log trong cùng transaction với thay đổi nghiệp vụ **vẫn bắt buộc**; bảng `audit_logs` được giữ. Chỉ endpoint tra cứu audit log là ngoài phạm vi.
 - Transactional outbox để gửi email và lịch **vẫn bắt buộc**; bảng `outbox_messages` được giữ. Chỉ endpoint xem và retry delivery là ngoài phạm vi.
 - Kiểm tra permission và data scope phía server trên mọi request **vẫn bắt buộc** (mục 1.2).
-- Bảng `users` và `user_roles` **vẫn tồn tại** làm dữ liệu định danh và data scope; API quản lý user, role và role-grant ngoài phạm vi vì việc cấp tài khoản và vai trò do Identity Provider bên ngoài đảm nhiệm.
+- Các bảng định danh (`users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens`) mang thông tin đăng nhập, định danh và data scope. API quản lý tài khoản và vai trò **thuộc phạm vi** (`[ADM-02]`); ma trận vai trò → permission là dữ liệu tham chiếu chỉ sửa được qua `seed_roles.sql`, không qua API.
 - Cấu hình tích hợp, thông báo và luồng phê duyệt nằm trong `appsettings`, không có giao diện hay API quản trị.
 - `GET /health/live` và `GET /health/ready` được giữ như endpoint hạ tầng phục vụ triển khai và giám sát, không phải chức năng nghiệp vụ trên bản đồ.
 
@@ -383,3 +390,45 @@ System Administration, Reports & Analytics, Performance Management, Compensation
 - **Quy tắc**:
   - Phụ lục không được sửa hợp đồng gốc; thay đổi sau khi hiệu lực phải tạo phiên bản phụ lục mới hoặc phụ lục thay thế.
   - Mỗi phụ lục cần số tham chiếu, người lập, người phê duyệt, file đã ký và vết ghi audit trong bảng canonical `contract_addenda`; migration runtime vẫn phải được tạo và review trước khi triển khai.
+
+---
+
+### PHÂN HỆ 4: ĐỊNH DANH & PHÂN QUYỀN (IDENTITY & ACCESS)
+
+#### [ADM-01] Đăng nhập & Quản lý Phiên (Password Sign-in & Session Management)
+- **Mục tiêu**: Cấp cho người dùng một danh tính đã được xác thực, kèm đúng permission và data scope, mà không phụ thuộc nhà cung cấp định danh bên ngoài.
+- **Tác nhân**: mọi người dùng nội bộ có tài khoản `active` trong bảng `users`.
+- **Luồng xử lý**:
+  1. Người dùng nhập email và mật khẩu. Email được chuẩn hoá về chữ thường và bỏ khoảng trắng trước khi tra cứu, vì `users.email` là UNIQUE.
+  2. Hệ thống verify mật khẩu với bản băm trong `user_credentials`. Nếu email không tồn tại, hệ thống **vẫn** verify với một hash giả để thời gian phản hồi không tiết lộ tài khoản nào tồn tại.
+  3. Đăng nhập đúng: xoá bộ đếm sai, ghi `last_login_at`, resolve permission + data scope bằng `user_roles ⋈ role_permissions`, phát access token (JWT HS256, mặc định 30 phút) và refresh token (mặc định 14 ngày).
+  4. Refresh token là **chuỗi ngẫu nhiên 256-bit dùng một lần**; database chỉ lưu bản băm SHA-256. Làm mới phiên sẽ thu hồi token cũ với lý do `rotated`, lưu liên kết tới token kế nhiệm và **đọc lại quyền từ database**.
+  5. Đăng xuất thu hồi refresh token đang giữ; access token vẫn sống tới khi hết hạn — đây là giới hạn đã biết và được chấp nhận của bearer token stateless.
+- **Quy tắc nghiệp vụ**:
+  - **Khoá tạm theo tài khoản**: sai **5 lần liên tiếp** khoá **15 phút** (`user_credentials.failed_attempts`, `locked_until`). Lần sai đạt ngưỡng mới bắt đầu cửa sổ khoá; sai thêm trong lúc đang khoá không kéo dài cửa sổ.
+  - **Không tiết lộ tài khoản**: email sai, không có credential và sai mật khẩu đều trả `401` với cùng một `code`. Tài khoản bị vô hiệu hoá chỉ được báo **sau khi** mật khẩu đã đúng.
+  - **Phát hiện đánh cắp token**: trình lại một refresh token đã bị thu hồi ⇒ thu hồi **toàn bộ** refresh token của tài khoản đó (`reuse_detected`) và buộc đăng nhập lại.
+  - **Buộc đổi mật khẩu**: khi `must_change_password` bật, phiên được cấp là phiên **hạn chế** — không có refresh token, access token không mang permission nào, chỉ gọi được endpoint đổi mật khẩu.
+  - **Tự đổi mật khẩu** bắt buộc nhập mật khẩu hiện tại (access token bị đánh cắp một mình không được phép chiếm tài khoản); mật khẩu mới tối thiểu 10 ký tự, kết hợp ít nhất 3 trong 4 nhóm ký tự, không chứa phần trước `@` của email và không trùng mật khẩu cũ. Đổi xong thu hồi mọi refresh token của người dùng.
+  - **Lưu trữ mật khẩu**: PBKDF2-HMAC-SHA512, 210.000 vòng, salt 128-bit riêng cho từng mật khẩu; tham số nằm trong chính chuỗi hash nên nâng work factor không cần migration. So sánh bằng thuật toán constant-time.
+  - **Audit**: mọi lần đăng nhập, làm mới, đăng xuất và đổi mật khẩu — kể cả thất bại (`result = 'rejected'`) — ghi `audit_logs` trong cùng transaction với thay đổi trạng thái. Không bao giờ ghi mật khẩu, hash hay giá trị token vào audit.
+- **Ngoài phạm vi**: tự đăng ký tài khoản, quên mật khẩu qua email, đăng nhập một lần (SSO/OIDC federation), xác thực hai yếu tố (MFA). Rate limit theo IP đặt ở reverse proxy trước API, không phải trong ứng dụng.
+
+---
+
+#### [ADM-02] Quản trị Tài khoản & Vai trò (Account & Role Administration)
+- **Mục tiêu**: Cho phép Super Admin cấp, thu hồi và giới hạn quyền truy cập mà không cần can thiệp trực tiếp vào database.
+- **Tác nhân**: Super Admin (`admin.user.manage`); vai trò chỉ đọc dùng `admin.user.read` / `admin.role.read`.
+- **Luồng xử lý**:
+  1. Tạo tài khoản: nhập email, tên hiển thị, mật khẩu ban đầu, tuỳ chọn liên kết `employee_id`, và danh sách vai trò kèm phạm vi dữ liệu. Hệ thống sinh `external_subject = local|<email>`, băm mật khẩu và **luôn** bật `must_change_password` vì mật khẩu do người khác biết.
+  2. Cấp/thu hồi vai trò: gửi **trạng thái đích đầy đủ**; vai trò không có trong danh sách sẽ bị xoá. Danh sách rỗng để lại tài khoản đăng nhập được nhưng không có quyền nào.
+  3. Vô hiệu hoá tài khoản: đổi `users.status = 'disabled'` và thu hồi toàn bộ refresh token của tài khoản.
+  4. Đặt lại mật khẩu: đặt mật khẩu tạm, bật `must_change_password`, xoá bộ đếm khoá, thu hồi toàn bộ refresh token. Mật khẩu tạm **không** xuất hiện trong response; phải chuyển cho người dùng qua kênh an toàn ngoài hệ thống.
+- **Quy tắc nghiệp vụ**:
+  - **Không tự quản trị chính mình**: Super Admin không được vô hiệu hoá, đặt lại mật khẩu hay sửa vai trò của tài khoản của chính mình. Đây là rào chắn kép — chống tự khoá cả tổ chức khỏi quyền quản trị, và chống nâng quyền không qua người thứ hai.
+  - **Vai trò phải có trong danh mục**: `role_code` phải tồn tại trong `roles` và `is_assignable = true`. Phạm vi `department` bắt buộc `data_scope_id` là phòng ban tồn tại; `self` và `organization` bắt buộc `data_scope_id = 0` (đúng theo `ck_user_roles_scope`).
+  - **Email là duy nhất** sau khi chuẩn hoá chữ thường; xung đột trả `409` cả khi phát hiện ở bước kiểm tra trước lẫn khi thua race ở unique index.
+  - **Liên kết nhân viên**: một `employee` chỉ gắn với một tài khoản; nhân viên đã có tài khoản thì bị từ chối.
+  - **Đồng thời**: mọi lệnh sửa yêu cầu `If-Match` theo `users.version`. Việc thay vai trò cũng dùng chính version này làm chốt, dù dữ liệu thay đổi nằm ở bảng `user_roles`.
+  - **Ma trận vai trò → permission là dữ liệu tham chiếu**, không sửa được qua API: nó được triển khai bằng [`database/seed_roles.sql`](../database/seed_roles.sql) để mọi thay đổi quyền hạn đều đi qua review và có vết trong version control.
+- **Ngoài phạm vi**: tạo/sửa vai trò và permission qua API, uỷ quyền tạm thời (delegation), nhập khẩu tài khoản theo lô, đồng bộ tài khoản từ HR sang hệ thống ngoài.

@@ -2,7 +2,7 @@
 
 > **Trạng thái:** Proposed runtime design. Các sequence tuân theo 3-tier và 3-layer: React Web → ASP.NET Core Presentation → Business Logic → Data Access/EF Core → PostgreSQL.
 >
-> **Phạm vi:** các sequence dưới đây chỉ mô tả những chức năng lá được in đậm dưới hai trụ cột **Recruitment** và **Core HR** trên bản đồ `topdown-approach.png` (xem mục 2 của [README](../README.md)). Không có sequence cho kiểm tra định biên/ngân sách khi phê duyệt requisition, quản lý nhiều kênh đăng tin, sơ đồ cây tổ chức, tạm hoãn/trở lại làm việc, báo cáo & phân tích hay quản trị hệ thống — tất cả đều ngoài phạm vi.
+> **Phạm vi:** các sequence dưới đây mô tả những chức năng lá được in đậm dưới hai trụ cột **Recruitment** và **Core HR** trên bản đồ `topdown-approach.png` (xem mục 2 của [README](../README.md)), cộng luồng đăng nhập của phân hệ định danh `[ADM]` ([ADR-011](architecture.md#9-architecture-decisions-adr-index)). Không có sequence cho kiểm tra định biên/ngân sách khi phê duyệt requisition, quản lý nhiều kênh đăng tin, sơ đồ cây tổ chức, tạm hoãn/trở lại làm việc, báo cáo & phân tích hay cấu hình hệ thống — tất cả đều ngoài phạm vi.
 >
 > Ba sequence của phân hệ Attendance & Leave (đơn nghỉ, chấm công, khóa kỳ công) đã được tách ra ngoài phạm vi và giữ tại [deferred/attendance_leave/sequence_diagrams_att.md](deferred/attendance_leave/sequence_diagrams_att.md).
 
@@ -312,7 +312,88 @@ sequenceDiagram
     W->>DB: Insert deduplicated notification outbox
 ```
 
-## 7. Traceability
+## 7. Đăng nhập, làm mới phiên và phát hiện token bị đánh cắp
+
+**User Stories:** `ADM-01.1`, `ADM-01.2` · **Trạng thái:** Proposed.
+
+Luồng này là tiền đề của cả sáu sequence trên: mọi `Controller` ở đó đều giả định đã có một actor đã xác thực kèm permission và data scope. Ba nhánh dưới đây là ba nhánh có thể kiểm thử độc lập: sai mật khẩu, khoá tạm, và trình lại refresh token đã dùng.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Người dùng nội bộ
+    participant UI as React Auth UI
+    participant C as AuthController
+    participant S as AuthenticationService
+    participant H as Pbkdf2PasswordHasher
+    participant T as JwtAccessTokenIssuer
+    participant Repo as AuthenticationRepository
+    participant DB as PostgreSQL
+
+    U->>UI: Nhập email và mật khẩu
+    UI->>C: POST /api/v1/auth/login
+    C->>S: SignIn(email, password, clientContext)
+    S->>Repo: FindByEmail(email đã chuẩn hoá)
+    Repo->>DB: SELECT users ⋈ user_credentials ⋈ employees
+    DB-->>Repo: Account + credential
+    Repo-->>S: UserSignInRecord
+
+    alt Email không tồn tại hoặc không có credential
+        S->>H: Verify(DummyHash, password)
+        Note over S,H: Vẫn tốn đúng thời gian như một lần verify thật<br/>nên không dò được tài khoản nào tồn tại
+        S->>Repo: RecordFailedSignIn(invalid_credentials)
+        Repo->>DB: BEGIN<br/>INSERT audit_logs (result='rejected')<br/>COMMIT
+        S-->>C: AuthenticationFailedException
+        C-->>UI: 401 invalid_credentials
+    else Đang trong cửa sổ khoá
+        S-->>C: AccountLocked(retryAfterSeconds)
+        Note over S: Không verify mật khẩu và không tăng bộ đếm
+        C-->>UI: 401 account_locked
+    else Sai mật khẩu
+        S->>H: Verify(storedHash, password) → Failed
+        S->>Repo: RecordFailedSignIn(attempts+1, locked_until nếu đạt 5)
+        Repo->>DB: BEGIN<br/>UPDATE user_credentials<br/>INSERT audit_logs (rejected)<br/>COMMIT
+        C-->>UI: 401 invalid_credentials
+    else Mật khẩu đúng
+        S->>H: Verify(storedHash, password) → Succeeded
+        alt users.status = 'disabled'
+            S->>Repo: RecordFailedSignIn(account_disabled)
+            C-->>UI: 401 account_disabled
+        else must_change_password
+            S->>T: Issue(identity hạn chế: không permission, 10 phút)
+            S->>Repo: RecordSuccessfulSignIn(không refresh token)
+            C-->>UI: 200 Session (không refreshToken, passwordChangeRequired)
+        else Bình thường
+            S->>Repo: GetAuthorization(userId)
+            Repo->>DB: SELECT user_roles ⋈ role_permissions
+            DB-->>Repo: Grants + permissions
+            S->>T: Issue(identity đầy đủ)
+            S->>Repo: RecordSuccessfulSignIn(refresh token mới)
+            Repo->>DB: BEGIN<br/>UPDATE user_credentials (reset bộ đếm, last_login_at)<br/>INSERT refresh_tokens (chỉ lưu SHA-256)<br/>INSERT audit_logs (succeeded)<br/>COMMIT
+            C-->>UI: 200 Session (accessToken + refreshToken)
+        end
+    end
+
+    Note over UI: ~1 phút trước khi access token hết hạn
+    UI->>C: POST /api/v1/auth/refresh
+    C->>S: Refresh(refreshToken)
+    S->>Repo: FindRefreshToken(SHA-256(token))
+    alt Token đã bị thu hồi — dấu hiệu bị đánh cắp
+        S->>Repo: RevokeAllRefreshTokens(reuse_detected)
+        Repo->>DB: BEGIN<br/>UPDATE refresh_tokens SET revoked_at<br/>INSERT audit_logs (rejected)<br/>COMMIT
+        C-->>UI: 401 invalid_refresh_token
+        Note over UI: Cả người dùng thật và kẻ tấn công đều phải đăng nhập lại
+    else Token còn hiệu lực
+        S->>Repo: GetAuthorization(userId)
+        Note over S,Repo: Đọc lại quyền từ DB nên vai trò vừa bị thu hồi<br/>không còn trong token mới
+        S->>Repo: RotateRefreshToken(tokenId, successor)
+        Repo->>DB: BEGIN<br/>UPDATE ... WHERE id=@id AND revoked_at IS NULL<br/>INSERT refresh_tokens (successor)<br/>UPDATE replaced_by_token_id<br/>INSERT audit_logs<br/>COMMIT
+        Note over Repo,DB: Điều kiện revoked_at IS NULL khiến hai request<br/>song song cùng token chỉ một cái thắng
+        C-->>UI: 200 Session mới
+    end
+```
+
+## 8. Traceability
 
 | # | Sequence | User Story / Requirement | Module | Implementation status |
 |---|---|---|---|---|
@@ -322,6 +403,7 @@ sequenceDiagram
 | 4 | Offer acceptance | `REC-06.1`–`REC-06.2` | Recruitment → Core HR | Proposed |
 | 5 | Employee movement | `EMP-04.1` | Core HR | Proposed |
 | 6 | Contract lifecycle | `CON-01.1`–`CON-03.1` | Core HR / Contracts | Proposed |
+| 7 | Sign-in và refresh rotation | `ADM-01.1`–`ADM-01.2` | Identity & Access | Proposed |
 
 ### Luồng chưa có sequence diagram
 
@@ -336,3 +418,4 @@ Các story sau đã có acceptance criteria nhưng chưa được vẽ sequence.
 | `EMP-05.1` | Luồng upload và phát Signed URL sẽ vẽ chung với chuẩn lưu trữ tài liệu |
 | `EMP-06.1`–`EMP-06.2` | Sẽ vẽ khi chốt template đánh giá thử việc |
 | `EMP-07.1`–`EMP-07.2` | Cần vẽ trước khi implement: có nhiều side effect (khóa tài khoản đúng ngày làm việc cuối, thu hồi tài sản, chốt công nợ) và thứ tự thực hiện quan trọng |
+| `ADM-02.1`–`ADM-02.2` | Cấp tài khoản và thay vai trò là CRUD có `If-Match`; quy tắc quan trọng nằm ở kiểm tra tham chiếu và rào tự-quản-trị, không ở thứ tự tương tác. Hệ quả duy nhất có thứ tự — vô hiệu hoá tài khoản thu hồi refresh token — đã thể hiện ở sequence 7 |

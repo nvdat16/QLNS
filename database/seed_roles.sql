@@ -1,0 +1,167 @@
+-- QLNS role catalogue and role → permission matrix. REFERENCE DATA, required in every environment.
+-- Source of truth for the matrix: docs/functional_specifications.md §1.2 and docs/user_stories.md §6.1.
+-- Run once after database/schema.sql, before database/seed_dev.sql. Idempotent: safe to re-run after
+-- adding a permission to a role. Permission strings must match the *Permissions constants in
+-- src/backend/src/Qlns.BusinessLogic (an unknown string here simply grants nothing).
+BEGIN;
+
+INSERT INTO roles (code, name, description, is_assignable) VALUES
+    ('ROLE_ADMIN',       'Super Admin',               'Quản trị tài khoản, vai trò và phân quyền. Không có quyền nghiệp vụ.', true),
+    ('ROLE_HR_MGR',      'HR Director / Manager',     'Phê duyệt trên toàn tổ chức: requisition, offer, biến động, hợp đồng, thử việc, thôi việc.', true),
+    ('ROLE_HR_OFFICER',  'HR Officer (C&B / Records)','Soạn thảo và vận hành hồ sơ, hợp đồng, onboarding. Không phê duyệt.', true),
+    ('ROLE_LINE_MGR',    'Line Manager',              'Phạm vi phòng ban: đề xuất tuyển dụng, đánh giá thử việc, xác nhận bàn giao.', true),
+    ('ROLE_RECRUITER',   'Talent Acquisition',        'Vận hành tuyển dụng toàn tổ chức: sàng lọc, phỏng vấn, offer.', true),
+    ('ROLE_INTERVIEWER', 'Hiring Manager / Interviewer','Tham gia hội đồng phỏng vấn và chấm điểm scorecard.', true),
+    ('ROLE_EMPLOYEE',    'Employee',                  'Tự phục vụ: hồ sơ, hợp đồng và bàn giao của chính mình.', true),
+    ('ROLE_IT_ADMIN',    'IT Administrator',          'Người thực hiện các task IT trong checklist onboarding/offboarding.', true)
+ON CONFLICT (code) DO UPDATE
+    SET name = excluded.name,
+        description = excluded.description,
+        is_assignable = excluded.is_assignable;
+
+INSERT INTO role_permissions (role_code, permission) VALUES
+    -- ROLE_ADMIN — quản trị định danh (ADM-02), không có quyền nghiệp vụ.
+    ('ROLE_ADMIN', 'admin.user.read'),
+    ('ROLE_ADMIN', 'admin.user.manage'),
+    ('ROLE_ADMIN', 'admin.role.read'),
+    ('ROLE_ADMIN', 'corehr.organization.read'),
+
+    -- ROLE_HR_MGR — duyệt mọi luồng, phạm vi toàn tổ chức.
+    ('ROLE_HR_MGR', 'corehr.employee.read'),
+    ('ROLE_HR_MGR', 'corehr.employee.read_sensitive'),
+    ('ROLE_HR_MGR', 'corehr.employee.profile.update'),
+    ('ROLE_HR_MGR', 'corehr.employee.profile.manage'),
+    ('ROLE_HR_MGR', 'corehr.organization.read'),
+    ('ROLE_HR_MGR', 'corehr.organization.manage'),
+    ('ROLE_HR_MGR', 'corehr.onboarding.read'),
+    ('ROLE_HR_MGR', 'corehr.onboarding.manage'),
+    ('ROLE_HR_MGR', 'corehr.onboarding.reopen'),
+    ('ROLE_HR_MGR', 'corehr.event.read'),
+    ('ROLE_HR_MGR', 'corehr.event.write'),
+    ('ROLE_HR_MGR', 'corehr.event.approve'),
+    ('ROLE_HR_MGR', 'corehr.document.read'),
+    ('ROLE_HR_MGR', 'corehr.document.read_sensitive'),
+    ('ROLE_HR_MGR', 'corehr.document.upload'),
+    ('ROLE_HR_MGR', 'corehr.probation.read'),
+    ('ROLE_HR_MGR', 'corehr.probation.manage'),
+    ('ROLE_HR_MGR', 'corehr.probation.decide'),
+    ('ROLE_HR_MGR', 'corehr.offboarding.read'),
+    ('ROLE_HR_MGR', 'corehr.offboarding.write'),
+    ('ROLE_HR_MGR', 'corehr.offboarding.approve'),
+    ('ROLE_HR_MGR', 'contracts.contract.read'),
+    ('ROLE_HR_MGR', 'contracts.contract.write'),
+    ('ROLE_HR_MGR', 'contracts.contract.approve'),
+    ('ROLE_HR_MGR', 'recruitment.requisition.read'),
+    ('ROLE_HR_MGR', 'recruitment.requisition.write'),
+    ('ROLE_HR_MGR', 'recruitment.requisition.approve'),
+    ('ROLE_HR_MGR', 'recruitment.requisition.publish'),
+    ('ROLE_HR_MGR', 'recruitment.intake.read'),
+    ('ROLE_HR_MGR', 'recruitment.intake.write'),
+    ('ROLE_HR_MGR', 'recruitment.application.read'),
+    ('ROLE_HR_MGR', 'recruitment.application.advance'),
+    ('ROLE_HR_MGR', 'recruitment.application.terminate'),
+    ('ROLE_HR_MGR', 'recruitment.interview.read'),
+    ('ROLE_HR_MGR', 'recruitment.interview.manage'),
+    ('ROLE_HR_MGR', 'recruitment.evaluation.read'),
+    ('ROLE_HR_MGR', 'recruitment.evaluation.read_all'),
+    ('ROLE_HR_MGR', 'recruitment.evaluation.submit'),
+    ('ROLE_HR_MGR', 'recruitment.evaluation.unlock'),
+    ('ROLE_HR_MGR', 'recruitment.offer.read'),
+    ('ROLE_HR_MGR', 'recruitment.offer.write'),
+    ('ROLE_HR_MGR', 'recruitment.offer.approve'),
+
+    -- ROLE_HR_OFFICER — soạn thảo và vận hành, không có *.approve và không duyệt biến động.
+    ('ROLE_HR_OFFICER', 'corehr.employee.read'),
+    ('ROLE_HR_OFFICER', 'corehr.employee.read_sensitive'),
+    ('ROLE_HR_OFFICER', 'corehr.employee.profile.update'),
+    ('ROLE_HR_OFFICER', 'corehr.employee.profile.manage'),
+    ('ROLE_HR_OFFICER', 'corehr.organization.read'),
+    ('ROLE_HR_OFFICER', 'corehr.organization.manage'),
+    ('ROLE_HR_OFFICER', 'corehr.onboarding.read'),
+    ('ROLE_HR_OFFICER', 'corehr.onboarding.manage'),
+    ('ROLE_HR_OFFICER', 'corehr.onboarding.reopen'),
+    ('ROLE_HR_OFFICER', 'corehr.event.read'),
+    ('ROLE_HR_OFFICER', 'corehr.event.write'),
+    ('ROLE_HR_OFFICER', 'corehr.document.read'),
+    ('ROLE_HR_OFFICER', 'corehr.document.read_sensitive'),
+    ('ROLE_HR_OFFICER', 'corehr.document.upload'),
+    ('ROLE_HR_OFFICER', 'corehr.probation.read'),
+    ('ROLE_HR_OFFICER', 'corehr.probation.manage'),
+    ('ROLE_HR_OFFICER', 'corehr.offboarding.read'),
+    ('ROLE_HR_OFFICER', 'corehr.offboarding.write'),
+    ('ROLE_HR_OFFICER', 'contracts.contract.read'),
+    ('ROLE_HR_OFFICER', 'contracts.contract.write'),
+    ('ROLE_HR_OFFICER', 'recruitment.requisition.read'),
+    ('ROLE_HR_OFFICER', 'recruitment.intake.read'),
+    ('ROLE_HR_OFFICER', 'recruitment.application.read'),
+    ('ROLE_HR_OFFICER', 'recruitment.interview.read'),
+    ('ROLE_HR_OFFICER', 'recruitment.offer.read'),
+
+    -- ROLE_LINE_MGR — data_scope_type = 'department'.
+    ('ROLE_LINE_MGR', 'corehr.employee.read'),
+    ('ROLE_LINE_MGR', 'corehr.employee.profile.update'),
+    ('ROLE_LINE_MGR', 'corehr.organization.read'),
+    ('ROLE_LINE_MGR', 'corehr.onboarding.read'),
+    ('ROLE_LINE_MGR', 'corehr.onboarding.manage'),
+    ('ROLE_LINE_MGR', 'corehr.event.read'),
+    ('ROLE_LINE_MGR', 'corehr.event.write'),
+    ('ROLE_LINE_MGR', 'corehr.document.read'),
+    ('ROLE_LINE_MGR', 'corehr.probation.read'),
+    ('ROLE_LINE_MGR', 'corehr.offboarding.read'),
+    ('ROLE_LINE_MGR', 'corehr.offboarding.write'),
+    ('ROLE_LINE_MGR', 'contracts.contract.read'),
+    ('ROLE_LINE_MGR', 'recruitment.requisition.read'),
+    ('ROLE_LINE_MGR', 'recruitment.requisition.write'),
+    ('ROLE_LINE_MGR', 'recruitment.intake.read'),
+    ('ROLE_LINE_MGR', 'recruitment.application.read'),
+    ('ROLE_LINE_MGR', 'recruitment.interview.read'),
+    ('ROLE_LINE_MGR', 'recruitment.evaluation.read'),
+    ('ROLE_LINE_MGR', 'recruitment.evaluation.submit'),
+    ('ROLE_LINE_MGR', 'recruitment.offer.read'),
+
+    -- ROLE_RECRUITER — vận hành tuyển dụng toàn tổ chức, không phê duyệt.
+    ('ROLE_RECRUITER', 'corehr.organization.read'),
+    ('ROLE_RECRUITER', 'recruitment.requisition.read'),
+    ('ROLE_RECRUITER', 'recruitment.requisition.publish'),
+    ('ROLE_RECRUITER', 'recruitment.intake.read'),
+    ('ROLE_RECRUITER', 'recruitment.intake.write'),
+    ('ROLE_RECRUITER', 'recruitment.application.read'),
+    ('ROLE_RECRUITER', 'recruitment.application.advance'),
+    ('ROLE_RECRUITER', 'recruitment.application.terminate'),
+    ('ROLE_RECRUITER', 'recruitment.interview.read'),
+    ('ROLE_RECRUITER', 'recruitment.interview.manage'),
+    ('ROLE_RECRUITER', 'recruitment.evaluation.read'),
+    ('ROLE_RECRUITER', 'recruitment.offer.read'),
+    ('ROLE_RECRUITER', 'recruitment.offer.write'),
+
+    -- ROLE_INTERVIEWER — hội đồng phỏng vấn, chấm scorecard của chính mình.
+    ('ROLE_INTERVIEWER', 'corehr.employee.read'),
+    ('ROLE_INTERVIEWER', 'corehr.organization.read'),
+    ('ROLE_INTERVIEWER', 'recruitment.requisition.read'),
+    ('ROLE_INTERVIEWER', 'recruitment.requisition.write'),
+    ('ROLE_INTERVIEWER', 'recruitment.intake.read'),
+    ('ROLE_INTERVIEWER', 'recruitment.application.read'),
+    ('ROLE_INTERVIEWER', 'recruitment.interview.read'),
+    ('ROLE_INTERVIEWER', 'recruitment.evaluation.read'),
+    ('ROLE_INTERVIEWER', 'recruitment.evaluation.submit'),
+
+    -- ROLE_EMPLOYEE — data_scope_type = 'self'.
+    ('ROLE_EMPLOYEE', 'corehr.employee.read'),
+    ('ROLE_EMPLOYEE', 'corehr.employee.profile.update'),
+    ('ROLE_EMPLOYEE', 'corehr.organization.read'),
+    ('ROLE_EMPLOYEE', 'corehr.onboarding.read'),
+    ('ROLE_EMPLOYEE', 'corehr.event.read'),
+    ('ROLE_EMPLOYEE', 'corehr.document.read'),
+    ('ROLE_EMPLOYEE', 'corehr.document.upload'),
+    ('ROLE_EMPLOYEE', 'corehr.probation.read'),
+    ('ROLE_EMPLOYEE', 'corehr.offboarding.read'),
+    ('ROLE_EMPLOYEE', 'contracts.contract.read'),
+
+    -- ROLE_IT_ADMIN — chỉ checklist onboarding/offboarding được phân công.
+    ('ROLE_IT_ADMIN', 'corehr.onboarding.read'),
+    ('ROLE_IT_ADMIN', 'corehr.onboarding.manage'),
+    ('ROLE_IT_ADMIN', 'corehr.offboarding.read'),
+    ('ROLE_IT_ADMIN', 'corehr.offboarding.write')
+ON CONFLICT (role_code, permission) DO NOTHING;
+
+COMMIT;

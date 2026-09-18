@@ -23,8 +23,11 @@ flowchart LR
     HROfficer([HR Officer])
     LineMgr([Line Manager])
     User([Employee / Candidate])
+    Admin([Super Admin])
 
     subgraph HRMS["QLNS / HRMS"]
+        Identity[Sign in & manage the session]
+        Accounts[Administer accounts, roles & data scope]
         Jobs[Create, approve & publish job requisitions]
         ATS[Screen CVs & manage ATS pipeline]
         Interviews[Schedule interviews & submit scorecards]
@@ -32,6 +35,15 @@ flowchart LR
         Records[Manage employee records, org data & contracts]
         Lifecycle[Run probation, mobility & offboarding]
     end
+
+    Admin --> Accounts
+    Admin --> Identity
+    HRMgr --> Identity
+    Recruiter --> Identity
+    Interviewer --> Identity
+    HROfficer --> Identity
+    LineMgr --> Identity
+    User --> Identity
 
     Recruiter --> Jobs
     Recruiter --> ATS
@@ -50,7 +62,7 @@ flowchart LR
     User --> Lifecycle
 ```
 
-Phạm vi đợt này không có use case báo cáo, phân tích, quản trị tài khoản, cấp/thu hồi vai trò và phạm vi dữ liệu, cấu hình hệ thống hay tra cứu nhật ký kiểm toán; cũng không có use case xem cây tổ chức trực quan và tạm hoãn/trở lại làm việc. Ghi nhật ký kiểm toán và gửi thông báo qua outbox vẫn là hành vi bắt buộc của mọi use case nghiệp vụ, chỉ các màn hình và API quản trị tương ứng là ngoài phạm vi. Vai trò **Super Admin / System Administrator** vì vậy không có use case nghiệp vụ nào trong đợt giao hàng hiện tại; actor này chỉ còn xuất hiện ở mục 5 với use case hạ tầng.
+Phạm vi đợt này **có** use case đăng nhập và quản trị tài khoản/vai trò (mục 6, phân hệ `[ADM]`), nhưng không có use case báo cáo, phân tích, cấu hình hệ thống hay tra cứu nhật ký kiểm toán; cũng không có use case xem cây tổ chức trực quan và tạm hoãn/trở lại làm việc. Ghi nhật ký kiểm toán và gửi thông báo qua outbox vẫn là hành vi bắt buộc của mọi use case nghiệp vụ, chỉ các màn hình và API tra cứu tương ứng là ngoài phạm vi. Actor **Super Admin** sở hữu đúng nhóm use case định danh và **không** có quyền đọc dữ liệu nghiệp vụ nào.
 
 ---
 
@@ -279,7 +291,7 @@ flowchart LR
 
 ## 5. Theo dõi vận hành hệ thống
 
-Đợt giao hàng này không có use case báo cáo, phân tích hay quản trị hệ thống. Phần còn lại duy nhất là theo dõi tình trạng hoạt động của dịch vụ — đây là hạ tầng phục vụ triển khai và giám sát, không phải chức năng nghiệp vụ trên bản đồ chức năng.
+Đợt giao hàng này không có use case báo cáo hay phân tích. Quản trị tài khoản và vai trò được đặc tả ở mục 6; phần còn lại của trụ cột System Administration chỉ còn việc theo dõi tình trạng hoạt động của dịch vụ — đây là hạ tầng phục vụ triển khai và giám sát, không phải chức năng nghiệp vụ trên bản đồ chức năng.
 
 ```mermaid
 flowchart LR
@@ -298,23 +310,62 @@ flowchart LR
 ### Ranh giới nghiệp vụ chính
 
 - `GET /health/live` và `GET /health/ready` là endpoint hạ tầng, không trả dữ liệu nghiệp vụ và không yêu cầu quyền nghiệp vụ.
-- Đây là use case duy nhất của actor System Administrator trong đợt này; quản lý tài khoản, vai trò, phạm vi dữ liệu, cấu hình tích hợp/thông báo và tra cứu nhật ký kiểm toán đều ngoài phạm vi. Việc cấp và thu hồi tài khoản do Identity Provider bên ngoài đảm nhiệm, cấu hình nằm trong `appsettings`.
+- Quản lý tài khoản, vai trò và phạm vi dữ liệu **thuộc phạm vi** và được đặc tả riêng ở mục 6. Cấu hình tích hợp/thông báo (nằm trong `appsettings`) và màn hình tra cứu nhật ký kiểm toán vẫn ngoài phạm vi.
 - Ghi nhật ký kiểm toán trong cùng transaction với thay đổi nghiệp vụ và gửi thông báo qua transactional outbox **vẫn bắt buộc** với mọi use case ở các mục 2, 3 và 4; chỉ màn hình và API tra cứu/retry tương ứng là ngoài phạm vi.
 
-## 6. Ma trận actor — nhóm chức năng
+## 6. Định danh & phân quyền
 
-| Actor | Tuyển dụng | Core HR | Hợp đồng |
-|---|---|---|---|
-| Candidate | Nộp CV, phản hồi Offer | — | — |
-| Employee | — | Hồ sơ cá nhân, thông tin phòng ban và quản lý trực tiếp, bàn giao khi thôi việc | Xem/ký hợp đồng |
-| Hiring/Line Manager | Requisition, phỏng vấn | Cơ cấu đội ngũ, onboarding, đánh giá thử việc, xác nhận bàn giao | — |
-| Recruiter | Pipeline, lịch, scorecard, Offer | — | — |
-| HR Officer / C&B | Hỗ trợ tiếp nhận | Hồ sơ, onboarding, biến động, tài liệu, khởi tạo & đóng case thôi việc | Soạn hợp đồng/phụ lục |
-| HR Manager | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc, quản lý phòng ban/chức danh | Phê duyệt hợp đồng/phụ lục |
-| System Administrator | — | Vô hiệu hóa tài khoản đúng ngày làm việc cuối; không mặc định xem dữ liệu HR | — |
+```mermaid
+flowchart LR
+    AnyUser(["👤 Người dùng nội bộ<br/>(mọi vai trò)"])
+    Admin(["👤 Super Admin"])
 
-Ma trận chỉ còn ba nhóm chức năng vì đó là toàn bộ phạm vi giao hàng. Cột báo cáo và quản trị hệ thống đã được bỏ: các chức năng đó thuộc trụ cột Reports & Analytics và System Administration, nằm ngoài phạm vi đợt này. Vì vậy actor **Super Admin / System Administrator** chỉ còn use case hạ tầng ở mục 5, và vai trò **Auditor** không có use case nào trong đợt này — nhật ký kiểm toán vẫn được ghi đầy đủ, nhưng không có màn hình hay API tra cứu.
+    subgraph QLNS_ADM["QLNS — Identity & Access"]
+        direction TB
+        UC_SIGN_IN(["Đăng nhập bằng email & mật khẩu<br/>[ADM-01.1]"])
+        UC_SESSION(["Duy trì & kết thúc phiên<br/>[ADM-01.2]"])
+        UC_CHANGE_PWD(["Tự đổi mật khẩu<br/>[ADM-01.2]"])
+        UC_ACCOUNT_PROVISION(["Cấp tài khoản & vai trò<br/>[ADM-02.1]"])
+        UC_ACCOUNT_REVOKE(["Thu hồi & điều chỉnh quyền<br/>[ADM-02.2]"])
+        UC_AUDIT_WRITE(["Ghi nhật ký kiểm toán"])
+    end
+
+    AnyUser --> UC_SIGN_IN
+    AnyUser --> UC_SESSION
+    AnyUser --> UC_CHANGE_PWD
+    Admin --> UC_ACCOUNT_PROVISION
+    Admin --> UC_ACCOUNT_REVOKE
+
+    UC_SIGN_IN -. "<<include>>" .-> UC_AUDIT_WRITE
+    UC_SESSION -. "<<include>>" .-> UC_AUDIT_WRITE
+    UC_CHANGE_PWD -. "<<include>>" .-> UC_AUDIT_WRITE
+    UC_ACCOUNT_PROVISION -. "<<include>>" .-> UC_AUDIT_WRITE
+    UC_ACCOUNT_REVOKE -. "<<include>>" .-> UC_AUDIT_WRITE
+    UC_ACCOUNT_REVOKE -. "<<extend>>" .-> UC_SESSION
+```
+
+### Ranh giới nghiệp vụ chính
+
+- `UC_SIGN_IN` là **tiền điều kiện của mọi use case** ở các mục 2, 3 và 4: những use case đó đều `<<include>>` `UC_AUTH`, và `UC_AUTH` giờ được hiện thực bởi chính hệ thống chứ không bởi Identity Provider bên ngoài.
+- Mọi lần đăng nhập, kể cả thất bại, đều ghi nhật ký kiểm toán — đây là use case duy nhất mà một lần **thất bại** cũng phải để lại vết.
+- `UC_ACCOUNT_REVOKE` `<<extend>>` `UC_SESSION`: vô hiệu hoá tài khoản hoặc đặt lại mật khẩu sẽ chấm dứt các phiên đang mở của tài khoản đó.
+- Super Admin **không** có quyền đọc hồ sơ, hợp đồng hay dữ liệu tuyển dụng; và không được tự vô hiệu hoá, đặt lại mật khẩu hay đổi vai trò của chính mình.
+- Ngoài phạm vi: tự đăng ký tài khoản, quên mật khẩu qua email, SSO/OIDC federation, xác thực hai yếu tố, uỷ quyền tạm thời.
+
+## 7. Ma trận actor — nhóm chức năng
+
+| Actor | Định danh | Tuyển dụng | Core HR | Hợp đồng |
+|---|---|---|---|---|
+| Candidate | — (dùng `X-Offer-Token`, không có tài khoản) | Nộp CV, phản hồi Offer | — | — |
+| Employee | Đăng nhập, đổi mật khẩu của mình | — | Hồ sơ cá nhân, thông tin phòng ban và quản lý trực tiếp, bàn giao khi thôi việc | Xem/ký hợp đồng |
+| Hiring/Line Manager | Đăng nhập, đổi mật khẩu của mình | Requisition, phỏng vấn | Cơ cấu đội ngũ, onboarding, đánh giá thử việc, xác nhận bàn giao | — |
+| Recruiter | Đăng nhập, đổi mật khẩu của mình | Pipeline, lịch, scorecard, Offer | — | — |
+| HR Officer / C&B | Đăng nhập, đổi mật khẩu của mình | Hỗ trợ tiếp nhận | Hồ sơ, onboarding, biến động, tài liệu, khởi tạo & đóng case thôi việc | Soạn hợp đồng/phụ lục |
+| HR Manager | Đăng nhập, đổi mật khẩu của mình | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc, quản lý phòng ban/chức danh | Phê duyệt hợp đồng/phụ lục |
+| Super Admin | **Cấp/thu hồi tài khoản, vai trò và phạm vi dữ liệu, đặt lại mật khẩu** | — | Vô hiệu hoá tài khoản đúng ngày làm việc cuối; không mặc định xem dữ liệu HR | — |
+
+Ma trận có bốn nhóm chức năng: ba nhóm nghiệp vụ trong phạm vi, cộng nhóm định danh được bổ sung theo [ADR-011](architecture.md#9-architecture-decisions-adr-index). Cột báo cáo vẫn không có (trụ cột Reports & Analytics ngoài phạm vi), và vai trò **Auditor** không có use case nào trong đợt này — nhật ký kiểm toán vẫn được ghi đầy đủ, nhưng không có màn hình hay API tra cứu.
 
 Chấm công / nghỉ phép không còn là một cột ở đây vì nhóm chức năng đó nằm ngoài phạm vi triển khai; use case của nó được giữ tại [deferred/attendance_leave/use_cases_att.md](deferred/attendance_leave/use_cases_att.md).
 
-System Administrator không mặc nhiên có quyền đọc hồ sơ, lương hoặc hợp đồng; quyền vận hành và quyền dữ liệu nghiệp vụ phải tách biệt.
+Super Admin không mặc nhiên có quyền đọc hồ sơ, lương hoặc hợp đồng: `ROLE_ADMIN` chỉ mang `admin.user.*`, `admin.role.read` và `corehr.organization.read`. Quyền quản trị và quyền dữ liệu nghiệp vụ phải tách biệt.

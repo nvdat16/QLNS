@@ -20,7 +20,8 @@ Những phần **không** thuộc phạm vi và vì vậy không có story trong
 - **Recruitment Channel Management** — Publish/Update/Close tin tuyển dụng vẫn còn, nhưng chỉ trên một kênh careers mặc định; không có việc chọn và quản lý nhiều kênh đăng tin.
 - **Organizational Chart** — không có màn hình sơ đồ cây tổ chức. Phân cấp phòng ban (`parent_department_id`), quan hệ cha con và ràng buộc xóa phòng ban vẫn trong phạm vi (xem `EMP-02.1`); chỉ phần trình bày dạng cây bị loại.
 - **Suspension & Return to Work** — không có nghiệp vụ tạm hoãn và trở lại làm việc. Trạng thái `suspended` cùng các `employee_events.event_type` tương ứng được giữ trong schema ở dạng *reserved*, không endpoint nào đặt được trong đợt này.
-- **System Administration, Reports & Analytics, Performance Management, Compensation & Benefits, Attendance & Leave Management** — toàn bộ các trụ cột này ngoài phạm vi. Việc cấp tài khoản và vai trò do Identity Provider bên ngoài đảm nhiệm; ghi audit log và transactional outbox vẫn là yêu cầu xuyên suốt, chỉ các API quản trị/tra cứu là không có.
+- **Reports & Analytics, Performance Management, Compensation & Benefits, Attendance & Leave Management** — toàn bộ các trụ cột này ngoài phạm vi.
+- **System Administration** — chỉ hai chức năng lá Account Management và Roles/Permissions & Data Access Scope vào phạm vi, dưới mã `ADM-*` (mục 5 của tài liệu này và [ADR-011](architecture.md#9-architecture-decisions-adr-index)). Cấu hình workflow/thông báo/integration và màn hình tra cứu audit trail vẫn ngoài phạm vi; ghi audit log và transactional outbox vẫn là yêu cầu xuyên suốt của mọi story.
 
 ---
 
@@ -31,7 +32,8 @@ Những phần **không** thuộc phạm vi và vì vậy không có story trong
 | **Recruitment (ATS)** | `REC-01` … `REC-06` — 10 story | Proposed |
 | **Core HR — Profile, Organization, Lifecycle** | `EMP-01` … `EMP-07` — 10 story | Proposed |
 | **Core HR — Contracts** | `CON-01` … `CON-03` — 4 story | Proposed |
-| **Tổng cộng** | **24 story** | Proposed |
+| **Identity & Access** | `ADM-01` … `ADM-02` — 4 story | Proposed |
+| **Tổng cộng** | **28 story** | Proposed |
 
 ---
 
@@ -57,14 +59,17 @@ Những phần **không** thuộc phạm vi và vì vậy không có story trong
   - [CON-01: Soạn thảo, Ký kết & Vòng đời Hợp đồng](#con-01-soạn-thảo-ký-kết--vòng-đời-hợp-đồng)
   - [CON-02: Giám sát Hạn Hợp đồng & Cảnh báo Tự động](#con-02-giám-sát-hạn-hợp-đồng--cảnh-báo-tự-động)
   - [CON-03: Quản lý Phụ lục Hợp đồng Lao động](#con-03-quản-lý-phụ-lục-hợp-đồng-lao-động)
-- [5. Ma trận Phân quyền & Traceability](#5-ma-trận-phân-quyền--traceability)
+- [5. Phân Hệ Định Danh & Phân Quyền (Identity & Access)](#5-phân-hệ-định-danh--phân-quyền-identity--access)
+  - [ADM-01: Đăng nhập & Quản lý Phiên](#adm-01-đăng-nhập--quản-lý-phiên)
+  - [ADM-02: Quản trị Tài khoản & Vai trò](#adm-02-quản-trị-tài-khoản--vai-trò)
+- [6. Ma trận Phân quyền & Traceability](#6-ma-trận-phân-quyền--traceability)
 
 ---
 
 ## 1. Quy ước & Cấu trúc User Story
 
 Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
-1. **Mã định danh (ID)**: Tương ứng với mã định danh phân hệ (`REC`, `EMP`, `CON`).
+1. **Mã định danh (ID)**: Tương ứng với mã định danh phân hệ (`REC`, `EMP`, `CON`, `ADM`).
 2. **Tiêu đề**: Tóm tắt hành động nghiệp vụ.
 3. **Mô tả (User Story Statement)**: Theo cú pháp:
    > **Là một** `[Vai trò/Actor]`,  
@@ -641,45 +646,185 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 
 ---
 
-## 5. Ma trận Phân quyền & Traceability
+## 5. Phân Hệ Định Danh & Phân Quyền (Identity & Access)
 
-### 5.1. Bảng phân quyền Role-to-Story
+> Phân hệ này được bổ sung khi quyết định **không** dùng Identity Provider bên ngoài ([ADR-011](architecture.md#9-architecture-decisions-adr-index)). Nó là tiền đề của mọi story còn lại: không có actor đã xác thực thì không story nào kiểm tra được permission và data scope.
 
-| Mã User Story | Tiêu đề tóm tắt | Employee | Recruiter | Interviewer / Hiring Mgr | Line Manager | HR Officer | HR Manager |
-| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| **REC-01.1** | Tạo đề xuất tuyển dụng | — | — | **Tạo/Sửa** | — | — | Xem |
-| **REC-01.2** | Duyệt & Đăng tin tuyển | — | **Đăng tin** | — | — | — | **Phê duyệt** |
-| **REC-02.1** | Tiếp nhận CV & Quét an toàn | Nộp CV | **Upload** | — | — | — | Xem |
-| **REC-02.2** | Nhận diện trùng lặp & AI parse | — | **Kiểm tra** | — | — | — | Xem |
-| **REC-03.1** | Xem bảng Kanban ATS | — | **Toàn quyền** | Xem vòng phỏng vấn | — | — | Xem |
-| **REC-03.2** | Chuyển giai đoạn Kanban | — | **Thực hiện** | — | — | — | Giám sát |
-| **REC-04.1** | Xếp lịch phỏng vấn | Xem lịch | **Tạo lịch** | Tham gia | — | — | Giám sát |
-| **REC-05.1** | Chấm điểm Scorecard | — | Xem tổng hợp | **Chấm điểm** | — | — | Quản lý |
-| **REC-06.1** | Tạo & Duyệt Offer Letter | Phản hồi | **Soạn thảo** | Xem | — | — | **Phê duyệt** |
-| **REC-06.2** | Tự động chuyển Onboarding | — | — | — | — | **Tiếp nhận** | Giám sát |
-| **EMP-01.1** | Tra cứu danh bạ nhân sự | Xem cơ bản | — | Xem phòng ban | Xem phạm vi | **Toàn quyền** | **Toàn quyền** |
-| **EMP-01.2** | Cập nhật hồ sơ cá nhân | **Cập nhật** | — | — | — | Kiểm tra | Phê duyệt |
-| **EMP-02.1** | Quản lý cơ cấu tổ chức, chức danh & phân công | Xem phạm vi | Xem | Xem | Xem phạm vi | **Khai báo/Phân công** | **Toàn quyền** |
-| **EMP-03.1** | Theo dõi việc Onboarding | Nhận việc | — | Nhận việc | Nhận việc | **Điều phối** | Giám sát |
-| **EMP-04.1** | Khởi tạo & Duyệt biến động | Xem của mình | — | Đề xuất | Đề xuất | Soạn thảo | **Phê duyệt** |
-| **EMP-05.1** | Lưu trữ hồ sơ điện tử | Xem của mình | — | — | — | **Quản lý** | **Quản lý** |
-| **EMP-06.1** | Đánh giá kết quả thử việc | Xem của mình | — | — | **Đánh giá** | Điều phối | Giám sát |
-| **EMP-06.2** | Quyết định hết thử việc | Nhận kết quả | — | — | Đề xuất | Soạn thảo | **Phê duyệt** |
-| **EMP-07.1** | Khởi tạo hồ sơ thôi việc | Xem của mình | — | — | Xác nhận bàn giao | **Soạn thảo** | **Phê duyệt** |
-| **EMP-07.2** | Hoàn tất bàn giao & đóng case | Thực hiện bàn giao | — | — | Xác nhận | **Đóng case** | Duyệt ngoại lệ |
-| **CON-01.1** | Soạn thảo hợp đồng | — | — | — | — | **Soạn thảo** | Phê duyệt |
-| **CON-01.2** | Ký kết & Kích hoạt HĐ | Xem/Ký | — | — | — | **Thực hiện** | Giám sát |
-| **CON-02.1** | Cảnh báo hạn hợp đồng | — | — | Nhận thông báo | Nhận thông báo | **Xử lý** | Giám sát |
-| **CON-03.1** | Quản lý phụ lục hợp đồng | Xem của mình | — | — | — | **Soạn thảo** | **Phê duyệt** |
+### ADM-01: Đăng nhập & Quản lý Phiên
+
+#### [ADM-01.1] Đăng nhập bằng Email & Mật khẩu (Password Sign-in)
+- **Mô tả**:
+  > **Là một** người dùng nội bộ của QLNS,
+  > **Tôi muốn** đăng nhập bằng email công vụ và mật khẩu của mình,
+  > **Để** truy cập đúng những chức năng và phạm vi dữ liệu mà vai trò của tôi được cấp.
+- **Tiền điều kiện**: Tài khoản tồn tại trong `users` với `status = 'active'` và có một dòng `user_credentials`.
+- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
+  - **Kịch bản 1: Đăng nhập thành công**
+    - **Given** tài khoản `hr.manager@qlns.local` đang `active` và được cấp `ROLE_HR_MGR` phạm vi toàn tổ chức,
+    - **When** người dùng gửi đúng email và mật khẩu,
+    - **Then** hệ thống trả access token kèm đầy đủ permission của vai trò, `dataScope = 'organization'` và một refresh token,
+    - **And** `user_credentials.failed_attempts` được đặt lại về 0, `last_login_at` được ghi nhận,
+    - **And** một dòng `audit_logs` với `action = 'admin.auth.sign_in'`, `result = 'succeeded'` được ghi trong cùng transaction.
+  - **Kịch bản 2: Sai mật khẩu không tiết lộ tài khoản nào tồn tại**
+    - **Given** một người gửi email đúng nhưng mật khẩu sai, hoặc một email hoàn toàn không tồn tại,
+    - **When** hệ thống xử lý yêu cầu,
+    - **Then** cả hai trường hợp trả về `401` với cùng `code = 'admin.auth.invalid_credentials'` và cùng thông điệp,
+    - **And** với email không tồn tại, hệ thống **vẫn** thực hiện một phép verify mật khẩu với hash giả để thời gian phản hồi không khác biệt,
+    - **And** một dòng `audit_logs` với `result = 'rejected'` được ghi, kèm email đã thử và dấu vết client.
+  - **Kịch bản 3: Khoá tạm sau nhiều lần sai**
+    - **Given** tài khoản đã sai mật khẩu 4 lần liên tiếp,
+    - **When** người dùng gửi sai lần thứ 5,
+    - **Then** `failed_attempts = 5` và `locked_until = thời điểm hiện tại + 15 phút`,
+    - **And** mọi lần đăng nhập tiếp theo trong cửa sổ đó trả `401` với `code = 'admin.auth.account_locked'` kèm `retryAfterSeconds`, **không** thực hiện verify mật khẩu,
+    - **And** sai thêm trong lúc đang khoá **không** kéo dài cửa sổ khoá.
+  - **Kịch bản 4: Tài khoản đã bị vô hiệu hoá**
+    - **Given** tài khoản có `status = 'disabled'`,
+    - **When** người dùng gửi **đúng** mật khẩu,
+    - **Then** hệ thống trả `401` với `code = 'admin.auth.account_disabled'`,
+    - **But** nếu mật khẩu sai thì trả `invalid_credentials` như mọi trường hợp khác — việc tài khoản bị vô hiệu hoá chỉ tiết lộ cho người biết mật khẩu.
+  - **Kịch bản 5: Tài khoản không có vai trò nào**
+    - **Given** tài khoản `active` nhưng không có dòng `user_roles` nào,
+    - **When** người dùng đăng nhập,
+    - **Then** đăng nhập **thành công** nhưng danh sách permission rỗng,
+    - **And** mọi endpoint nghiệp vụ trả `403` (deny by default), không phải `401`.
+- **Ràng buộc kỹ thuật**: Mật khẩu lưu bằng PBKDF2-HMAC-SHA512, 210.000 vòng, salt 128-bit riêng từng mật khẩu; tham số nằm trong chính chuỗi hash. So sánh constant-time. Permission và data scope resolve từ `user_roles ⋈ role_permissions`, **không bao giờ** nhận từ client. Audit không bao giờ chứa mật khẩu, hash hay giá trị token.
+
+#### [ADM-01.2] Duy trì & Kết thúc Phiên An toàn (Refresh Rotation & Sign-out)
+- **Mô tả**:
+  > **Là một** người dùng đang làm việc trên hệ thống,
+  > **Tôi muốn** phiên của mình được duy trì mà không phải đăng nhập lại mỗi 30 phút,
+  > **Để** không bị gián đoạn công việc, đồng thời tôi vẫn có thể đăng xuất để kết thúc phiên ngay khi cần.
+- **Tiền điều kiện**: Người dùng đang giữ một refresh token chưa hết hạn và chưa bị thu hồi.
+- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
+  - **Kịch bản 1: Làm mới phiên và đọc lại quyền**
+    - **Given** một refresh token còn hiệu lực,
+    - **When** client gọi làm mới phiên,
+    - **Then** token cũ bị thu hồi với `revoked_reason = 'rotated'` và lưu liên kết tới token kế nhiệm,
+    - **And** access token mới được phát hành với permission **đọc lại từ database**, nên vai trò vừa bị thu hồi không còn xuất hiện.
+  - **Kịch bản 2: Phát hiện token bị đánh cắp**
+    - **Given** một refresh token đã được dùng (đã bị thu hồi với lý do `rotated`),
+    - **When** ai đó trình lại đúng token đó,
+    - **Then** hệ thống thu hồi **toàn bộ** refresh token đang hoạt động của tài khoản với `revoked_reason = 'reuse_detected'`,
+    - **And** trả `401`; cả người dùng thật và kẻ tấn công đều phải đăng nhập lại.
+  - **Kịch bản 3: Đăng xuất không trở thành công cụ dò token**
+    - **Given** một refresh token bất kỳ — hợp lệ, đã thu hồi, hoặc không tồn tại,
+    - **When** client gọi đăng xuất,
+    - **Then** hệ thống luôn trả `204`,
+    - **And** chỉ token hợp lệ mới thực sự bị thu hồi (`revoked_reason = 'logout'`).
+  - **Kịch bản 4: Tài khoản bị vô hiệu hoá giữa phiên**
+    - **Given** quản trị viên vô hiệu hoá tài khoản khi người dùng đang có phiên mở,
+    - **When** client gọi làm mới phiên,
+    - **Then** toàn bộ refresh token của tài khoản bị thu hồi và yêu cầu trả `401 admin.auth.account_disabled`,
+    - **And** access token đang giữ vẫn dùng được **cho tới khi hết hạn** — đây là giới hạn đã biết của bearer token stateless, được chấp nhận với vòng đời 30 phút.
+- **Ràng buộc kỹ thuật**: Refresh token là chuỗi ngẫu nhiên 256-bit từ CSPRNG; database chỉ lưu SHA-256 digest trong `refresh_tokens.token_hash` (UNIQUE). Việc luân chuyển được bảo vệ bằng điều kiện `WHERE revoked_at IS NULL` nên hai request song song cùng token chỉ một cái thắng.
+
+### ADM-02: Quản trị Tài khoản & Vai trò
+
+#### [ADM-02.1] Cấp Tài khoản cho Người dùng Mới (Provision User Account)
+- **Mô tả**:
+  > **Là một** Super Admin,
+  > **Tôi muốn** tạo tài khoản kèm vai trò và phạm vi dữ liệu, có thể liên kết với hồ sơ nhân viên,
+  > **Để** người dùng mới truy cập được hệ thống với đúng quyền hạn ngay từ ngày đầu.
+- **Tiền điều kiện**: Người thao tác có permission `admin.user.manage`.
+- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
+  - **Kịch bản 1: Tạo tài khoản thành công**
+    - **Given** email chưa được dùng và các mã vai trò đều tồn tại, `is_assignable = true`,
+    - **When** Super Admin tạo tài khoản kèm mật khẩu ban đầu và danh sách vai trò,
+    - **Then** hệ thống ghi `users`, `user_credentials` và `user_roles` trong **một transaction**, kèm dòng `audit_logs` `admin.user.create`,
+    - **And** `must_change_password = true` **luôn** được bật vì mật khẩu do người khác biết,
+    - **And** `external_subject` được sinh theo mẫu `local|<email đã chuẩn hoá>`.
+  - **Kịch bản 2: Liên kết hồ sơ nhân viên**
+    - **Given** một `employee_id` chưa gắn với tài khoản nào,
+    - **When** Super Admin tạo tài khoản kèm `employeeId` đó,
+    - **Then** `employees.user_id` được cập nhật trong cùng transaction,
+    - **But** nếu nhân viên đã có tài khoản, hệ thống trả `409 admin.user.employee_already_linked` và **không** ghi gì.
+  - **Kịch bản 3: Từ chối dữ liệu không hợp lệ trước khi ghi**
+    - **Given** yêu cầu có email sai định dạng, mật khẩu yếu, vai trò không tồn tại, hoặc grant phạm vi phòng ban thiếu `dataScopeId`,
+    - **When** hệ thống xử lý,
+    - **Then** trả `422` cho lỗi định dạng và `409 admin.user.unknown_role` (kèm danh sách `unknownRoles`/`unknownDepartments`) cho lỗi tham chiếu,
+    - **And** không dòng nào được ghi vào bất kỳ bảng nào.
+- **Ràng buộc kỹ thuật**: `users.email` UNIQUE sau khi chuẩn hoá chữ thường; race giữa bước kiểm tra và insert được bắt qua unique violation và cũng trả `409`. Ma trận vai trò → permission là dữ liệu tham chiếu trong `roles`/`role_permissions`, **không** sửa được qua API.
+
+#### [ADM-02.2] Thu hồi & Điều chỉnh Quyền Truy cập (Revoke & Adjust Access)
+- **Mô tả**:
+  > **Là một** Super Admin,
+  > **Tôi muốn** vô hiệu hoá tài khoản, đổi vai trò và đặt lại mật khẩu khi có người chuyển bộ phận, nghỉ việc hoặc mất kiểm soát tài khoản,
+  > **Để** quyền truy cập luôn khớp với thực tế tổ chức và sự cố được xử lý trong vài phút.
+- **Tiền điều kiện**: Người thao tác có permission `admin.user.manage` và đang giữ `ETag` hiện tại của tài khoản.
+- **Tiêu chí nghiệm thu (Acceptance Criteria)**:
+  - **Kịch bản 1: Vô hiệu hoá tài khoản chấm dứt phiên đang mở**
+    - **Given** một tài khoản `active` đang có refresh token hoạt động,
+    - **When** Super Admin vô hiệu hoá tài khoản với `If-Match` đúng,
+    - **Then** `users.status = 'disabled'` và **toàn bộ** refresh token của tài khoản bị thu hồi (`account_disabled`) trong cùng transaction,
+    - **And** lần vô hiệu hoá lặp lại trả về nguyên trạng (idempotent), bỏ qua `If-Match`.
+  - **Kịch bản 2: Thay vai trò là thay toàn bộ trạng thái đích**
+    - **Given** tài khoản đang có hai grant `ROLE_LINE_MGR` phạm vi phòng ban 2 và 4,
+    - **When** Super Admin gửi danh sách chỉ còn phòng ban 2,
+    - **Then** grant phòng ban 4 bị xoá, `audit_logs` ghi cả trạng thái trước và sau,
+    - **And** gửi danh sách rỗng để lại tài khoản đăng nhập được nhưng không có quyền nào.
+  - **Kịch bản 3: Đặt lại mật khẩu buộc đổi ở lần đăng nhập kế tiếp**
+    - **Given** người dùng báo mất kiểm soát tài khoản,
+    - **When** Super Admin đặt mật khẩu tạm,
+    - **Then** `must_change_password = true`, bộ đếm khoá được xoá, toàn bộ refresh token bị thu hồi,
+    - **And** mật khẩu tạm **không** xuất hiện trong response — phải chuyển cho người dùng qua kênh an toàn ngoài hệ thống,
+    - **And** lần đăng nhập kế tiếp cấp một phiên **hạn chế**: không refresh token, không permission, chỉ gọi được endpoint đổi mật khẩu.
+  - **Kịch bản 4: Không ai được tự quản trị chính mình**
+    - **Given** Super Admin đang đăng nhập bằng tài khoản của chính mình,
+    - **When** người đó cố vô hiệu hoá, đặt lại mật khẩu hoặc đổi vai trò của **chính tài khoản đó**,
+    - **Then** hệ thống trả `403 admin.user.self_management_forbidden` và không ghi gì,
+    - **And** để tự đổi mật khẩu thì dùng `ADM-01` (`POST /auth/change-password`), có kiểm tra mật khẩu hiện tại.
+  - **Kịch bản 5: Hai quản trị viên sửa cùng một tài khoản**
+    - **Given** hai Super Admin cùng mở một tài khoản ở `version = 5`,
+    - **When** người thứ nhất lưu thành công và người thứ hai lưu với `If-Match: "5"`,
+    - **Then** yêu cầu của người thứ hai trả `409` và không ghi gì — kể cả khi thao tác là thay vai trò, vì chốt đồng thời là `users.version`.
+- **Ràng buộc kỹ thuật**: Mọi lệnh ghi dùng `ExecuteUpdate … WHERE id = @id AND version = @expected`, kèm audit trong cùng transaction. Access token đã phát hành **không thu hồi được**; vòng đời 30 phút là giới hạn trên của việc thu hồi quyền và được ghi rõ trong [ADR-011](architecture.md#9-architecture-decisions-adr-index).
+
+---
+
+## 6. Ma trận Phân quyền & Traceability
+
+### 6.1. Bảng phân quyền Role-to-Story
+
+| Mã User Story | Tiêu đề tóm tắt | Employee | Recruiter | Interviewer / Hiring Mgr | Line Manager | HR Officer | HR Manager | Super Admin |
+| :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **REC-01.1** | Tạo đề xuất tuyển dụng | — | — | **Tạo/Sửa** | — | — | Xem | — |
+| **REC-01.2** | Duyệt & Đăng tin tuyển | — | **Đăng tin** | — | — | — | **Phê duyệt** | — |
+| **REC-02.1** | Tiếp nhận CV & Quét an toàn | Nộp CV | **Upload** | — | — | — | Xem | — |
+| **REC-02.2** | Nhận diện trùng lặp & AI parse | — | **Kiểm tra** | — | — | — | Xem | — |
+| **REC-03.1** | Xem bảng Kanban ATS | — | **Toàn quyền** | Xem vòng phỏng vấn | — | — | Xem | — |
+| **REC-03.2** | Chuyển giai đoạn Kanban | — | **Thực hiện** | — | — | — | Giám sát | — |
+| **REC-04.1** | Xếp lịch phỏng vấn | Xem lịch | **Tạo lịch** | Tham gia | — | — | Giám sát | — |
+| **REC-05.1** | Chấm điểm Scorecard | — | Xem tổng hợp | **Chấm điểm** | — | — | Quản lý | — |
+| **REC-06.1** | Tạo & Duyệt Offer Letter | Phản hồi | **Soạn thảo** | Xem | — | — | **Phê duyệt** | — |
+| **REC-06.2** | Tự động chuyển Onboarding | — | — | — | — | **Tiếp nhận** | Giám sát | — |
+| **EMP-01.1** | Tra cứu danh bạ nhân sự | Xem cơ bản | — | Xem phòng ban | Xem phạm vi | **Toàn quyền** | **Toàn quyền** | — |
+| **EMP-01.2** | Cập nhật hồ sơ cá nhân | **Cập nhật** | — | — | — | Kiểm tra | Phê duyệt | — |
+| **EMP-02.1** | Quản lý cơ cấu tổ chức, chức danh & phân công | Xem phạm vi | Xem | Xem | Xem phạm vi | **Khai báo/Phân công** | **Toàn quyền** | — |
+| **EMP-03.1** | Theo dõi việc Onboarding | Nhận việc | — | Nhận việc | Nhận việc | **Điều phối** | Giám sát | — |
+| **EMP-04.1** | Khởi tạo & Duyệt biến động | Xem của mình | — | Đề xuất | Đề xuất | Soạn thảo | **Phê duyệt** | — |
+| **EMP-05.1** | Lưu trữ hồ sơ điện tử | Xem của mình | — | — | — | **Quản lý** | **Quản lý** | — |
+| **EMP-06.1** | Đánh giá kết quả thử việc | Xem của mình | — | — | **Đánh giá** | Điều phối | Giám sát | — |
+| **EMP-06.2** | Quyết định hết thử việc | Nhận kết quả | — | — | Đề xuất | Soạn thảo | **Phê duyệt** | — |
+| **EMP-07.1** | Khởi tạo hồ sơ thôi việc | Xem của mình | — | — | Xác nhận bàn giao | **Soạn thảo** | **Phê duyệt** | — |
+| **EMP-07.2** | Hoàn tất bàn giao & đóng case | Thực hiện bàn giao | — | — | Xác nhận | **Đóng case** | Duyệt ngoại lệ | — |
+| **CON-01.1** | Soạn thảo hợp đồng | — | — | — | — | **Soạn thảo** | Phê duyệt | — |
+| **CON-01.2** | Ký kết & Kích hoạt HĐ | Xem/Ký | — | — | — | **Thực hiện** | Giám sát | — |
+| **CON-02.1** | Cảnh báo hạn hợp đồng | — | — | Nhận thông báo | Nhận thông báo | **Xử lý** | Giám sát | — |
+| **CON-03.1** | Quản lý phụ lục hợp đồng | Xem của mình | — | — | — | **Soạn thảo** | **Phê duyệt** | — |
+| **ADM-01.1/.2** | Đăng nhập & duy trì phiên | Mọi vai trò | Mọi vai trò | Mọi vai trò | Mọi vai trò | Mọi vai trò | Mọi vai trò | Mọi vai trò |
+| **ADM-02.1** | Cấp tài khoản & vai trò | — | — | — | — | — | — | **Toàn quyền** |
+| **ADM-02.2** | Thu hồi & điều chỉnh quyền | — | — | — | — | — | — | **Toàn quyền** |
 
 Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_scope_type`. Nhãn "Xem phạm vi" và "Xem đội nhóm" tương ứng `data_scope_type = 'department'`; "Xem của mình" tương ứng `'self'`.
 
 > [!NOTE]
-> **Vai trò Super Admin không sở hữu story nào trong đợt này.** Toàn bộ chức năng System Administration (quản lý tài khoản, vai trò và phạm vi dữ liệu, cấu hình workflow/thông báo/integration, tra cứu audit trail) nằm ngoài phạm vi; việc cấp tài khoản và gán vai trò do Identity Provider bên ngoài đảm nhiệm. Vì vậy bảng trên không còn cột `Super Admin`. Việc kiểm tra permission và data scope phía server vẫn là yêu cầu bắt buộc của mọi story, và audit log vẫn được ghi trong cùng transaction với thay đổi nghiệp vụ — chỉ các API quản trị và tra cứu là không có trong đợt này.
+> **Super Admin chỉ sở hữu `ADM-*` và không có quyền nghiệp vụ nào.** Vai trò này quản lý tài khoản, vai trò và phạm vi dữ liệu (`ADM-02`) nhưng không đọc được hồ sơ nhân viên, hợp đồng hay dữ liệu tuyển dụng — xem cột cuối của bảng trên. Các chức năng System Administration còn lại (cấu hình workflow/thông báo/integration, màn hình tra cứu audit trail) vẫn ngoài phạm vi. Việc kiểm tra permission và data scope phía server là yêu cầu bắt buộc của mọi story, và audit log vẫn được ghi trong cùng transaction với thay đổi nghiệp vụ.
+>
+> `ADM-01` (đăng nhập, làm mới phiên, tự đổi mật khẩu) áp dụng cho **mọi vai trò** nên không được liệt kê thành dòng riêng theo từng cột.
 
 ---
 
-### 5.2. Ánh xạ Cơ sở Dữ liệu & Use Cases (Traceability Matrix)
+### 6.2. Ánh xạ Cơ sở Dữ liệu & Use Cases (Traceability Matrix)
 
 > Bảng dưới đây đã được đối chiếu với [`schema.sql`](../database/schema.sql) và [`openapi.yaml`](../api/openapi.yaml). Tất cả tên bảng và endpoint đều tồn tại trong canonical artifact; base path là `/api/v1`.
 
@@ -710,11 +855,21 @@ Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_sco
 | **CON-02.1** | `UC_MONITOR`, `UC_ALERT` | `contracts`, `outbox_messages` | `GET /api/v1/contracts/expiring` |
 | **CON-03.1** | `UC_ADDENDUM`, `UC_ADDENDUM_EFFECT` | `contract_addenda`, `contracts`, `employee_events` | `POST /api/v1/contracts/{contractId}/addenda`, `POST /api/v1/contract-addenda/{addendumId}/{action}` |
 
+#### Identity & Access
+
+| User Story ID | Use Case ID | Bảng Cơ sở Dữ liệu (`schema.sql`) | API Endpoints (`openapi.yaml`) |
+| :--- | :--- | :--- | :--- |
+| **ADM-01.1** | `UC_SIGN_IN` | `users`, `user_credentials`, `user_roles`, `role_permissions`, `employees`, `audit_logs` | `POST /api/v1/auth/login`, `GET /api/v1/auth/me` |
+| **ADM-01.2** | `UC_SESSION` | `refresh_tokens`, `users`, `user_credentials`, `audit_logs` | `POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`, `POST /api/v1/auth/change-password` |
+| **ADM-02.1** | `UC_ACCOUNT_PROVISION` | `users`, `user_credentials`, `user_roles`, `roles`, `departments`, `employees`, `audit_logs` | `GET\|POST /api/v1/admin/users`, `GET /api/v1/admin/users/{userId}`, `GET /api/v1/admin/roles` |
+| **ADM-02.2** | `UC_ACCOUNT_REVOKE` | `users`, `user_credentials`, `user_roles`, `refresh_tokens`, `audit_logs` | `PUT /api/v1/admin/users/{userId}`, `POST /api/v1/admin/users/{userId}/{enable\|disable}`, `POST /api/v1/admin/users/{userId}/password-reset`, `PUT /api/v1/admin/users/{userId}/roles` |
+
 ---
 
-### 5.3. Điều kiện đưa story vào sprint
+### 6.3. Điều kiện đưa story vào sprint
 
 | Nhóm story | Điều kiện bắt buộc |
 | :--- | :--- |
-| `REC-*`, `EMP-01`…`EMP-05`, `CON-*` | Chốt Identity Provider bên ngoài và mô hình RBAC/data scope (API quản lý tài khoản và vai trò nằm ngoài phạm vi); sinh EF Core migration đầu tiên từ canonical schema. |
+| `REC-*`, `EMP-01`…`EMP-05`, `CON-*` | `ADM-01`/`ADM-02` phải có trước, vì mọi story khác đều cần một actor đã xác thực kèm permission và data scope; sinh EF Core migration đầu tiên từ canonical schema. |
+| `ADM-01`, `ADM-02` | Chốt chính sách mật khẩu và vòng đời phiên với Security (đã ghi ở [ADR-011](architecture.md#9-architecture-decisions-adr-index)); chốt nơi quản lý secret `Authentication:Jwt:SigningKey`; đặt rate limit theo IP ở reverse proxy trước `POST /auth/login`. |
 | `EMP-06`, `EMP-07` | Chốt template checklist offboarding theo đơn vị; chốt danh mục khoản thanh toán khi chấm dứt — việc tính và chi trả thuộc Compensation & Benefits nên nằm ngoài phạm vi, phần trong phạm vi chỉ là trạng thái chốt công nợ trên hồ sơ thôi việc. |

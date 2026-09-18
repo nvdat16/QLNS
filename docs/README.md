@@ -5,7 +5,7 @@
 Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc của hệ thống Quản lý Nhân sự **QLNS / HRMS**.
 
 > [!IMPORTANT]
-> Repository có **UI/UX prototype**, canonical database/OpenAPI contract và **backend .NET 10 code-complete** cho toàn bộ 66 operation (3 layer, audit/outbox cùng transaction, 1248 unit test) cùng skeleton frontend React. Integration test trên PostgreSQL, migration runtime, tích hợp IdP, background worker và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là hoàn tất; `code-complete` chưa phải production-ready.
+> Repository có **UI/UX prototype**, canonical database/OpenAPI contract và **backend .NET 10 code-complete** cho toàn bộ 79 operation (3 layer, audit/outbox cùng transaction, 1347 unit test) cùng frontend React có đăng nhập thật. Integration test trên PostgreSQL, migration runtime, background worker và hạ tầng triển khai chưa được xác minh. Chỉ artifact được ghi rõ `Implemented` mới được xem là hoàn tất; `code-complete` chưa phải production-ready.
 
 > **Phạm vi giao hàng:** hai phân hệ được chọn theo bản đồ chức năng [`topdown-approach.png`](../topdown-approach.png) — **Core HR** (bao gồm nhánh con Contracts) và **Recruitment (ATS)**. Quy ước đọc bản đồ: **chỉ các chức năng lá in đậm dưới hai phân hệ này thuộc phạm vi**; mọi thứ khác ngoài phạm vi, kể cả bốn chức năng lá không in đậm nằm ngay trong hai phân hệ đó. Nguồn chuẩn về phạm vi là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected); chi tiết ở [mục 4](#4-functional-coverage) dưới đây.
 
@@ -15,16 +15,16 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 
 | Document | Purpose | Status |
 |---|---|---|
-| [INVEST User Stories](user_stories.md) | 24 user story theo INVEST cho hai phân hệ triển khai trước, có acceptance criteria Gherkin và traceability | Proposed · Authoritative for delivery |
+| [INVEST User Stories](user_stories.md) | 28 user story theo INVEST cho hai phân hệ nghiệp vụ và phân hệ định danh, có acceptance criteria Gherkin và traceability | Proposed · Authoritative for delivery |
 | [Deferred — Attendance & Leave](deferred/attendance_leave/README.md) | Toàn bộ thiết kế của phân hệ đã tách khỏi phạm vi: SRS, 13 story, use case, 3 sequence, DDL 13 bảng, OpenAPI fragment, Open Decisions | **Out of scope · Parked** |
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules | Proposed · Authoritative |
 | [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ trong phạm vi: Core HR và Recruitment | Proposed · Supporting |
 | [Sequence Diagrams](sequence_diagrams.md) | 6 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
 | [Class Diagrams](class_diagrams.md) | Domain model 23 class theo module, design class diagram của vertical slice đã có code, và pattern 3-layer cho module còn lại | Proposed · Supporting |
-| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng v1; bảng thứ 24 và các delta v1.1 ở Database README | Design artifact |
+| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng v1; bảng thứ 24 (delta v1.1) và bốn bảng định danh (delta v1.2) ở Database README | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |
-| [API Contract](../api/README.md) | OpenAPI 3.0.3, 66 operation trên 51 path, kèm `x-implementation-status` từng operation | Design artifact |
+| [API Contract](../api/README.md) | OpenAPI 3.0.3, 79 operation trên 62 path, kèm `x-implementation-status` từng operation | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
 
 Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
@@ -41,16 +41,16 @@ Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
 
 | Area | Existing artifacts | Not implemented | Chặn bởi |
 |---|---|---|---|
-| Core HR — Profile & Organization | UI prototype; canonical schema; OpenAPI; user story có AC; **backend code-complete** (EMP-01, EMP-02) | integration test, IdP thật | IdP, migration |
-| Core HR — Lifecycle (onboarding, biến động, thử việc, thôi việc) | UI prototype (onboarding); canonical schema; OpenAPI; user story có AC; **backend code-complete** (EMP-03 … EMP-07) | integration test; Effective-Date Worker và worker khóa tài khoản; sequence cho offboarding chưa vẽ | IdP, migration, Payroll (final settlement) |
-| Core HR — Contracts | UI prototype; canonical schema; OpenAPI; user story có AC; **backend code-complete** (CON-01 … CON-03) | integration test; worker hết hạn/cảnh báo; object store thật | IdP, migration |
-| Recruitment ATS | UI prototype; canonical schema/OpenAPI; **backend code-complete** (REC-01 … REC-06) | integration test; outbox worker (email/.ics/offer token); CV parser và malware scanner thật | IdP, migration, PostgreSQL runtime |
+| Core HR — Profile & Organization | UI prototype; canonical schema; OpenAPI; user story có AC; **backend code-complete** (EMP-01, EMP-02) | integration test | migration |
+| Core HR — Lifecycle (onboarding, biến động, thử việc, thôi việc) | UI prototype (onboarding); canonical schema; OpenAPI; user story có AC; **backend code-complete** (EMP-03 … EMP-07) | integration test; Effective-Date Worker và worker khóa tài khoản; sequence cho offboarding chưa vẽ | migration, Payroll (final settlement) |
+| Core HR — Contracts | UI prototype; canonical schema; OpenAPI; user story có AC; **backend code-complete** (CON-01 … CON-03) | integration test; worker hết hạn/cảnh báo; object store thật | migration |
+| Recruitment ATS | UI prototype; canonical schema/OpenAPI; **backend code-complete** (REC-01 … REC-06) | integration test; outbox worker (email/.ics/offer token); CV parser và malware scanner thật | migration, PostgreSQL runtime |
 | Attendance & Leave | UI prototype; thiết kế đầy đủ đã tách sang `deferred/` | — | **Ngoài phạm vi** — không triển khai |
-| Identity & data scope | vai trò, permission và data scope được đặc tả; `users`, `user_roles` là **dữ liệu định danh canonical** mà authorization đọc | IdP, server-side enforcement runtime | chọn IdP |
+| Identity & Access (ADM) | UI đăng nhập + màn hình quản trị tài khoản; canonical schema (6 bảng định danh); OpenAPI; user story có AC; **backend code-complete** (ADM-01, ADM-02) | integration test cho luân chuyển refresh token; rate limit ở reverse proxy; luồng quên mật khẩu qua email | migration, quản lý secret cho `Authentication:Jwt:SigningKey` |
 | Audit & outbox (crosscutting) | `audit_logs` và `outbox_messages` là **cơ chế bắt buộc** của mọi command, ghi cùng transaction nghiệp vụ; đã có trong canonical schema | persistence và outbox dispatcher runtime | migration, email/calendar provider |
 | Deployment / Operations | topology mục tiêu trong tài liệu kiến trúc; hai probe `/health/live`, `/health/ready` trong hợp đồng (tag `Operations`, thuộc deployment view chứ không phải chức năng nghiệp vụ) | container image, Docker Compose, CI/CD, monitoring, backup runtime | ADR hạ tầng |
 
-Không có API quản trị tài khoản, vai trò, audit log, delivery hay integration trong đợt này: việc cấp tài khoản và vai trò do **Identity Provider bên ngoài** đảm nhiệm, cấu hình integration/notification/approval nằm trong `appsettings` (không UI, không API). Điều đó **không** làm giảm yêu cầu kiểm tra permission và data scope phía server trên mọi request — quality goal Q1 không đổi.
+**Quản trị tài khoản và vai trò thuộc phạm vi** (phân hệ `[ADM]`, [ADR-011](architecture.md#9-architecture-decisions-adr-index)): QLNS tự phát hành và thu hồi phiên, không dùng Identity Provider bên ngoài. Vẫn không có API cho audit log, delivery hay integration: cấu hình integration/notification/approval nằm trong `appsettings` (không UI, không API). Yêu cầu kiểm tra permission và data scope phía server trên mọi request không đổi — quality goal Q1 giữ nguyên.
 
 Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác mô phỏng. Chúng không phải frontend application và không được dùng làm bằng chứng rằng business rule đã hoạt động. Một số prototype (ví dụ Workforce Dashboard) mô tả chức năng **ngoài phạm vi** và chỉ được giữ làm tham chiếu thiết kế.
 
@@ -139,8 +139,8 @@ Performance Management và Compensation & Benefits (gồm payroll) chưa thuộc
 Trước khi bắt đầu frontend/backend, tối thiểu cần:
 
 - Chấp thuận stack frontend/backend và phiên bản bằng ADR.
-- Chốt Identity Provider và authentication flow: việc cấp tài khoản và vai trò do IdP bên ngoài đảm nhiệm, QLNS chỉ tiêu thụ kết quả. Chốt bảng permission và data-scope policy mà server phải kiểm tra trên mọi request.
-- Review canonical schema **24 bảng (v1.1)** và sinh EF Core migration đầu tiên có version.
+- Chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và chính sách vòng đời phiên (access token 30 phút, refresh token 14 ngày). Authentication flow đã chốt ở [ADR-011](architecture.md#9-architecture-decisions-adr-index); ma trận permission và data scope nằm ở `database/seed_roles.sql`.
+- Review canonical schema **28 bảng (v1.2)** và sinh EF Core migration đầu tiên có version.
 - Chốt API convention, error model, pagination và concurrency strategy. ✅ đã có trong `api/README.md`.
 - Chọn vertical slice đầu tiên cùng acceptance test end-to-end.
 - Thiết lập architecture, security, migration và contract gates trong CI.

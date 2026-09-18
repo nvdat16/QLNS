@@ -67,6 +67,7 @@ flowchart LR
     employee(["👤 Employee"])
     manager(["👤 Hiring / Line Manager"])
     hr(["👤 Recruiter / HR Officer / HR Manager"])
+    admin(["👤 Super Admin"])
 
     subgraph boundary["QLNS System Boundary"]
         qlns["QLNS<br/><i>[Software System — Proposed]</i><br/>Recruitment and HR lifecycle management"]
@@ -74,22 +75,21 @@ flowchart LR
 
     comms["Email / Calendar<br/><i>[External System]</i>"]
     storage["Document Storage<br/><i>[External System]</i>"]
-    idp["Identity Provider<br/><i>[External System]</i>"]
 
     candidate -- "submits application; receives status" --> qlns
-    employee -- "profile, contracts, handover" --> qlns
+    employee -- "signs in; profile, contracts, handover" --> qlns
     manager -- "requisition, scorecard, approvals" --> qlns
     hr -- "recruitment and HR operations" --> qlns
+    admin -- "accounts, role grants, password resets" --> qlns
     qlns -- "notifications and schedules" --> comms
     qlns -- "private document objects" --> storage
-    qlns -- "validates identity/tokens" --> idp
-    idp -- "provisions accounts, roles and data scope" --> qlns
 
     style qlns fill:#1168bd,color:#fff
     style comms fill:#999,color:#fff
     style storage fill:#999,color:#fff
-    style idp fill:#999,color:#fff
 ```
+
+Không còn Identity Provider bên ngoài trong context: QLNS tự phát hành, xác thực và thu hồi phiên của mình (phân hệ `[ADM]`). Đây là thay đổi so với baseline đầu tiên — lý do và hệ quả ở [ADR-011](#9-architecture-decisions-adr-index).
 
 
 ### 3.2 External interfaces
@@ -97,12 +97,14 @@ flowchart LR
 | Interface | Direction | Protocol / contract | Contract owner | Failure mode |
 |---|---|---|---|---|
 | Web API | in/out | HTTPS, REST/JSON, OpenAPI | QLNS Backend | RFC 7807-style error, `Retry-After` khi phù hợp |
-| Identity | in | OIDC/OAuth2 candidate; chưa chọn provider | Security / Platform | fail closed; token invalid → `401` |
+| ~~Identity~~ | — | **Không còn là interface ngoài.** Access token do chính QLNS phát hành và ký (HS256, `Authentication:Jwt:SigningKey`) | QLNS Backend — module ADM | fail closed; token invalid → `401` |
 | Email/Calendar | out | Provider API | Notification/Calendar adapter | delivery state + bounded retry + reconciliation |
 | Document storage | both | object API; signed/authorized download | Document adapter | unavailable → no metadata corruption |
 | Database | both | PostgreSQL protocol | Persistence layer | transaction rollback; readiness degraded |
 
-Identity là interface một chiều **vào** hệ thống: QLNS chỉ xác thực token và đọc claim (roles, data scope) do provider phát hành. Dữ liệu định danh vẫn được lưu ở `users`/`user_roles` để phục vụ authorization và audit, nhưng không có endpoint tạo/khóa tài khoản hay cấp vai trò — xem [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected). Hệ thống không nhận webhook từ provider ngoài trong đợt này, nên không có interface inbound nào khác ngoài Web API.
+Định danh giờ nằm **trong** hệ thống: `POST /api/v1/auth/login` phát hành access token mang đúng những claim mà mọi module nghiệp vụ đã đọc từ trước (`qlns_user_id`, `qlns_employee_id`, `data_scope`, `department_id`, `permission`), nên không module nghiệp vụ nào phải thay đổi. Quyền và phạm vi dữ liệu được resolve lại từ `user_roles ⋈ role_permissions` ở mỗi lần đăng nhập và mỗi lần làm mới phiên, vì vậy vai trò bị thu hồi hết hiệu lực trong tối đa một chu kỳ access token (mặc định 30 phút).
+
+`Authentication:Jwt:SigningKey` là **bắt buộc**: thiếu nó host dừng ngay khi khởi động chứ không chạy ở trạng thái nửa vời. Cố tình **không** có nhánh dự phòng sang một OIDC authority bên ngoài — federation sẽ thay thế cả cụm endpoint đăng nhập chứ không chỉ một dòng cấu hình, nên nó phải là một ADR mới, không phải một nhánh `if` im lặng. Hệ thống không nhận webhook từ bên ngoài, nên không có interface inbound nào khác ngoài Web API.
 
 ---
 
@@ -165,7 +167,6 @@ flowchart LR
         db[("PostgreSQL HRMS Database<br/><i>[Container · Data Tier — Schema contract]</i><br/>Transactional system of record")]
     end
 
-    idp["Identity Provider<br/><i>[External System]</i>"]
     comms["Email / Calendar<br/><i>[External System]</i>"]
     objects[("Private Object Storage<br/><i>[External System]</i>")]
     observe["Observability Platform<br/><i>[External System]</i>"]
@@ -176,8 +177,7 @@ flowchart LR
     hr -->|"HTTPS: recruitment and HR operations"| web
 
     web -->|"HTTPS REST/JSON; OpenAPI contract"| api
-    web -->|"OIDC Authorization Code + PKCE"| idp
-    api -->|"validate token metadata / JWKS"| idp
+    web -->|"POST /auth/login · /auth/refresh"| api
     api -->|"EF Core / Npgsql; ACID transaction"| db
     api -->|"object metadata and signed access"| objects
     api -->|"transactional outbox"| db
@@ -195,7 +195,7 @@ flowchart LR
     class web,api partial
     class worker proposed
     class db contract
-    class idp,comms,objects,observe external
+    class comms,objects,observe external
 ```
 
 **Container responsibilities and dependency direction**
@@ -223,13 +223,12 @@ React Web Application → ASP.NET Core API ─┬→ Business/Data Layer → Pos
 flowchart TB
     user(["👤 Browser User"])
     api["ASP.NET Core Backend API<br/><i>[Container]</i>"]
-    idp["Identity Provider<br/><i>[External System]</i>"]
     observe["Observability Platform<br/><i>[External System]</i>"]
 
     subgraph web["React Web Application [Container · Presentation Tier]"]
         direction TB
         shell["Application Shell & Router<br/><i>[Component — Partial]</i><br/>layout, routes, navigation and error boundary"]
-        auth["Session & Route Guards<br/><i>[Component — Proposed]</i><br/>OIDC session, claims and route access"]
+        auth["Session & Route Guards<br/><i>[Component]</i><br/>Password sign-in, refresh rotation, claims and route access"]
 
         subgraph features["Feature components"]
             direction LR
@@ -254,7 +253,7 @@ flowchart TB
     end
 
     user -->|HTTPS| shell
-    auth -->|"Authorization Code + PKCE"| idp
+    auth -->|"sign in · rotate refresh token"| api
     client -->|"REST/JSON generated from OpenAPI"| api
     telemetry -->|"logs, traces and web vitals"| observe
 
@@ -263,7 +262,7 @@ flowchart TB
     classDef external fill:#777,color:#fff,stroke:#555
     class shell,recruitment,shared,client partial
     class auth,corehr,telemetry proposed
-    class api,idp,observe external
+    class api,observe external
 ```
 
 Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên, không phải frontend implementation. Mỗi feature chỉ phụ thuộc `shared` và `client`; feature không import trực tiếp internals của feature khác. Route guard giúp trải nghiệm người dùng, nhưng Backend API vẫn phải kiểm tra quyền cho mọi request.
@@ -275,7 +274,6 @@ Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên
 ```mermaid
 flowchart TB
     web["React Web Application<br/><i>[Container]</i>"]
-    idp["Identity Provider<br/><i>[External System]</i>"]
     db[("PostgreSQL<br/><i>[Container]</i>")]
     objects[("Private Object Storage<br/><i>[External System]</i>")]
 
@@ -288,6 +286,7 @@ flowchart TB
             recApi["Recruitment API<br/><i>[Partial]</i>"]
             hrApi["Core HR API<br/><i>[Proposed]</i>"]
             contractApi["Contract & Onboarding API<br/><i>[Proposed]</i>"]
+            admApi["Identity & Access API<br/><i>[Partial]</i><br/>sign-in, refresh, account administration"]
         end
 
         subgraph business["Qlns.BusinessLogic — Business Layer"]
@@ -297,6 +296,7 @@ flowchart TB
             hrLogic["Core HR Services & Domain<br/><i>[Proposed]</i>"]
             contractLogic["Contract & Onboarding Services<br/><i>[Proposed]</i>"]
             auditOutbox["Audit & Outbox Policies<br/><i>[Component — Proposed]</i>"]
+            adm["Identity & Access Services<br/><i>[Partial]</i><br/>password verification, lockout, token rotation, role grants"]
         end
 
         subgraph data["Qlns.DataAccess — Data Layer"]
@@ -307,15 +307,20 @@ flowchart TB
             auditRepo["Audit & Outbox Repositories<br/><i>[Proposed]</i>"]
             uow["EF Core DbContext & Unit of Work<br/><i>[Component — Partial]</i>"]
             objectAdapter["Object Storage Adapter<br/><i>[Component — Proposed]</i>"]
+            admRepo["Identity Repositories &amp; Crypto Adapters<br/><i>[Partial]</i><br/>PBKDF2 hasher, JWT issuer, refresh-token store"]
         end
     end
 
     web -->|"REST/JSON"| pipeline
-    pipeline -->|"validate token / obtain claims"| idp
+    pipeline -->|"validate the token issued by the ADM module"| adm
     pipeline --> recApi
     pipeline --> hrApi
     pipeline --> contractApi
+    pipeline --> admApi
     pipeline --> authorization
+    admApi --> adm
+    adm --> admRepo
+    admRepo --> uow
 
     recApi --> recLogic
     hrApi --> hrLogic
@@ -342,9 +347,9 @@ flowchart TB
     classDef partial fill:#1168bd,color:#fff,stroke:#0b4884
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
-    class pipeline,recApi,recLogic,recRepo,uow partial
+    class pipeline,recApi,recLogic,recRepo,uow,admApi,adm,admRepo partial
     class authorization,hrApi,contractApi,hrLogic,contractLogic,auditOutbox,hrRepo,contractRepo,auditRepo,objectAdapter proposed
-    class web,idp,db,objects external
+    class web,db,objects external
 ```
 
 Ba **tier runtime** là: Presentation Tier (React Web), Application Tier (ASP.NET Core API + .NET Worker) và Data Tier (PostgreSQL). Chúng là ranh giới triển khai/mạng; Worker không tạo tier thứ tư. Ba **layer source code** bên trong ASP.NET Core application tier là Presentation, Business Logic và Data Access:
@@ -445,7 +450,7 @@ backend/
 └── tests/Qlns.IntegrationTests/  # proposed — required before the first slice
 
 api/openapi.yaml                  # contract-first OpenAPI 3.0.3 (51 paths, 66 operations, 16 tags)
-database/schema.sql               # canonical schema contract before EF migrations (23 tables)
+database/schema.sql               # canonical schema contract before EF migrations (28 tables, v1.2)
 ```
 
 `tests/Qlns.IntegrationTests/` chưa tồn tại nhưng là điều kiện bắt buộc trước slice đầu tiên: các invariant quan trọng nhất của Core HR (một offer đang mở mỗi đơn, một hợp đồng chính đang hiệu lực, một case thôi việc đang mở, áp dụng biến động đúng ngày hiệu lực) là partial unique index và conditional update ở database, không thể verify bằng repository giả lập.
@@ -663,10 +668,13 @@ Docker Compose ba service có thể dùng cho local development sau này, nhưng
 | ADR-008 | Feature-based React frontend và shared API client | Accepted 2026-09-15 |
 | ADR-009 | .NET 10, ASP.NET Core, EF Core và PostgreSQL | Accepted 2026-09-15 |
 | ADR-010 | Thu hẹp phạm vi giao hàng về các chức năng lá in đậm dưới Recruitment và Core HR theo `topdown-approach.png`; System Administration, Reports & Analytics, Performance, C&B, Attendance & Leave cùng bốn chức năng không in đậm (Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart, Suspension & Return to Work) ra ngoài phạm vi, trong khi authorization, audit và outbox vẫn là cơ chế bắt buộc | Accepted 2026-09-17 |
+| ADR-011 | Xác thực và quản trị tài khoản làm **nội bộ** thay vì tích hợp Identity Provider bên ngoài: mật khẩu băm PBKDF2-HMAC-SHA512 trong `user_credentials`, access token JWT HS256 do chính API phát hành, refresh token dùng một lần lưu dạng băm trong `refresh_tokens`, ma trận vai trò → permission là dữ liệu tham chiếu trong `roles`/`role_permissions` | Accepted 2026-09-18 |
+
+**ADR-011 — chi tiết.** *Bối cảnh:* baseline đầu tiên để trống provider (§3.2, "chưa chọn provider"), nên hệ thống có đủ authorization nhưng **không có đường đăng nhập nào** ngoài endpoint `/dev/token` chỉ chạy ở môi trường Development. *Quyết định:* đưa hai chức năng lá Account Management và Roles/Permissions của trụ cột System Administration vào phạm vi và tự phát hành phiên. *Phương án đã cân nhắc:* (a) tích hợp Keycloak/Entra ID — loại bỏ vì cần thêm một thành phần vận hành và một quyết định mua sắm chưa có; (b) chỉ làm đăng nhập, để việc cấp tài khoản chạy bằng SQL tay — loại bỏ vì không có vết audit cho hành vi nâng quyền. *Hệ quả:* (1) hệ thống nay tự chịu trách nhiệm lưu mật khẩu — rủi ro được giảm bằng PBKDF2 210.000 vòng, khoá tạm sau 5 lần sai và audit mọi lần đăng nhập; (2) access token stateless **không thu hồi được**, nên vòng đời 30 phút chính là giới hạn trên của việc thu hồi quyền, và refresh token là tạo tác thu hồi được; (3) khoá ký `Authentication:Jwt:SigningKey` trở thành secret hạng nhất của hệ thống; (4) claim trong token giữ **nguyên** hình dạng cũ (`qlns_user_id`, `qlns_employee_id`, `data_scope`, `department_id`, `permission`) nên không module nghiệp vụ nào phải sửa — nếu sau này federation với IdP ngoài, chỉ cần provider phát hành đúng bộ claim đó và thay cụm `/api/v1/auth/*`, phần authorization không đổi. *Chưa làm:* MFA, quên mật khẩu qua email, rate limit theo IP (thuộc reverse proxy).
 
 ADR-010 là quyết định phạm vi sản phẩm, được ghi nhận từ bản đồ phân rã chức năng `topdown-approach.png` cập nhật ngày 2026-09-17; **owner và alternatives/consequences đầy đủ chờ Project Owner xác nhận** trước khi ADR này được coi là hoàn chỉnh theo quy ước ở cuối mục này. Hệ quả kiến trúc đã được áp dụng ở [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected), §5.2–§5.6, §10 và §12.
 
-**Open decisions:** Identity Provider; object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency. EF Core migration là công cụ migration mục tiêu nhưng migration đầu tiên chỉ được sinh sau khi cài .NET 10 SDK và review model/schema drift.
+**Open decisions:** object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency. (Identity Provider đã được chốt: xác thực và quản trị tài khoản làm nội bộ — [ADR-011](#9-architecture-decisions-adr-index).) EF Core migration là công cụ migration mục tiêu nhưng migration đầu tiên chỉ được sinh sau khi cài .NET 10 SDK và review model/schema drift.
 
 Không ADR nào chuyển sang Accepted chỉ vì công nghệ xuất hiện trong prototype, sơ đồ hoặc file DDL. ADR Accepted phải có owner, ngày phê duyệt, alternatives và consequences.
 

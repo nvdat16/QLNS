@@ -1,6 +1,6 @@
 # 📑 HRMS Database Design
 
-> **Trạng thái:** Design artifact mô tả **canonical schema v1 — 23 bảng**, bao phủ hai phân hệ triển khai trước: Core HR (gồm Contracts) và Recruitment. Source backend hiện chỉ là skeleton cấu trúc, chưa implement bảng nào; EF Core migration pipeline và database runtime chưa được xác minh.
+> **Trạng thái:** Design artifact mô tả **canonical schema — 28 bảng (v1.2)**, bao phủ hai phân hệ nghiệp vụ (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access. ERD Mermaid ở mục 1 vẫn vẽ theo 23 bảng của v1; bảng `interview_panelists` (v1.1) và bốn bảng định danh (v1.2) chưa được đưa vào sơ đồ — xem [README §2.6](README.md#26-delta-v11--phát-hiện-khi-triển-khai) và [§2.7](README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ). Source backend hiện chỉ là skeleton cấu trúc, chưa implement bảng nào; EF Core migration pipeline và database runtime chưa được xác minh.
 
 > [!IMPORTANT]
 > [`schema.sql`](schema.sql) là **canonical schema contract** và là nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. Tài liệu này mô tả mục đích nghiệp vụ và invariant của từng bảng. Khi hai bên lệch nhau, `schema.sql` thắng và tài liệu này phải được sửa.
@@ -19,10 +19,14 @@
 | **Core HR — Lifecycle** | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | 6 |
 | **Core HR — Contracts** | `contracts`, `contract_addenda` | 2 |
 | **Recruitment (ATS)** | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | 8 |
-| **Platform (định danh, audit, outbox)** | `users`, `user_roles`, `audit_logs`, `outbox_messages` | 4 |
-| **Tổng** | | **23** |
+| **Recruitment — delta v1.1** | `interview_panelists` | 1 |
+| **Identity & Access (ADM)** | `users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens` | 6 |
+| **Platform (audit, outbox)** | `audit_logs`, `outbox_messages` | 2 |
+| **Tổng** | | **28** |
 
-Bốn bảng Platform **vẫn thuộc canonical schema**. `users` và `user_roles` là dữ liệu định danh và data scope mà tầng authorization đọc; `audit_logs` và `outbox_messages` là **cơ chế xuyên suốt bắt buộc**, ghi cùng transaction với thay đổi nghiệp vụ. Điều nằm ngoài phạm vi đợt này là **API quản trị** cho chúng: không có endpoint quản lý user/role/role-grant (việc cấp tài khoản và vai trò do Identity Provider bên ngoài đảm nhiệm), không có endpoint tra cứu audit log, không có endpoint xem và retry delivery. Không bảng nào bị bỏ đi vì thế.
+Sáu bảng Identity & Access là **aggregate do hệ thống này sở hữu**: `users` + `user_credentials` mang danh tính và mật khẩu, `user_roles` + `roles` + `role_permissions` mang phân quyền và data scope, `refresh_tokens` mang phiên dài hạn thu hồi được. Chúng **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](../docs/architecture.md#9-architecture-decisions-adr-index)).
+
+Hai bảng Platform còn lại là **cơ chế xuyên suốt bắt buộc**, ghi cùng transaction với thay đổi nghiệp vụ, và **không** có API: không endpoint tra cứu audit log, không endpoint xem và retry delivery.
 
 ## Quy ước chung của canonical schema
 
@@ -520,24 +524,55 @@ Một hợp đồng thử việc có đúng một phiếu đánh giá (`ux_proba
 
 ---
 
-## 5. Platform Tables (Identity, Audit, Integration)
+## 5. Identity & Access + Platform Tables
 
-Bốn bảng này không thuộc một phân hệ nghiệp vụ nào nhưng mọi phân hệ đều phụ thuộc, và **cả bốn đều được giữ trong canonical schema**. Đặc tả DDL đầy đủ ở [`schema.sql`](schema.sql).
-
-Phân biệt bắt buộc cho đợt giao hàng này: **cơ chế vẫn bắt buộc, API quản trị thì không.** Ghi `audit_logs` trong cùng transaction với thay đổi nghiệp vụ và ghi `outbox_messages` để phát email/lịch là yêu cầu của mọi command; kiểm tra permission và data scope phía server trên mọi request cũng không đổi (quality goal Q1). Nhưng đợt này **không có endpoint** quản lý user/role/role-grant, tra cứu audit log, hay xem và retry delivery — việc cấp tài khoản và vai trò do **Identity Provider bên ngoài** đảm nhiệm, còn cấu hình integration/notification/approval nằm trong `appsettings`.
+Tám bảng này không thuộc một phân hệ nghiệp vụ nào nhưng mọi phân hệ đều phụ thuộc. Đặc tả DDL đầy đủ ở [`schema.sql`](schema.sql).
 
 | Bảng | Mục đích | Invariant chính |
 | :--- | :--- | :--- |
-| `users` | Danh tính ứng dụng, liên kết tới IdP qua `external_subject` | `external_subject` và `email` là `UNIQUE`; `status IN (active, disabled)` |
-| `user_roles` | Gán vai trò kèm **data scope** | `ck_user_roles_scope`: scope `department` bắt buộc có `data_scope_id > 0`; `self`/`organization` bắt buộc `= 0` |
-| `audit_logs` | Nhật ký mọi hành động tạo/sửa/duyệt/từ chối, ghi cùng transaction nghiệp vụ | `result IN (succeeded, rejected, failed)`; index theo `entity` và theo `actor` |
+| `users` | Danh tính ứng dụng. `external_subject` mang tiền tố `local|` cho tài khoản do QLNS cấp | `external_subject` và `email` là `UNIQUE`; `status IN (active, disabled)`; `version` là ETag của mọi lệnh quản trị |
+| `user_credentials` | Mật khẩu nội bộ và bộ đếm khoá tạm | 1–0..1 với `users` (tài khoản có thể chưa có mật khẩu); `failed_attempts >= 0`; `password_hash` tự mang tham số thuật toán |
+| `user_roles` | Gán vai trò kèm **data scope** | `ck_user_roles_scope`: scope `department` bắt buộc có `data_scope_id > 0`; `self`/`organization` bắt buộc `= 0`; `role_code` tham chiếu `roles(code)` |
+| `roles` | Danh mục vai trò (dữ liệu tham chiếu) | Nạp từ [`seed_roles.sql`](seed_roles.sql); `is_assignable = false` để nghỉ hưu một vai trò mà không mất vết lịch sử |
+| `role_permissions` | Ma trận vai trò → permission (dữ liệu tham chiếu) | PK `(role_code, permission)`; đăng nhập resolve permission bằng `user_roles ⋈ role_permissions` |
+| `refresh_tokens` | Phiên dài hạn **thu hồi được** | `token_hash` là SHA-256 của token và là `UNIQUE` — token gốc không bao giờ được lưu; `expires_at > issued_at`; `revoked_at` và `revoked_reason` luôn cùng có hoặc cùng không |
+| `audit_logs` | Nhật ký mọi hành động tạo/sửa/duyệt/từ chối, ghi cùng transaction nghiệp vụ | `result IN (succeeded, rejected, failed)`; index theo `entity` và theo `actor`; lần đăng nhập thất bại cũng phải có dòng |
 | `outbox_messages` | Transactional outbox cho email/notification/integration | Ghi cùng transaction nghiệp vụ; index partial trên bản ghi chưa xử lý |
+
+### 5.1. `user_credentials` Table (Local sign-in secret)
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `user_id` | `BIGINT` | `PRIMARY KEY`, `FK users(id) ON DELETE CASCADE` | Một dòng cho mỗi tài khoản đăng nhập được bằng mật khẩu |
+| `password_hash` | `VARCHAR(255)` | `NOT NULL` | Dạng `pbkdf2-sha512$<vòng>$<salt>$<hash>` — tham số nằm trong chính chuỗi nên nâng work factor không cần migration |
+| `password_algorithm` | `VARCHAR(40)` | `NOT NULL`, default `pbkdf2-sha512` | Dùng để lọc/ước lượng khối lượng khi đổi thuật toán |
+| `must_change_password` | `BOOLEAN` | `NOT NULL`, default `false` | Bật khi mật khẩu do admin đặt; phiên cấp ra khi đó không có permission |
+| `password_updated_at` | `TIMESTAMPTZ` | `NOT NULL`, default `now()` | Phục vụ chính sách tuổi mật khẩu về sau |
+| `failed_attempts` | `INTEGER` | `NOT NULL`, default 0, `>= 0` | Đếm số lần sai liên tiếp; reset khi đăng nhập thành công |
+| `locked_until` | `TIMESTAMPTZ` | `NULL` | Cuối cửa sổ khoá tạm (5 lần sai ⇒ 15 phút) |
+| `last_login_at` | `TIMESTAMPTZ` | `NULL` | Lần đăng nhập thành công gần nhất |
+| `version` | `BIGINT` | `NOT NULL`, default 1 | Chốt đồng thời của lệnh đổi mật khẩu |
+
+### 5.2. `refresh_tokens` Table (Rotating session tokens)
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `BIGINT` | `PRIMARY KEY`, Auto Increment | Primary key |
+| `user_id` | `BIGINT` | `NOT NULL`, `FK users(id) ON DELETE CASCADE` | Chủ sở hữu phiên |
+| `token_hash` | `VARCHAR(64)` | `NOT NULL`, `UNIQUE` | SHA-256 hex của token; **không** lưu token gốc nên dump bảng này không replay được. Dùng `varchar` thay vì `char` để tham số `text` khớp trực tiếp với unique index trên đường đăng nhập nóng |
+| `issued_at` | `TIMESTAMPTZ` | `NOT NULL`, default `now()` | Thời điểm phát hành |
+| `expires_at` | `TIMESTAMPTZ` | `NOT NULL`, `> issued_at` | Mặc định 14 ngày |
+| `revoked_at` | `TIMESTAMPTZ` | `NULL` | Luôn đi kèm `revoked_reason` |
+| `revoked_reason` | `VARCHAR(40)` | `NULL`, CHECK enum | `rotated`, `logout`, `password_changed`, `reuse_detected`, `revoked_by_admin`, `account_disabled` |
+| `replaced_by_token_id` | `BIGINT` | `NULL`, `FK refresh_tokens(id)` | Nối chuỗi luân chuyển; phục vụ điều tra khi phát hiện replay |
+| `client_ip` | `VARCHAR(45)` | `NULL` | Dấu vết client, đủ cho IPv6 |
+| `user_agent` | `VARCHAR(255)` | `NULL` | Dấu vết client, bị cắt bớt nếu dài hơn |
+
+`CREATE INDEX ix_refresh_tokens_active ON refresh_tokens(user_id, expires_at) WHERE revoked_at IS NULL` — thao tác nóng là "thu hồi mọi token còn hiệu lực của một tài khoản", nên index partial đúng theo hình dạng câu lệnh đó.
 
 ---
 
 ## 6. Điều kiện trước khi sinh migration
 
 1. `employees.work_email` là **nullable** với partial unique index `ux_employees_work_email` (case-insensitive): nhân viên do offer-acceptance handoff tạo ra chưa có email công vụ; `ck_employee_active_requires_work_email` chặn chuyển `active` khi còn trống. `employee_code` lấy từ sequence `employee_code_seq`. §2.3 phía trên là bản mô tả lịch sử và vẫn ghi `email NOT NULL` — canonical thắng.
-2. Chốt Identity Provider để `users.external_subject` có nguồn xác thực thật.
+2. ~~Chốt Identity Provider~~ — đã chốt: xác thực làm nội bộ ([ADR-011](../docs/architecture.md#9-architecture-decisions-adr-index)). Việc còn lại là chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và đưa `seed_roles.sql` vào quy trình triển khai của mọi môi trường.
 3. Cần integration test trên PostgreSQL thật cho từng invariant chặn-ghi: một offer đang mở mỗi đơn ứng tuyển, một hợp đồng chính đang hiệu lực, một phiếu thử việc mỗi hợp đồng, một case thôi việc đang mở, `application_stage_events` duy nhất theo phiên bản.
 4. Cần test cho luồng áp dụng `employee_events` đúng `effective_date` và cho tính idempotent của offer-acceptance handoff.

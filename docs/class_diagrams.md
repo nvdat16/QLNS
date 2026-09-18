@@ -1,6 +1,6 @@
 # Class Diagrams — Domain Model và Design Model
 
-> **Trạng thái:** Proposed · **Nguồn suy dẫn:** [`database/schema.sql`](../database/schema.sql) (canonical, 23 bảng) và source skeleton `src/backend/`.
+> **Trạng thái:** Proposed · **Nguồn suy dẫn:** [`database/schema.sql`](../database/schema.sql) (canonical, 28 bảng — v1.2) và source `src/backend/`.
 >
 > Tài liệu này bổ sung cho [Architecture](architecture.md): C4 Level 3 mô tả tới mức **component**, class diagram ở đây mô tả mức **class** — thuộc tính, phương thức và quan hệ.
 >
@@ -639,7 +639,7 @@ classDiagram
 
 `User` là **actor** của hệ thống, khác với `Employee` là **hồ sơ nhân sự**. Quan hệ 0..1–0..1: ứng viên chưa có user, nhân viên có thể chưa được cấp tài khoản, và interviewer có thể là user không phải employee.
 
-Dữ liệu định danh (`User`, `UserRole`) và audit (`AuditLog`, `OutboxMessage`) **vẫn thuộc mô hình** vì authorization, audit và outbox là cơ chế xuyên suốt bắt buộc của mọi command. Nhưng **không có API quản trị trong đợt này**: việc tạo, khóa tài khoản và cấp vai trò/data scope do Identity Provider bên ngoài đảm nhiệm; `audit_logs` và `outbox_messages` chỉ được ghi trong cùng transaction với thay đổi nghiệp vụ và được Worker đọc, không có endpoint tra cứu hay retry. Vì vậy các class ở đây chỉ có phương thức phục vụ kiểm tra quyền và ghi nhận, không có phương thức quản trị.
+Định danh (`User`, `UserCredential`, `UserRole`, `Role`, `RolePermission`, `RefreshToken`) là **aggregate do hệ thống này sở hữu** kể từ [ADR-011](architecture.md#9-architecture-decisions-adr-index): QLNS tự cấp tài khoản, tự phát hành và thu hồi phiên. Audit (`AuditLog`, `OutboxMessage`) vẫn là cơ chế xuyên suốt bắt buộc và **không** có API tra cứu hay retry: chúng chỉ được ghi trong cùng transaction với thay đổi nghiệp vụ và được Worker đọc.
 
 ```mermaid
 classDiagram
@@ -656,6 +656,20 @@ classDiagram
         +hasRole(string roleCode) bool
     }
 
+    class UserCredential {
+        +long userId
+        +string passwordHash
+        +string passwordAlgorithm
+        +bool mustChangePassword
+        +DateTimeOffset passwordUpdatedAt
+        +int failedAttempts
+        +DateTimeOffset lockedUntil
+        +DateTimeOffset lastLoginAt
+        +long version
+        +isLockedOut(DateTimeOffset now) bool
+        +nextFailure(DateTimeOffset now) CredentialFailureUpdate
+    }
+
     class UserRole {
         +long userId
         +string roleCode
@@ -664,6 +678,31 @@ classDiagram
         +DateTimeOffset grantedAt
         +long grantedBy
         +covers(long departmentId) bool
+        +isWellFormed() bool
+    }
+
+    class Role {
+        +string code
+        +string name
+        +string description
+        +bool isAssignable
+    }
+
+    class RolePermission {
+        +string roleCode
+        +string permission
+    }
+
+    class RefreshToken {
+        +long id
+        +long userId
+        +string tokenHash
+        +DateTimeOffset issuedAt
+        +DateTimeOffset expiresAt
+        +DateTimeOffset revokedAt
+        +RevocationReason revokedReason
+        +long replacedByTokenId
+        +isUsable(DateTimeOffset now) bool
     }
 
     class AuditLog {
@@ -709,17 +748,36 @@ classDiagram
         failed
     }
 
+    class RevocationReason {
+        <<enumeration>>
+        rotated
+        logout
+        password_changed
+        reuse_detected
+        revoked_by_admin
+        account_disabled
+    }
+
     User "1" *-- "0..*" UserRole : được cấp
+    User "1" *-- "0..1" UserCredential : mật khẩu nội bộ
+    User "1" *-- "0..*" RefreshToken : phiên dài hạn
     User "0..1" <-- "0..*" AuditLog : actor
     User "0..1" -- "0..1" Employee : hồ sơ nhân sự
+    Role "1" *-- "0..*" RolePermission : gồm
+    Role "1" <-- "0..*" UserRole : tham chiếu
+    RefreshToken "0..1" --> "0..1" RefreshToken : replacedBy
     UserRole ..> DataScopeType
+    RefreshToken ..> RevocationReason
     AuditLog ..> AuditResult
 ```
 
 **Invariant và ràng buộc:**
 
-- **`User`** — không phải aggregate được hệ thống này tạo/sửa: bản ghi được đồng bộ từ Identity Provider (`externalSubject` là khóa liên kết). `status` và `email` là hình chiếu của provider, dùng cho authorization và hiển thị actor trong audit.
-- **`UserRole`** — PK (userId, roleCode, dataScopeType, dataScopeId). Constraint: dataScopeType='department' cần dataScopeId > 0; 'self'/'organization' cần dataScopeId = 0. `covers()` là điểm dùng duy nhất trong đợt này — đọc để áp data scope cho query/command; việc cấp và thu hồi role không có endpoint.
+- **`User`** — aggregate root của định danh, do `ADM-02` tạo và sửa. `email` UNIQUE sau khi chuẩn hoá chữ thường; `externalSubject` mang tiền tố `local|` cho tài khoản do QLNS cấp, để dành không gian tên riêng nếu sau này federation với provider ngoài. `version` là ETag của mọi lệnh quản trị, kể cả lệnh thay `UserRole`.
+- **`UserCredential`** — 1–0..1 với `User`: một tài khoản có thể tồn tại mà chưa có mật khẩu nội bộ (khi đó không đăng nhập được). `passwordHash` tự mang tham số thuật toán nên nâng work factor không cần migration. `failedAttempts`/`lockedUntil` là bộ khoá tạm: 5 lần sai liên tiếp khoá 15 phút, xoá khi đăng nhập thành công hoặc khi admin đặt lại mật khẩu.
+- **`UserRole`** — PK (userId, roleCode, dataScopeType, dataScopeId), `roleCode` tham chiếu `Role`. Constraint: dataScopeType='department' cần dataScopeId > 0; 'self'/'organization' cần dataScopeId = 0 (`isWellFormed()`). `covers()` được đọc để áp data scope cho query/command.
+- **`Role`, `RolePermission`** — **dữ liệu tham chiếu**, chỉ đọc qua API và chỉ sửa qua `database/seed_roles.sql`. Đăng nhập resolve permission bằng `UserRole ⋈ RolePermission`, nên thu hồi một vai trò có hiệu lực ở lần làm mới phiên kế tiếp mà không cần triển khai lại code.
+- **`RefreshToken`** — dùng **một lần**: `tokenHash` là SHA-256 của token (chính token không bao giờ được lưu), `replacedByTokenId` nối chuỗi luân chuyển. Trình lại một token đã `revoked` ⇒ thu hồi cả họ token của tài khoản với lý do `reuse_detected`. Access token không có class tương ứng vì nó **stateless và không thu hồi được** — vòng đời 30 phút chính là giới hạn trên của việc thu hồi quyền.
 - **`AuditLog`** — Ghi trong CÙNG transaction với thay đổi nghiệp vụ. result='rejected' dùng cho command bị từ chối bởi authorization/business rule — cũng phải được ghi.
 - **`OutboxMessage`** — Side effect ra hệ thống ngoài không gọi trực tiếp trong transaction: ghi outbox rồi Worker gửi sau commit.
 
@@ -976,7 +1034,7 @@ classDiagram
 | Authorization policy `RecruitmentRead` / `RecruitmentAdvance` | `Qlns.Api` | **Proposed** — được tham chiếu bằng `[Authorize]` nhưng chưa có implementation |
 
 > [!IMPORTANT]
-> `GetDataScope()` đọc claim `data_scope` và `department_id` từ token. Chừng nào Identity Provider và policy chưa được chốt, data scope chưa được enforce thật — xem [risk register](architecture.md#11-risks-and-technical-debt).
+> `GetDataScope()` đọc claim `data_scope` và `department_id` từ token — những claim do `JwtAccessTokenIssuer` phát hành khi đăng nhập, dựng từ `user_roles` của chính người dùng ([ADR-011](architecture.md#9-architecture-decisions-adr-index)). Phần chưa được kiểm chứng trên PostgreSQL thật là các truy vấn áp scope trong SQL — xem [risk register](architecture.md#11-risks-and-technical-debt).
 
 ---
 

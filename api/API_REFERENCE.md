@@ -2,7 +2,7 @@
 
 Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yaml) cho hai phân hệ được chọn triển khai trước: **Recruitment (ATS)** và **Core HR** (bao gồm nhánh con Contracts).
 
-**Phạm vi:** chỉ các chức năng lá được **in đậm** dưới Recruitment và Core HR của [`topdown-approach.png`](../topdown-approach.png) — xem thêm [README · Functional architecture](../README.md#2-delivery-scope--seven-pillars-two-selected). Nằm ngoài phạm vi và **không** có endpoint trong tài liệu này: Reports & Analytics (kèm xuất báo cáo), System Administration (quản lý user/role, tra cứu audit log, theo dõi delivery, cấu hình integration), Performance Management, Compensation & Benefits, Attendance & Leave Management, cùng bốn chức năng không in đậm nằm trong hai phân hệ được chọn: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Contract của Attendance & Leave được giữ tại [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml).
+**Phạm vi:** các chức năng lá được **in đậm** dưới Recruitment và Core HR của [`topdown-approach.png`](../topdown-approach.png) — xem thêm [README · Functional architecture](../README.md#2-delivery-scope--seven-pillars-two-selected) — cộng phân hệ **Identity & Access (ADM)**: đăng nhập bằng mật khẩu, làm mới phiên và quản trị tài khoản/vai trò do chính API này đảm nhiệm, không dùng Identity Provider bên ngoài. Nằm ngoài phạm vi và **không** có endpoint trong tài liệu này: Reports & Analytics (kèm xuất báo cáo), các chức năng System Administration còn lại (tra cứu audit log, theo dõi delivery, cấu hình integration/notification/approval), Performance Management, Compensation & Benefits, Attendance & Leave Management, cùng bốn chức năng không in đậm nằm trong hai phân hệ được chọn: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Contract của Attendance & Leave được giữ tại [docs/deferred/attendance_leave/openapi_attendance_leave.yaml](../docs/deferred/attendance_leave/openapi_attendance_leave.yaml).
 
 > OpenAPI là nguồn contract chính thức. Khi nội dung mô tả ở đây khác OpenAPI, ưu tiên `openapi.yaml`.
 
@@ -11,6 +11,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - Base URL local: `http://localhost:5000`.
 - Base path: `/api/v1`.
 - API nội bộ yêu cầu `Authorization: Bearer <JWT>` và luôn kiểm tra permission, data scope và field scope ở backend.
+- Access token do `POST /api/v1/auth/login` phát hành, mặc định sống 30 phút; làm mới bằng `POST /api/v1/auth/refresh` với refresh token dùng một lần. Ba endpoint `login`, `refresh`, `logout` là endpoint công khai (không cần bearer).
 - API ứng viên phản hồi Offer dùng `X-Offer-Token` thay cho JWT.
 - Resource có thể thay đổi trả `ETag`, ví dụ `"4"`. Lệnh cập nhật phải gửi lại `If-Match: "4"`.
 - Command có khả năng retry tạo dữ liệu yêu cầu `Idempotency-Key`, dài từ 16 đến 128 ký tự.
@@ -30,9 +31,110 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 | `415` | Định dạng file không được hỗ trợ. |
 | `422` | Dữ liệu đúng cú pháp nhưng không hợp lệ về ngữ nghĩa. |
 
-## 2. Recruitment
+## 2. Identity & Access (ADM)
 
-### 2.1. Requisitions
+Phân hệ định danh do hệ thống tự quản: mật khẩu lưu dưới dạng băm PBKDF2-HMAC-SHA512 (210.000 vòng, salt riêng cho từng mật khẩu), refresh token chỉ lưu bản băm SHA-256 và dùng **một lần**. Mọi lần đăng nhập — thành công hay thất bại — đều ghi `audit_logs` trong cùng transaction với thay đổi trạng thái.
+
+### 2.1. Phiên đăng nhập (ADM-01)
+
+#### `POST /api/v1/auth/login`
+
+- **Mục đích:** Đổi email + mật khẩu lấy access token và refresh token.
+- **Body:** `LoginRequest` — `email`, `password`.
+- **Kết quả:** `Session` gồm `accessToken`, `expiresIn`, `refreshToken` và `user` (`AuthenticatedIdentity`: vai trò, permission, data scope).
+- **Công khai:** không cần bearer token.
+- **Lỗi 401 kèm `code`:**
+  - `admin.auth.invalid_credentials` — email không tồn tại, không có credential nội bộ, hoặc sai mật khẩu. Ba trường hợp trả về **giống nhau**; email lạ vẫn được verify với một hash giả để thời gian phản hồi không tiết lộ tài khoản nào tồn tại.
+  - `admin.auth.account_locked` — sai 5 lần liên tiếp, khoá 15 phút; problem details kèm `retryAfterSeconds`.
+  - `admin.auth.account_disabled` — tài khoản bị vô hiệu hoá; chỉ báo **sau khi** mật khẩu đã đúng.
+- **Trường hợp phải đổi mật khẩu:** nếu `must_change_password` đang bật, response **không có** `refreshToken` và access token **không mang permission nào**, `user.passwordChangeRequired = true`. Phiên đó chỉ gọi được `change-password`.
+- **Yêu cầu:** `ADM-01.1`.
+
+#### `POST /api/v1/auth/refresh`
+
+- **Mục đích:** Luân chuyển refresh token thành phiên mới.
+- **Body:** `RefreshTokenRequest` — `refreshToken`.
+- **Kết quả:** `Session` mới. Permission và data scope được **đọc lại từ database**, nên vai trò bị thu hồi hết hiệu lực trong vòng tối đa một chu kỳ access token.
+- **Quy tắc:** token cũ bị thu hồi (`rotated`) và liên kết tới token kế nhiệm. Nếu trình một token **đã bị thu hồi**, hệ thống coi là token bị đánh cắp và thu hồi **toàn bộ** refresh token của tài khoản đó (`reuse_detected`).
+- **Lỗi:** `401 admin.auth.invalid_refresh_token`, `401 admin.auth.account_disabled`, `401 admin.auth.password_change_required`.
+- **Yêu cầu:** `ADM-01.2`.
+
+#### `POST /api/v1/auth/logout`
+
+- **Mục đích:** Thu hồi refresh token đang giữ.
+- **Kết quả:** luôn `204`, dù token có tồn tại hay không — không để endpoint này trở thành công cụ dò token hợp lệ.
+- **Lưu ý:** access token vẫn dùng được cho tới khi hết hạn; đây là cái giá đã biết của bearer token stateless.
+- **Yêu cầu:** `ADM-01.2`.
+
+#### `GET /api/v1/auth/me`
+
+- **Mục đích:** Trả về danh tính hiện tại, **đọc lại từ database** thay vì tin vào claim trong token.
+- **Kết quả:** `AuthenticatedIdentity`.
+- **Yêu cầu:** `ADM-01.1`.
+
+#### `POST /api/v1/auth/change-password`
+
+- **Mục đích:** Người dùng tự đổi mật khẩu.
+- **Body:** `ChangePasswordRequest` — `currentPassword`, `newPassword`.
+- **Quy tắc mật khẩu:** tối thiểu 10 ký tự, tối đa 128, kết hợp ít nhất 3 trong 4 nhóm (chữ thường, chữ hoa, số, ký tự đặc biệt), không chứa phần trước `@` của email, không trùng mật khẩu hiện tại.
+- **Bắt buộc nhập mật khẩu hiện tại** dù đã authenticated: access token bị đánh cắp một mình không được phép chiếm tài khoản.
+- **Kết quả:** `204`. Toàn bộ refresh token của người dùng bị thu hồi (`password_changed`) nên các thiết bị khác phải đăng nhập lại.
+- **Lỗi:** `401 admin.auth.invalid_credentials`, `422` khi mật khẩu mới không hợp lệ, `409` khi `user_credentials.version` đã đổi.
+- **Yêu cầu:** `ADM-01.3`.
+
+### 2.2. Quản trị tài khoản & vai trò (ADM-02)
+
+Yêu cầu permission `admin.user.read` để đọc, `admin.user.manage` để thay đổi, `admin.role.read` để đọc danh mục vai trò.
+
+#### `GET /api/v1/admin/users`
+
+- **Query:** `page`, `pageSize`, `search` (tên hoặc email), `status` (`active` | `disabled`), `roleCode`.
+- **Kết quả:** `UserAccountPage`. Mỗi `UserAccount` gồm vai trò kèm phạm vi, `hasCredential`, `mustChangePassword`, `lastLoginAt`, `lockedUntil` — **không bao giờ** trả password hash hay refresh token.
+- **Yêu cầu:** `ADM-02.1`.
+
+#### `POST /api/v1/admin/users`
+
+- **Body:** `CreateUserAccountRequest` — `email`, `displayName`, `initialPassword`, `employeeId` (không bắt buộc), `roles`.
+- **Quy tắc:** email được chuẩn hoá về chữ thường và phải chưa được dùng; `external_subject` sinh theo mẫu `local|<email>`; mật khẩu do admin đặt nên **luôn** bật `must_change_password`; `employeeId` liên kết `employees.user_id` và bị từ chối nếu nhân viên đã có tài khoản.
+- **Kết quả:** `201` kèm `ETag` và `Location`.
+- **Lỗi:** `409 admin.user.email_taken`, `409 admin.user.unknown_role` (kèm `unknownRoles` / `unknownDepartments`), `409 admin.user.employee_already_linked`, `422` cho email/mật khẩu/vai trò sai định dạng.
+- **Yêu cầu:** `ADM-02.1`.
+
+#### `GET /api/v1/admin/users/{userId}` · `PUT /api/v1/admin/users/{userId}`
+
+- `PUT` cần `If-Match` theo `users.version`, body `UserAccountWrite` (`email`, `displayName`). Không có thay đổi thực tế thì không ghi gì và trả lại trạng thái hiện tại.
+- **Yêu cầu:** `ADM-02.1`.
+
+#### `POST /api/v1/admin/users/{userId}/enable` · `/disable`
+
+- Cần `If-Match`. `disable` thu hồi toàn bộ refresh token của tài khoản.
+- **Idempotent:** tài khoản đã ở trạng thái đích được trả về nguyên trạng, bỏ qua `If-Match`.
+- **Lỗi:** `403 admin.user.self_management_forbidden` — admin không được đổi trạng thái tài khoản của chính mình.
+- **Yêu cầu:** `ADM-02.2`.
+
+#### `POST /api/v1/admin/users/{userId}/password-reset`
+
+- **Body:** `ResetUserPasswordRequest` — `newPassword`.
+- Đặt mật khẩu tạm, bật `must_change_password`, xoá bộ đếm khoá và thu hồi toàn bộ refresh token. Mật khẩu **không** được trả lại trong response; phải chuyển cho người dùng qua kênh an toàn ngoài hệ thống.
+- **Lỗi:** `403 admin.user.self_management_forbidden` — tự đặt lại mật khẩu thì dùng `change-password`.
+- **Yêu cầu:** `ADM-02.3`.
+
+#### `PUT /api/v1/admin/users/{userId}/roles`
+
+- **Body:** `RoleGrantsRequest` — danh sách `RoleGrant` (`roleCode`, `dataScopeType`, `dataScopeId`). Đây là **trạng thái đích đầy đủ**: vai trò không nằm trong danh sách sẽ bị xoá; danh sách rỗng để lại tài khoản đăng nhập được nhưng không có quyền nào.
+- **Quy tắc:** `dataScopeType = department` bắt buộc `dataScopeId > 0` và phòng ban phải tồn tại; hai phạm vi còn lại bắt buộc `dataScopeId = 0` (đúng theo `ck_user_roles_scope`). Vai trò phải có trong `roles` và `is_assignable = true`.
+- Cần `If-Match` theo `users.version` — chính version này tuần tự hoá hai admin sửa cùng tài khoản dù dữ liệu thay đổi nằm ở `user_roles`.
+- **Lỗi:** `403 admin.user.self_management_forbidden` — admin không tự sửa vai trò của mình.
+- **Yêu cầu:** `ADM-02.2`.
+
+#### `GET /api/v1/admin/roles`
+
+- Trả danh mục vai trò kèm permission của từng vai trò. **Chỉ đọc**: ma trận vai trò → permission là dữ liệu tham chiếu triển khai qua [`database/seed_roles.sql`](../database/seed_roles.sql), sửa đổi phải đi qua review chứ không qua API.
+- **Yêu cầu:** `ADM-02.2`.
+
+## 3. Recruitment
+
+### 3.1. Requisitions
 
 #### `GET /api/v1/recruitment/requisitions`
 
@@ -75,7 +177,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Side effect:** Publish ghi outbox để phát hành bài đăng sau khi transaction thành công.
 - **Phê duyệt:** Là quyết định của HR Manager. `targetHeadcount`, `salaryMin`, `salaryMax` là dữ liệu khai báo của requisition, server không dùng chúng làm điều kiện chặn.
 
-### 2.2. Candidate intake và CV
+### 3.2. Candidate intake và CV
 
 #### `POST /api/v1/recruitment/resumes`
 
@@ -101,7 +203,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Xung đột:** Nếu có candidate nghi trùng nhưng chưa được xử lý, API trả `409`.
 - **Tính nguyên tử:** Candidate/resume/application phải được tạo hoặc liên kết trong cùng một transaction.
 
-### 2.3. Recruitment pipeline
+### 3.3. Recruitment pipeline
 
 #### `GET /api/v1/recruitment/pipeline`
 
@@ -133,7 +235,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Kết quả:** Application ở stage `rejected` hoặc `withdrawn` cùng `ETag` mới.
 - **Side effect:** Có thể tạo outbox gửi email cảm ơn; lỗi provider không rollback trạng thái đã commit.
 
-### 2.4. Interviews
+### 3.4. Interviews
 
 #### `GET /api/v1/recruitment/interviews`
 
@@ -158,7 +260,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Kết quả:** Interview và `ETag` mới.
 - **Side effect:** Gửi cập nhật hoặc hủy lịch sau khi commit.
 
-### 2.5. Evaluations
+### 3.5. Evaluations
 
 #### `GET /api/v1/recruitment/interviews/{interviewId}/evaluations`
 
@@ -183,7 +285,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Phân quyền:** Chỉ HR Manager hoặc quyền tương đương.
 - **Kết quả:** Evaluation version mới và `ETag` mới.
 
-### 2.6. Offers
+### 3.6. Offers
 
 #### `GET /api/v1/recruitment/offers`
 
@@ -222,9 +324,9 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Tính nguyên tử:** Accept tạo tối đa một employee, một hợp đồng ban đầu và một bộ onboarding task.
 - **Retry:** Cùng idempotency key trả lại kết quả trước với `replayed=true`.
 
-## 3. Core HR
+## 4. Core HR
 
-### 3.1. Employees
+### 4.1. Employees
 
 #### `GET /api/v1/employees`
 
@@ -248,7 +350,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Trường bị cấm:** work email, department, position, manager, status, salary và employee code.
 - **Kết quả:** `EmployeeDetail` và `ETag` mới.
 
-### 3.2. Organization
+### 4.2. Organization
 
 #### `GET /api/v1/organization/departments`
 
@@ -292,7 +394,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Header:** Bắt buộc `If-Match`.
 - **Kết quả:** Position và `ETag` mới.
 
-### 3.3. Onboarding
+### 4.3. Onboarding
 
 #### `GET /api/v1/onboarding/tasks`
 
@@ -315,7 +417,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Workflow:** `pending → in_progress → completed`.
 - **Quyền:** Reopen chỉ dành cho HR Officer/HR Manager và phải có lý do.
 
-### 3.4. Employee events
+### 4.4. Employee events
 
 #### `GET /api/v1/employees/{employeeId}/events`
 
@@ -339,7 +441,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Workflow:** `draft → pending_approval → approved → applied`.
 - **Bất biến:** Event đã applied không được sửa/xóa; phải tạo compensating event.
 
-### 3.5. Employee documents
+### 4.5. Employee documents
 
 #### `GET /api/v1/employees/{employeeId}/documents`
 
@@ -361,7 +463,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Kết quả:** `SignedDownload` gồm `url` và `expiresAt`, tối đa khoảng 15 phút.
 - **Audit:** Truy cập tài liệu nhạy cảm phải được ghi log.
 
-### 3.6. Probation review
+### 4.6. Probation review
 
 #### `GET /api/v1/employees/{employeeId}/probation-review`
 
@@ -388,7 +490,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Hệ quả:** `confirmed` → `probation_confirmation`; `extended` → `probation_extension`; `terminated` → `termination` và mở một offboarding case.
 - **Lưu ý:** `employees.status` **không** đổi ngay khi phê duyệt; chỉ đổi khi sự kiện được áp dụng vào `effectiveDate`.
 
-### 3.7. Offboarding
+### 4.7. Offboarding
 
 #### `GET /api/v1/offboarding/cases`
 
@@ -422,9 +524,9 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Action:** `start`, `complete`, `reopen`; bắt buộc `If-Match`.
 - **Quy tắc:** Bỏ qua task chặn cần quyền HR Manager và bắt buộc ghi lý do vào audit log.
 
-## 4. Contracts
+## 5. Contracts
 
-### 4.1. Employment contracts
+### 5.1. Employment contracts
 
 #### `GET /api/v1/contracts`
 
@@ -481,7 +583,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Bảo mật:** Employee chỉ tải hợp đồng của chính mình; HR vẫn chịu data scope.
 - **Kết quả:** `SignedDownload` với thời hạn ngắn.
 
-### 4.2. Contract addenda
+### 5.2. Contract addenda
 
 #### `GET /api/v1/contracts/{contractId}/addenda`
 
@@ -510,7 +612,7 @@ Tài liệu này diễn giải các operation trong [`openapi.yaml`](openapi.yam
 - **Header:** Bắt buộc `If-Match`.
 - **Kết quả:** ContractAddendum và `ETag` mới.
 
-## 5. Operations
+## 6. Operations
 
 Hai endpoint dưới đây là endpoint hạ tầng phục vụ deployment (liveness/readiness probe), không phải chức năng nghiệp vụ trên bản đồ phân rã chức năng.
 
@@ -523,7 +625,7 @@ Hai endpoint dưới đây là endpoint hạ tầng phục vụ deployment (live
 - Probe công khai tối giản cho biết service sẵn sàng nhận traffic.
 - Trả `200` khi ready hoặc `503` khi chưa ready; không liệt kê secret/dependency detail.
 
-## 6. Trạng thái triển khai
+## 7. Trạng thái triển khai
 
 Mọi operation trong `openapi.yaml` hiện mang `x-implementation-status: code-complete`: đã có controller, authorization policy ở endpoint, business workflow (service + domain), persistence transaction ghi kèm audit và outbox, và unit test cho tầng nghiệp vụ. Source nằm tại `src/backend`, tổ chức theo `Modules/<Module>/<Feature>`; xem [src/backend/README.md](../src/backend/README.md) để biết feature nào chứa operation nào.
 
@@ -533,13 +635,14 @@ Mọi operation trong `openapi.yaml` hiện mang `x-implementation-status: code-
 | :--- | :--- |
 | `proposed` | Chỉ có contract. |
 | `code-complete` | Đủ 5/6 phần: controller, policy, workflow, persistence (audit + outbox cùng transaction), unit test. **Chưa có** integration/contract test trên PostgreSQL. |
-| `implemented` | `code-complete` cộng integration/contract test và xác thực với Identity Provider thật. |
+| `implemented` | `code-complete` cộng integration/contract test chạy trên PostgreSQL thật. |
 
 ### Điều kiện còn thiếu để lên `implemented`
 
 | Nhóm | Còn thiếu |
 | :--- | :--- |
-| Toàn bộ | `tests/Qlns.IntegrationTests` (WebApplicationFactory + Testcontainers) để kiểm chứng partial unique index, conditional update và các truy vấn EF phức tạp (cửa sổ cảnh báo hết hạn, đếm task chặn, subquery user của quản lý); chốt IdP/RBAC; sinh EF Core migration từ `schema.sql` v1.1. |
+| Toàn bộ | `tests/Qlns.IntegrationTests` (WebApplicationFactory + Testcontainers) để kiểm chứng partial unique index, conditional update và các truy vấn EF phức tạp (cửa sổ cảnh báo hết hạn, đếm task chặn, subquery user của quản lý); sinh EF Core migration từ `schema.sql` v1.2. |
+| Identity & Access | Integration test cho luân chuyển refresh token (bao gồm hai request đồng thời cùng token) và cho thu hồi phiên khi vô hiệu hoá tài khoản; rate limit ở reverse proxy trước `POST /auth/login`; luồng quên mật khẩu qua email (hiện chỉ có admin đặt lại). |
 | Recruitment | Worker gửi outbox (email/`.ics`, offer token), worker `ExpireDueOffersAsync`; bộ parser CV thật thay `DevelopmentOnlyResumeParser`; scanner thật thay `DevelopmentOnlyMalwareScanner`. |
 | Core HR — Probation, Offboarding | Worker vô hiệu hóa tài khoản đúng `lastWorkingDate` (nhận từ outbox `corehr.offboarding.case_completed`); nguồn cập nhật `finalSettlementStatus` thuộc Payroll (ngoài phạm vi). |
 | Contracts | Worker `ExpireDueContractsAsync` và outbox cảnh báo hết hạn có chống trùng theo mốc; object store thật thay `FileSystemDocumentStorage`. |

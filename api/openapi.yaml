@@ -6,8 +6,12 @@ info:
     Contract-first API for the delivery scope agreed on the functional decomposition
     map (topdown-approach.png): the functions printed in bold under Recruitment and
     under Core HR, where Core HR includes Contract Management and the employee
-    lifecycle. Everything else on the map is out of scope for this delivery —
-    System Administration, Reports & Analytics, Performance Management,
+    lifecycle, plus Identity & Access (ADM): password sign-in, refresh-token
+    rotation and account/role administration are served by this API itself, no
+    external Identity Provider is involved. Everything else on the map is out of
+    scope for this delivery — the remaining System Administration functions
+    (audit-log browsing, outbox monitoring, integration and notification
+    configuration), Reports & Analytics, Performance Management,
     Compensation & Benefits and Attendance & Leave — together with the four
     non-bold functions inside the two selected pillars: Headcount & Budget
     Validation, Recruitment Channel Management, Organizational Chart, and
@@ -26,6 +30,7 @@ servers:
 security:
   - bearerAuth: []
 tags:
+  - { name: Identity & Access }
   - { name: Recruitment Requisitions }
   - { name: Recruitment Intake }
   - { name: Recruitment Pipeline }
@@ -1201,6 +1206,276 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
 
+  /api/v1/auth/login:
+    post:
+      tags: [Identity & Access]
+      operationId: signIn
+      x-implementation-status: code-complete
+      x-requirement: ADM-01.1
+      summary: Exchange e-mail and password for an access and a refresh token
+      description: >-
+        Every rejection returns the same 401 shape; the code distinguishes invalid_credentials,
+        account_locked (after 5 consecutive failures, for 15 minutes) and account_disabled. When the
+        account must change its password the response carries no refreshToken and an access token
+        without any permission — such a session may only call change-password.
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest' } } }
+      responses:
+        '200': { description: Session established, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/auth/refresh:
+    post:
+      tags: [Identity & Access]
+      operationId: refreshSession
+      x-implementation-status: code-complete
+      x-requirement: ADM-01.2
+      summary: Rotate a refresh token into a new session
+      description: >-
+        Refresh tokens are single-use. The presented token is revoked and replaced; permissions and data
+        scope are re-read from the database, so a withdrawn role stops working within one access-token
+        lifetime. Presenting an already revoked token is treated as theft and revokes every token of
+        that account.
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RefreshTokenRequest' } } }
+      responses:
+        '200': { description: Session renewed, content: { application/json: { schema: { $ref: '#/components/schemas/Session' } } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/v1/auth/logout:
+    post:
+      tags: [Identity & Access]
+      operationId: signOut
+      x-implementation-status: code-complete
+      x-requirement: ADM-01.2
+      summary: Revoke a refresh token
+      description: >-
+        Always answers 204, whether or not the token existed, so that sign-out cannot be used to probe
+        which tokens are valid. The access token stays usable until it expires — the documented cost of
+        stateless bearer tokens.
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RefreshTokenRequest' } } }
+      responses:
+        '204': { description: Token revoked or already unusable }
+        '400': { $ref: '#/components/responses/BadRequest' }
+
+  /api/v1/auth/me:
+    get:
+      tags: [Identity & Access]
+      operationId: getCurrentIdentity
+      x-implementation-status: code-complete
+      x-requirement: ADM-01.1
+      summary: Describe the signed-in actor, re-read from the database
+      responses:
+        '200': { description: Current identity, content: { application/json: { schema: { $ref: '#/components/schemas/AuthenticatedIdentity' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/v1/auth/change-password:
+    post:
+      tags: [Identity & Access]
+      operationId: changeOwnPassword
+      x-implementation-status: code-complete
+      x-requirement: ADM-01.3
+      summary: Change one's own password
+      description: >-
+        Requires the current password even though the caller is authenticated, so that a stolen access
+        token alone cannot take over the account. Succeeding revokes every refresh token of the user.
+        Available to every authenticated actor, including the restricted session issued after a reset.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ChangePasswordRequest' } } }
+      responses:
+        '204': { description: Password changed; all sessions of the user were revoked }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/admin/users:
+    get:
+      tags: [Identity & Access]
+      operationId: listUserAccounts
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.1
+      summary: Search user accounts
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/Search'
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/UserAccountStatus' } }
+        - { name: roleCode, in: query, schema: { type: string, maxLength: 80 } }
+      responses:
+        '200': { description: Matching accounts, content: { application/json: { schema: { $ref: '#/components/schemas/UserAccountPage' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+    post:
+      tags: [Identity & Access]
+      operationId: createUserAccount
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.1
+      summary: Provision an account with its initial password and role grants
+      description: >-
+        The initial password is chosen by the administrator and therefore always forces a change at the
+        first sign-in. An employeeId links the account to employees.user_id; an employee that already
+        has an account is rejected.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/CreateUserAccountRequest' } } }
+      responses:
+        '201':
+          description: Account created
+          headers: { ETag: { $ref: '#/components/headers/ETag' }, Location: { $ref: '#/components/headers/Location' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/UserAccount' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/admin/users/{userId}:
+    parameters: [{ $ref: '#/components/parameters/UserId' }]
+    get:
+      tags: [Identity & Access]
+      operationId: getUserAccount
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.1
+      summary: Read one account with its role grants and credential state
+      responses:
+        '200':
+          description: Account
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/UserAccount' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Identity & Access]
+      operationId: updateUserAccount
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.1
+      summary: Update e-mail and display name
+      parameters: [{ $ref: '#/components/parameters/IfMatch' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/UserAccountWrite' } } }
+      responses:
+        '200':
+          description: Account updated
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/UserAccount' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/admin/users/{userId}/{accountAction}:
+    post:
+      tags: [Identity & Access]
+      operationId: setUserAccountStatus
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.2
+      summary: Enable or disable an account
+      description: >-
+        Disabling revokes every refresh token of the account. Idempotent: an account already in the
+        requested state is returned unchanged whatever If-Match carries. An administrator may not change
+        the status of their own account (403 admin.user.self_management_forbidden).
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/IfMatch'
+        - { name: accountAction, in: path, required: true, schema: { type: string, enum: [enable, disable] } }
+      responses:
+        '200':
+          description: New account state
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/UserAccount' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /api/v1/admin/users/{userId}/password-reset:
+    post:
+      tags: [Identity & Access]
+      operationId: resetUserPassword
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.3
+      summary: Set a temporary password and force a change at the next sign-in
+      description: >-
+        The secret is handed to its owner out of band; the response never echoes it. Clears the lockout
+        counters and revokes every refresh token of the account. An administrator may not reset their own
+        password — use change-password instead.
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/ResetUserPasswordRequest' } } }
+      responses:
+        '200':
+          description: Credential replaced
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/UserAccount' } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/admin/users/{userId}/roles:
+    put:
+      tags: [Identity & Access]
+      operationId: replaceUserRoleGrants
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.2
+      summary: Replace the whole set of role grants of an account
+      description: >-
+        The request is the complete desired state: grants not listed are removed, and an empty list
+        leaves the account authenticated but unauthorized. Role codes must exist in the catalogue and be
+        assignable; a department-scoped grant requires an existing department. An administrator may not
+        rewrite their own grants.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/IfMatch'
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/RoleGrantsRequest' } } }
+      responses:
+        '200':
+          description: Grants replaced
+          headers: { ETag: { $ref: '#/components/headers/ETag' } }
+          content: { application/json: { schema: { $ref: '#/components/schemas/UserAccount' } } }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/UnprocessableEntity' }
+
+  /api/v1/admin/roles:
+    get:
+      tags: [Identity & Access]
+      operationId: listRoles
+      x-implementation-status: code-complete
+      x-requirement: ADM-02.2
+      summary: Read the role catalogue and its permission matrix
+      description: >-
+        Read-only: roles and their permissions are reference data deployed with
+        database/seed_roles.sql, so a change to the permission matrix goes through review.
+      responses:
+        '200': { description: Role catalogue, content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/Role' } } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
   /health/live:
     get:
       tags: [Operations]
@@ -1232,7 +1507,7 @@ paths:
 
 components:
   securitySchemes:
-    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: OIDC access token for workforce users. }
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT, description: 'Access token issued by POST /api/v1/auth/login. Carries the actor''s permissions and data scope; short-lived, renewed through POST /api/v1/auth/refresh.' }
     offerToken: { type: apiKey, in: header, name: X-Offer-Token, description: Short-lived single-offer candidate token. }
   parameters:
     Page: { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
@@ -1256,6 +1531,7 @@ components:
     AddendumId: { name: addendumId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     ReviewId: { name: reviewId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
     CaseId: { name: caseId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
+    UserId: { name: userId, in: path, required: true, schema: { type: integer, format: int64, minimum: 1 } }
   headers:
     ETag: { description: Quoted numeric resource version., schema: { type: string, example: '"5"' } }
     Location: { description: Created resource URI., schema: { type: string, format: uri-reference } }
@@ -1283,6 +1559,110 @@ components:
       allOf: [{ $ref: '#/components/schemas/ProblemDetails' }, { type: object, required: [code], properties: { code: { type: string } } }]
     ValidationProblemDetails:
       allOf: [{ $ref: '#/components/schemas/ProblemDetails' }, { type: object, required: [errors], properties: { errors: { type: object, additionalProperties: { type: array, items: { type: string } } } } }]
+
+    DataScopeType: { type: string, enum: [self, department, organization] }
+    UserAccountStatus: { type: string, enum: [active, disabled] }
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties: { email: { type: string, format: email, maxLength: 320 }, password: { type: string, minLength: 1, maxLength: 128 } }
+    RefreshTokenRequest:
+      type: object
+      additionalProperties: false
+      required: [refreshToken]
+      properties: { refreshToken: { type: string, minLength: 1, maxLength: 512 } }
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword]
+      properties: { currentPassword: { type: string, minLength: 1, maxLength: 128 }, newPassword: { type: string, minLength: 10, maxLength: 128, description: 'At least 10 characters combining 3 of: lower case, upper case, digit, symbol; must not contain the e-mail account name.' } }
+    AuthenticatedIdentity:
+      type: object
+      required: [userId, email, displayName, roles, permissions, dataScope, departmentIds, passwordChangeRequired]
+      properties:
+        userId: { type: integer, format: int64 }
+        employeeId: { type: integer, format: int64, nullable: true, description: employees.user_id link, absent for accounts without an employee record. }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        roles: { type: array, items: { type: string } }
+        permissions: { type: array, items: { type: string }, description: Effective permissions of every grant; the server re-checks them on every request. }
+        dataScope: { $ref: '#/components/schemas/DataScopeType' }
+        departmentIds: { type: array, items: { type: integer, format: int64 }, description: Populated only for department scope. }
+        passwordChangeRequired: { type: boolean }
+    Session:
+      type: object
+      required: [accessToken, tokenType, expiresIn, expiresAt, user]
+      properties:
+        accessToken: { type: string }
+        tokenType: { type: string, enum: [Bearer] }
+        expiresIn: { type: integer, minimum: 0, description: Seconds until the access token expires. }
+        expiresAt: { type: string, format: date-time }
+        refreshToken: { type: string, nullable: true, description: Absent while a password change is pending — that session is deliberately not renewable. }
+        refreshTokenExpiresAt: { type: string, format: date-time, nullable: true }
+        user: { $ref: '#/components/schemas/AuthenticatedIdentity' }
+    RoleGrant:
+      type: object
+      additionalProperties: false
+      required: [roleCode, dataScopeType]
+      properties:
+        roleCode: { type: string, minLength: 1, maxLength: 80 }
+        dataScopeType: { $ref: '#/components/schemas/DataScopeType' }
+        dataScopeId: { type: integer, format: int64, minimum: 0, default: 0, description: 'Positive department id for department scope, 0 otherwise (ck_user_roles_scope).' }
+    RoleGrantsRequest:
+      type: object
+      additionalProperties: false
+      required: [roles]
+      properties: { roles: { type: array, items: { $ref: '#/components/schemas/RoleGrant' } } }
+    Role:
+      type: object
+      required: [code, name, isAssignable, permissions]
+      properties:
+        code: { type: string, maxLength: 80 }
+        name: { type: string }
+        description: { type: string, nullable: true }
+        isAssignable: { type: boolean }
+        permissions: { type: array, items: { type: string } }
+    UserAccountWrite:
+      type: object
+      additionalProperties: false
+      required: [email, displayName]
+      properties: { email: { type: string, format: email, maxLength: 320 }, displayName: { type: string, minLength: 1, maxLength: 255 } }
+    CreateUserAccountRequest:
+      allOf:
+        - { $ref: '#/components/schemas/UserAccountWrite' }
+        - type: object
+          required: [initialPassword]
+          properties:
+            initialPassword: { type: string, minLength: 10, maxLength: 128 }
+            employeeId: { type: integer, format: int64, minimum: 1, nullable: true }
+            roles: { type: array, items: { $ref: '#/components/schemas/RoleGrant' } }
+    ResetUserPasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [newPassword]
+      properties: { newPassword: { type: string, minLength: 10, maxLength: 128 } }
+    UserAccount:
+      type: object
+      required: [id, email, displayName, status, externalSubject, roles, dataScope, hasCredential, mustChangePassword, createdAt, updatedAt, version]
+      properties:
+        id: { type: integer, format: int64 }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        status: { $ref: '#/components/schemas/UserAccountStatus' }
+        externalSubject: { type: string, description: 'users.external_subject; locally provisioned accounts use the prefix local|.' }
+        employeeId: { type: integer, format: int64, nullable: true }
+        roles: { type: array, items: { $ref: '#/components/schemas/RoleGrant' } }
+        dataScope: { $ref: '#/components/schemas/DataScopeType' }
+        hasCredential: { type: boolean, description: False for an account that cannot sign in with a password yet. }
+        mustChangePassword: { type: boolean }
+        passwordUpdatedAt: { type: string, format: date-time, nullable: true }
+        lastLoginAt: { type: string, format: date-time, nullable: true }
+        lockedUntil: { type: string, format: date-time, nullable: true, description: End of the lockout window after consecutive failed sign-ins. }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        version: { type: integer, format: int64 }
+    UserAccountPage: { type: object, required: [items, page], properties: { items: { type: array, items: { $ref: '#/components/schemas/UserAccount' } }, page: { $ref: '#/components/schemas/PageMetadata' } } }
 
     RequisitionStatus: { type: string, enum: [draft, pending_approval, approved, active_recruiting, closed, cancelled] }
     EmploymentType: { type: string, enum: [full_time, part_time, hybrid, remote, internship, service_contract] }

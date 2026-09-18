@@ -5,17 +5,17 @@
 > **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Source backend hiện chỉ là skeleton cấu trúc; EF Core migration pipeline và PostgreSQL runtime chưa được cấu hình/xác minh. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các luồng nghiệp vụ đã hoạt động.
 
 > [!IMPORTANT]
-> Chỉ [`schema.sql`](schema.sql) là canonical — **24 bảng** (baseline v1.1), bao phủ hai phân hệ trong phạm vi: Core HR (gồm Contracts) và Recruitment. DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql` và `postgres_db.sql` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng.
+> Chỉ [`schema.sql`](schema.sql) là canonical — **28 bảng** (baseline v1.2), bao phủ hai phân hệ nghiệp vụ trong phạm vi (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access (ADM). DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql` và `postgres_db.sql` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng.
 
 > [!NOTE]
-> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Việc thu hẹp phạm vi **không đổi DDL**: phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu. Bảng thứ 24 (`interview_panelists`) và các cột `currency` được bổ sung ở v1.1 khi triển khai code — xem [mục 2.6](#26-delta-v11--phát-hiện-khi-triển-khai).
+> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Việc thu hẹp phạm vi **không đổi DDL**: phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu. Bảng thứ 24 (`interview_panelists`) và các cột `currency` được bổ sung ở v1.1 khi triển khai code — xem [mục 2.6](#26-delta-v11--phát-hiện-khi-triển-khai). Bốn bảng định danh của v1.2 (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`) được thêm khi chuyển xác thực về nội bộ — xem [mục 2.7](#27-delta-v12--đưa-xác-thực-về-nội-bộ).
 
 ---
 
 ## 📌 Mục Lục
 
 - [1. Sơ Đồ Thực Thể Quan Hệ (ERD)](#1-sơ-đồ-thực-thể-quan-hệ-erd)
-- [2. Danh Sách 24 Bảng Canonical](#2-danh-sách-24-bảng-canonical)
+- [2. Danh Sách 28 Bảng Canonical](#2-danh-sách-28-bảng-canonical)
 - [3. Danh Mục Tệp Lược Đồ Dữ Liệu](#3-danh-mục-tệp-lược-đồ-dữ-liệu)
 - [4. Kiểm Tra Thiết Kế Schema](#4-kiểm-tra-thiết-kế-schema-tùy-chọn)
 - [🔗 Quay lại README Tổng Quan](../README.md)
@@ -24,16 +24,16 @@
 
 ## 1. Sơ Đồ Thực Thể Quan Hệ (ERD)
 
-Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd), render từ canonical 23 bảng của v1; bảng `interview_panelists` (v1.1) chưa được vẽ.
+Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd), render từ canonical 23 bảng của v1; bảng `interview_panelists` (v1.1) và bốn bảng định danh của v1.2 (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`) chưa được vẽ.
 
 > [!NOTE]
 > Sơ đồ DBML cũ (`dbml.txt` và ảnh `dbml.png`, theo mô hình 14 bảng) đã được xóa khỏi repository vì không khớp canonical schema. Đừng dựng lại nó song song với Mermaid ERD: hai nguồn sơ đồ sẽ lệch nhau.
 
 ---
 
-## 2. Danh Sách 24 Bảng Canonical
+## 2. Danh Sách 28 Bảng Canonical
 
-Canonical v1.1 (`schema.sql`) gồm 24 bảng thuộc năm nhóm. Cột **Trạng thái** cho biết mức độ sẵn sàng triển khai, không phải mức độ tồn tại của file SQL.
+Canonical v1.2 (`schema.sql`) gồm 28 bảng thuộc năm nhóm. Cột **Trạng thái** cho biết mức độ sẵn sàng triển khai, không phải mức độ tồn tại của file SQL.
 
 ### 2.1. Core HR — Organization & Profile
 
@@ -75,16 +75,20 @@ Canonical v1.1 (`schema.sql`) gồm 24 bảng thuộc năm nhóm. Cột **Trạn
 | 18 | **`evaluations`** | Scorecard chấm điểm với thang 0–5 bước 0.5 và cơ chế unlock có lý do. | Proposed |
 | 19 | **`offers`** | Thư mời nhận việc; index partial đảm bảo mỗi đơn chỉ có một offer đang mở. Cột `currency` (v1.1) khớp `OfferWrite.currency`. | Implemented |
 
-### 2.5. Platform — định danh, audit, outbox
+### 2.5. Platform — định danh, phân quyền, audit, outbox
 
-Bốn bảng này **vẫn thuộc canonical schema**. Chúng mang dữ liệu định danh và hai cơ chế xuyên suốt bắt buộc, chứ không phải một phân hệ nghiệp vụ. Đợt giao hàng này **không có API quản trị** cho chúng: không endpoint quản lý user/role/role-grant, không endpoint tra cứu audit log, không endpoint xem và retry delivery. Việc cấp tài khoản và vai trò do **Identity Provider bên ngoài** đảm nhiệm.
+Tám bảng này **thuộc canonical schema**. Sáu bảng đầu mang dữ liệu định danh, thông tin đăng nhập và phân quyền của phân hệ Identity & Access (ADM) — **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*`. Hai bảng cuối là cơ chế xuyên suốt bắt buộc và **không** có API: không endpoint tra cứu audit log, không endpoint xem/retry delivery.
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 20 | **`users`** | Dữ liệu định danh của ứng dụng, liên kết IdP qua `external_subject`. Không có API quản lý tài khoản trong đợt này. | Proposed |
-| 21 | **`user_roles`** | Gán vai trò kèm data scope (`self`/`department`/`organization`) — nguồn cho việc kiểm tra quyền phía server, vẫn bắt buộc trên mọi request. Không có API cấp vai trò trong đợt này. | Proposed |
-| 22 | **`audit_logs`** | Nhật ký hành động với before/after và `correlation_id`. **Cơ chế bắt buộc**: ghi cùng transaction với thay đổi nghiệp vụ. Không có endpoint tra cứu trong đợt này. | Proposed |
-| 23 | **`outbox_messages`** | Transactional outbox cho email và lịch. **Cơ chế bắt buộc**: ghi cùng transaction nghiệp vụ. Không có endpoint xem/retry delivery trong đợt này. | Proposed |
+| 20 | **`users`** | Dữ liệu định danh của ứng dụng. `external_subject` mang tiền tố `local|` cho tài khoản do QLNS cấp, để dành không gian tên riêng nếu sau này federation với IdP ngoài. Quản trị qua `/api/v1/admin/users`. | Proposed |
+| 21 | **`user_credentials`** | Mật khẩu băm PBKDF2-HMAC-SHA512 kèm tham số trong chính chuỗi hash, cờ buộc đổi mật khẩu, bộ đếm sai và mốc hết khoá. Một dòng cho mỗi tài khoản đăng nhập được bằng mật khẩu. | Proposed |
+| 22 | **`user_roles`** | Gán vai trò kèm data scope (`self`/`department`/`organization`) — nguồn cho việc kiểm tra quyền phía server, bắt buộc trên mọi request. Quản trị qua `PUT /api/v1/admin/users/{userId}/roles`. | Proposed |
+| 23 | **`roles`** | Danh mục vai trò. Dữ liệu tham chiếu, nạp từ `seed_roles.sql`; `user_roles.role_code` tham chiếu tới đây. | Proposed |
+| 24 | **`role_permissions`** | Ma trận vai trò → permission. Đăng nhập resolve permission bằng `user_roles ⋈ role_permissions`, nên đổi ma trận không cần build lại code. Chỉ đọc qua API. | Proposed |
+| 25 | **`refresh_tokens`** | Refresh token dùng một lần: chỉ lưu bản băm SHA-256, ghi nhận token kế nhiệm và lý do thu hồi. Trình lại token đã thu hồi ⇒ thu hồi cả họ token của tài khoản. | Proposed |
+| 26 | **`audit_logs`** | Nhật ký hành động với before/after và `correlation_id`. **Cơ chế bắt buộc**: ghi cùng transaction với thay đổi nghiệp vụ — kể cả lần đăng nhập thất bại (`result = 'rejected'`). Không có endpoint tra cứu trong đợt này. | Proposed |
+| 27 | **`outbox_messages`** | Transactional outbox cho email và lịch. **Cơ chế bắt buộc**: ghi cùng transaction nghiệp vụ. Không có endpoint xem/retry delivery trong đợt này. | Proposed |
 
 ### 2.6. Delta v1.1 — phát hiện khi triển khai
 
@@ -97,6 +101,20 @@ Bốn khác biệt giữa contract OpenAPI và DDL v1 chỉ lộ ra khi viết c
 | Bảng mới `interview_panelists(interview_id, user_id)` | `InterviewWrite.interviewerUserIds` là mảng; `interviews.interviewer_user_id` chỉ lưu một người. Người đầu tiên của hội đồng được ghi vào `interviewer_user_id` làm lead; `evaluations` chấm theo từng panelist. |
 | `contract_addenda.version bigint` là **phiên bản đồng thời**, bỏ `ux_contract_addendum_version (contract_id, version)` | Contract dùng `version` làm ETag/`If-Match` cho phụ lục; một unique theo `(contract_id, version)` sẽ va chạm khi hai phụ lục cùng hợp đồng được sửa. Thứ tự/định danh phụ lục dựa vào `addendum_number` (UNIQUE) và trạng thái `superseded`. |
 
+### 2.7. Delta v1.2 — đưa xác thực về nội bộ
+
+Quyết định chuyển đăng nhập và quản trị tài khoản từ Identity Provider bên ngoài về chính hệ thống kéo theo bốn bảng mới và một khoá ngoại:
+
+| Delta | Lý do |
+|---|---|
+| Bảng mới `roles(code, name, description, is_assignable)` | Cần danh mục vai trò để API `GET /api/v1/admin/roles` trả về và để validate `role_code` khi cấp quyền. |
+| Bảng mới `role_permissions(role_code, permission)` | Ma trận vai trò → permission trước đây chỉ tồn tại trong code (`DevelopmentAuthentication` personas). Đưa vào dữ liệu để đăng nhập resolve permission bằng SQL, và để đổi ma trận không phải build lại. |
+| Bảng mới `user_credentials` | `users` không có chỗ lưu mật khẩu; tách bảng 1–1 giữ nguyên `users` là dữ liệu định danh và cho phép tồn tại tài khoản chưa có mật khẩu nội bộ. |
+| Bảng mới `refresh_tokens` | Phiên dài hạn cần một tạo tác **thu hồi được**, điều mà access token stateless không làm được. Chỉ lưu băm SHA-256 nên dump bảng này không replay được. |
+| `user_roles.role_code` giờ `REFERENCES roles(code)` | Trước đây là chuỗi tự do; một mã sai chính tả sẽ âm thầm không cấp quyền nào. |
+
+Hai lưu ý khi triển khai: (1) `seed_roles.sql` là **dữ liệu tham chiếu bắt buộc ở mọi môi trường**, phải chạy ngay sau `schema.sql`; (2) mọi tài khoản trong `seed_dev.sql` dùng mật khẩu phát triển `Qlns@2026` và **không được** mang sang môi trường dùng chung.
+
 ---
 
 ## 3. Danh Mục Tệp Lược Đồ Dữ Liệu
@@ -107,10 +125,11 @@ Bốn khác biệt giữa contract OpenAPI và DDL v1 chỉ lộ ra khi viết c
 | Tệp | Mô Tả Chi Tiết | Liên Kết |
 | :--- | :--- | :--- |
 | **`database_design.md`** | Tài liệu đặc tả kỹ thuật chi tiết từng trường, kiểu dữ liệu, ràng buộc khóa chính/khóa ngoại và Mermaid ERD. | [Xem database_design.md](./database_design.md) |
-| **`schema.sql`** | **Canonical schema contract v1.1 — 24 bảng.** Nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. | [Xem schema.sql](./schema.sql) |
+| **`schema.sql`** | **Canonical schema contract v1.2 — 28 bảng.** Nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. | [Xem schema.sql](./schema.sql) |
+| **`seed_roles.sql`** | **Dữ liệu tham chiếu bắt buộc:** danh mục 8 vai trò và ma trận vai trò → permission. Chạy sau `schema.sql`, trước `seed_dev.sql`; idempotent (`ON CONFLICT`). | [Xem seed_roles.sql](./seed_roles.sql) |
 | **`init.sql`** | ⚠️ **DEPRECATED.** Script seed/DDL cũ, chưa có bảng định danh/phân quyền, audit, outbox và các bảng lifecycle. | [Xem init.sql](./init.sql) |
 | **`postgres_db.sql`** | ⚠️ **DEPRECATED.** DDL legacy; các bảng chấm công/nghỉ phép ở đây nằm ngoài phạm vi và không khớp bản thiết kế deferred. | [Xem postgres_db.sql](./postgres_db.sql) |
-| **`seed_dev.sql`** | Dữ liệu mẫu **chỉ dùng cho môi trường phát triển**: 7 user, 6 phòng ban, 6 chức danh, 7 nhân viên, 5 task onboarding, 2 requisition, 2 ứng viên/đơn ứng tuyển, 1 phỏng vấn đã chấm, 3 hợp đồng và 1 phiếu thử việc. Không thuộc hợp đồng schema và không được chạy trên môi trường dùng chung. | [Xem seed_dev.sql](./seed_dev.sql) |
+| **`seed_dev.sql`** | Dữ liệu mẫu **chỉ dùng cho môi trường phát triển**: 8 user (đều đăng nhập bằng mật khẩu `Qlns@2026`), 6 phòng ban, 6 chức danh, 7 nhân viên, 5 task onboarding, 2 requisition, 2 ứng viên/đơn ứng tuyển, 1 phỏng vấn đã chấm, 3 hợp đồng và 1 phiếu thử việc. Không thuộc hợp đồng schema và không được chạy trên môi trường dùng chung. | [Xem seed_dev.sql](./seed_dev.sql) |
 
 ---
 

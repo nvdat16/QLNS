@@ -1,5 +1,7 @@
 -- QLNS development seed — Core HR, Recruitment and Contracts smoke-test data. DEVELOPMENT ONLY, never run against a shared environment.
 -- Ids are fixed so that the /dev/token personas in Qlns.Api can reference them.
+-- Prerequisite: run database/seed_roles.sql first (roles and role_permissions are referenced here).
+-- Every seeded account signs in through POST /api/v1/auth/login with the password Qlns@2026.
 BEGIN;
 
 INSERT INTO users (id, external_subject, email, display_name, status) OVERRIDING SYSTEM VALUE VALUES
@@ -9,7 +11,22 @@ INSERT INTO users (id, external_subject, email, display_name, status) OVERRIDING
     (4, 'dev|employee',     'dev.nguyen@qlns.local',   'Nguyễn Văn Dev',       'active'),
     (5, 'dev|it-admin',     'it.admin@qlns.local',     'Phạm IT Admin',        'active'),
     (6, 'dev|ceo',          'ceo@qlns.local',          'Hoàng CEO',            'active'),
-    (7, 'dev|recruiter',    'recruiter@qlns.local',    'Vũ Thị Recruiter',     'active');
+    (7, 'dev|recruiter',    'recruiter@qlns.local',    'Vũ Thị Recruiter',     'active'),
+    (8, 'local|admin',      'admin@qlns.local',        'Quản trị Hệ thống',    'active');
+
+-- Local sign-in credentials (ADM-01). All eight accounts share the development password Qlns@2026,
+-- hashed with pbkdf2-sha512 / 210 000 iterations and a per-user salt. User 6 (CEO) is seeded with
+-- must_change_password so the forced password-change flow can be exercised; that account has no role
+-- grant either, which makes it the fixture for "authenticated but not authorized" (401 vs 403) tests.
+INSERT INTO user_credentials (user_id, password_hash, password_algorithm, must_change_password) VALUES
+    (1, 'pbkdf2-sha512$210000$CswdCafXdHQEi/zyiOwVog==$py/5KrskJQ7ljxuEBtfZ8yYHT9DvOIo/YaVEjZwhNMRLmbP6mSSU8K+EJuEYzNW7OIREb8Y+A+e9CViR8Kol2Q==', 'pbkdf2-sha512', false),
+    (2, 'pbkdf2-sha512$210000$CrzP798VtnMY7qYHBM1jPw==$ZFrX5+216MIK1cYZp9ys7Z9LDhO9+qCVZ0uQxvk/hSHj8sLOZkKYM6RXzgNkHEiCs0rsE+O7fpvpysJ8MI34dQ==', 'pbkdf2-sha512', false),
+    (3, 'pbkdf2-sha512$210000$3hTZJLKtH/2Z2DXJBrIoHg==$jVnD5pL6GQWbyMMp0DfzdT2gwIb75lZz3yPHR55l+WZ541MSN+b2GZEHDfHb8XpNIj81vBJk+4jDqhVKpG71wA==', 'pbkdf2-sha512', false),
+    (4, 'pbkdf2-sha512$210000$1ZDyrVGPX2jFCqe32u8uaQ==$bVblO+F5wL3C/IDOXVLJ6Kd3PUWWhUocam/bxGFhesLQpiQzclwy9Kb6wfyIE6+2Nt5gf9TtVnJeNYGCvprgvg==', 'pbkdf2-sha512', false),
+    (5, 'pbkdf2-sha512$210000$UP0EKVNIfOJlwqbCsu5lbg==$7QxVCU4fMpwyRuudOLY72K7f2HG2LX/DbvSeuZ3esZT06ktpyPkpABfwGWQxIhwMxuZVPCJ7dt/wRXdBZZ68gQ==', 'pbkdf2-sha512', false),
+    (6, 'pbkdf2-sha512$210000$H6zVufw86PzAbXBhNwH0hA==$inJ47c0ivysZ1miXWoCAXsa2H1qgzGJOCHAmFdHtU9gZ2pV/iwTrHZanzepf2gpjKrv3c7zZYAYpljhRFLIfpA==', 'pbkdf2-sha512', true),
+    (7, 'pbkdf2-sha512$210000$PFiNy3p0PP+zuVVu8GxNJQ==$iOhhjJXd4vqSzrl2vdFx8ApwfryWxjpbARXpIvPI/RGqXtq4A/hxp6yTQD+4slB+A8ncYg/hQz/F9Gj6Kz9axw==', 'pbkdf2-sha512', false),
+    (8, 'pbkdf2-sha512$210000$M7pvFDWZtn6amABheKflXg==$7teLJyPY5+ShhZs0IcNjulPNRWVM0vkQL2dGceyJ1/w/WVJsQ+dcq+oB6jhQk0Q4k9YqJxDomCktCEBMePzXew==', 'pbkdf2-sha512', false);
 
 INSERT INTO departments (id, code, name, parent_department_id, cost_center) OVERRIDING SYSTEM VALUE VALUES
     (1, 'BOD',  'Ban Giám đốc',      NULL, 'CC-000'),
@@ -43,7 +60,9 @@ INSERT INTO user_roles (user_id, role_code, data_scope_type, data_scope_id) VALU
     (3, 'ROLE_LINE_MGR',   'department',   2),
     (3, 'ROLE_LINE_MGR',   'department',   4),
     (4, 'ROLE_EMPLOYEE',   'self',         0),
-    (7, 'ROLE_RECRUITER',  'organization', 0);
+    (5, 'ROLE_IT_ADMIN',   'self',         0),
+    (7, 'ROLE_RECRUITER',  'organization', 0),
+    (8, 'ROLE_ADMIN',      'organization', 0);
 
 INSERT INTO onboarding_tasks (id, employee_id, template_key, task_name, description, assigned_to_user_id, due_at, status, completed_at) OVERRIDING SYSTEM VALUE VALUES
     (1, 4, 'it.email',      'Tạo email công vụ',          'Tạo mailbox và cấp quyền Slack/Git', 5, '2026-07-31T10:00:00Z', 'pending',     NULL),

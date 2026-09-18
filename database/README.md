@@ -8,7 +8,7 @@
 > Chỉ [`schema.sql`](schema.sql) là canonical — **28 bảng** (baseline v1.2), bao phủ hai phân hệ nghiệp vụ trong phạm vi (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access (ADM). DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql` và `postgres_db.sql` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng.
 
 > [!NOTE]
-> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Việc thu hẹp phạm vi **không đổi DDL**: phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu. Bảng thứ 24 (`interview_panelists`) và các cột `currency` được bổ sung ở v1.1 khi triển khai code — xem [mục 2.6](#26-delta-v11--phát-hiện-khi-triển-khai). Bốn bảng định danh của v1.2 (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`) được thêm khi chuyển xác thực về nội bộ — xem [mục 2.7](#27-delta-v12--đưa-xác-thực-về-nội-bộ).
+> **Phạm vi giao hàng** lấy theo các chức năng lá in đậm dưới Recruitment và Core HR trên bản đồ [`topdown-approach.png`](../topdown-approach.png); nguồn chuẩn là [mục 2 của README gốc](../README.md#2-delivery-scope--seven-pillars-two-selected). Ngoài phạm vi đợt này: Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart và Suspension & Return to Work. Việc thu hẹp phạm vi **không đổi DDL**: phần bị loại là màn hình và endpoint, không phải cấu trúc dữ liệu. Bảng `interview_panelists` và các cột `currency` được bổ sung ở v1.1 khi triển khai code — xem [mục 2.6](#26-delta-v11--phát-hiện-khi-triển-khai). Bốn bảng định danh của v1.2 (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`) được thêm khi chuyển xác thực về nội bộ — xem [mục 2.7](#27-delta-v12--đưa-xác-thực-về-nội-bộ).
 
 ---
 
@@ -33,47 +33,50 @@ Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./da
 
 ## 2. Danh Sách 28 Bảng Canonical
 
-Canonical v1.2 (`schema.sql`) gồm 28 bảng thuộc năm nhóm. Cột **Trạng thái** cho biết mức độ sẵn sàng triển khai, không phải mức độ tồn tại của file SQL.
+Canonical v1.2 (`schema.sql`) gồm 28 bảng thuộc năm nhóm, đánh số liên tục 1–28. Cột **Trạng thái** dùng đúng thang của
+[API_REFERENCE §7](../docs/api/API_REFERENCE.md#7-trạng-thái-triển-khai): `Code-complete` nghĩa là backend đã đọc/ghi bảng này
+qua repository có transaction kèm audit/outbox và có unit test. **Chưa bảng nào đạt `Implemented`**, vì điều đó đòi hỏi
+integration test chạy trên PostgreSQL thật (`tests/Qlns.IntegrationTests` chưa tồn tại) và một EF Core migration có version.
 
 ### 2.1. Core HR — Organization & Profile
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 1 | **`departments`** | Danh mục phòng ban, có `parent_department_id` cho phân cấp nhiều tầng và `cost_center`. *Departments & Organizational Hierarchy* trong phạm vi nên quan hệ cha con, quy tắc chống vòng lặp và ràng buộc khi xóa được giữ; chỉ màn hình/endpoint *Organizational Chart* nằm ngoài phạm vi. | Proposed |
-| 2 | **`positions`** | Danh mục chức danh, vị trí công việc và cấp bậc. | Proposed |
-| 3 | **`employees`** | Bảng nhân viên trung tâm: định danh, liên hệ, phòng ban, chức vụ, `manager_id`, trạng thái công tác. `work_email` nullable tới khi kích hoạt; `source_application_id` unique là khóa idempotency của handoff. `status = 'suspended'` là **giá trị reserved, ngoài phạm vi** đợt này — không endpoint nào đặt được. | Proposed · target of REC-06.2 |
+| 1 | **`departments`** | Danh mục phòng ban, có `parent_department_id` cho phân cấp nhiều tầng và `cost_center`. *Departments & Organizational Hierarchy* trong phạm vi nên quan hệ cha con, quy tắc chống vòng lặp và ràng buộc khi xóa được giữ; chỉ màn hình/endpoint *Organizational Chart* nằm ngoài phạm vi. | Code-complete |
+| 2 | **`positions`** | Danh mục chức danh, vị trí công việc và cấp bậc. | Code-complete |
+| 3 | **`employees`** | Bảng nhân viên trung tâm: định danh, liên hệ, phòng ban, chức vụ, `manager_id`, trạng thái công tác. `work_email` nullable tới khi kích hoạt; `source_application_id` unique là khóa idempotency của handoff. `status = 'suspended'` là **giá trị reserved, ngoài phạm vi** đợt này — không endpoint nào đặt được. | Code-complete · target of REC-06.2 |
 
 ### 2.2. Core HR — Employee Lifecycle
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 4 | **`onboarding_tasks`** | Checklist tiếp nhận nhân sự mới, sinh từ template theo đơn vị/vị trí. | Proposed |
-| 5 | **`employee_events`** | Lịch sử biến động nhân sự với before/after JSON và luồng phê duyệt. `event_type` là `'suspension'` hoặc `'return_to_work'` là **giá trị reserved, ngoài phạm vi** đợt này — không endpoint nào đặt được. | Proposed |
-| 6 | **`employee_documents`** | Hồ sơ, bằng cấp, chứng chỉ; lưu `object_key` private kèm thời hạn lưu trữ. | Proposed |
-| 7 | **`probation_reviews`** | Đánh giá và xác nhận hết thử việc (`confirmed`/`extended`/`terminated`). | Proposed |
-| 8 | **`offboarding_cases`** | Hồ sơ thôi việc: loại chấm dứt, ngày làm việc cuối, người nhận bàn giao, chốt công nợ. | Proposed |
-| 9 | **`offboarding_tasks`** | Checklist bàn giao và thu hồi tài sản/tài khoản, có cờ task chặn. | Proposed |
+| 4 | **`onboarding_tasks`** | Checklist tiếp nhận nhân sự mới, sinh từ template theo đơn vị/vị trí. | Code-complete |
+| 5 | **`employee_events`** | Lịch sử biến động nhân sự với before/after JSON và luồng phê duyệt. `event_type` là `'suspension'` hoặc `'return_to_work'` là **giá trị reserved, ngoài phạm vi** đợt này — không endpoint nào đặt được. | Code-complete |
+| 6 | **`employee_documents`** | Hồ sơ, bằng cấp, chứng chỉ; lưu `object_key` private kèm thời hạn lưu trữ. | Code-complete |
+| 7 | **`probation_reviews`** | Đánh giá và xác nhận hết thử việc (`confirmed`/`extended`/`terminated`). | Code-complete |
+| 8 | **`offboarding_cases`** | Hồ sơ thôi việc: loại chấm dứt, ngày làm việc cuối, người nhận bàn giao, chốt công nợ. | Code-complete |
+| 9 | **`offboarding_tasks`** | Checklist bàn giao và thu hồi tài sản/tài khoản, có cờ task chặn. | Code-complete |
 
 ### 2.3. Core HR — Contracts
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 10 | **`contracts`** | Hợp đồng lao động: loại, mức lương và `currency` (v1.1), ngày hiệu lực/hết hạn, trạng thái, bản ký số hóa. | Implemented |
-| 11 | **`contract_addenda`** | Phụ lục hợp đồng với before/after terms và lịch sử phê duyệt. `version` là phiên bản đồng thời (ETag) từ v1.1; phụ lục được định danh bằng `addendum_number`. | Implemented |
+| 10 | **`contracts`** | Hợp đồng lao động: loại, mức lương và `currency` (v1.1), ngày hiệu lực/hết hạn, trạng thái, bản ký số hóa. | Code-complete |
+| 11 | **`contract_addenda`** | Phụ lục hợp đồng với before/after terms và lịch sử phê duyệt. `version` là phiên bản đồng thời (ETag) từ v1.1; phụ lục được định danh bằng `addendum_number`. | Code-complete |
 
 ### 2.4. Recruitment (ATS)
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 12 | **`job_postings`** | Đề xuất và tin tuyển dụng, ngân sách lương, số lượng cần tuyển. | Proposed |
-| 13 | **`candidates`** | Hồ sơ ứng viên, email/điện thoại đã chuẩn hóa để chống trùng, mốc đồng ý xử lý dữ liệu. | Proposed |
-| 14 | **`resumes`** | Tệp CV kèm vòng đời intake (`intake_id`, `intake_status`), trạng thái quét mã độc, dữ liệu bóc tách và độ tin cậy. Tạo trước khi có `candidates`. | Proposed |
-| 15 | **`applications`** | Đơn ứng tuyển liên kết ứng viên với tin tuyển dụng và giai đoạn pipeline. | Proposed |
-| 16 | **`application_stage_events`** | Lịch sử chuyển giai đoạn, chống ghi đè bằng `application_version`. | Proposed |
-| 17 | **`interviews`** | Lịch phỏng vấn kèm múi giờ, người phỏng vấn chính (`interviewer_user_id`) và trạng thái. | Implemented |
-| 17b | **`interview_panelists`** *(v1.1)* | Hội đồng phỏng vấn — một dòng cho mỗi `interviewerUserIds` của `InterviewWrite`; `interviewer_user_id` của `interviews` luôn có mặt trong bảng này. | Implemented |
-| 18 | **`evaluations`** | Scorecard chấm điểm với thang 0–5 bước 0.5 và cơ chế unlock có lý do. | Proposed |
-| 19 | **`offers`** | Thư mời nhận việc; index partial đảm bảo mỗi đơn chỉ có một offer đang mở. Cột `currency` (v1.1) khớp `OfferWrite.currency`. | Implemented |
+| 12 | **`job_postings`** | Đề xuất và tin tuyển dụng, ngân sách lương, số lượng cần tuyển. | Code-complete |
+| 13 | **`candidates`** | Hồ sơ ứng viên, email/điện thoại đã chuẩn hóa để chống trùng, mốc đồng ý xử lý dữ liệu. | Code-complete |
+| 14 | **`resumes`** | Tệp CV kèm vòng đời intake (`intake_id`, `intake_status`), trạng thái quét mã độc, dữ liệu bóc tách và độ tin cậy. Tạo trước khi có `candidates`. | Code-complete |
+| 15 | **`applications`** | Đơn ứng tuyển liên kết ứng viên với tin tuyển dụng và giai đoạn pipeline. | Code-complete |
+| 16 | **`application_stage_events`** | Lịch sử chuyển giai đoạn, chống ghi đè bằng `application_version`. | Code-complete |
+| 17 | **`interviews`** | Lịch phỏng vấn kèm múi giờ, người phỏng vấn chính (`interviewer_user_id`) và trạng thái. | Code-complete |
+| 18 | **`interview_panelists`** *(v1.1)* | Hội đồng phỏng vấn — một dòng cho mỗi `interviewerUserIds` của `InterviewWrite`; `interviewer_user_id` của `interviews` luôn có mặt trong bảng này. | Code-complete |
+| 19 | **`evaluations`** | Scorecard chấm điểm với thang 0–5 bước 0.5 và cơ chế unlock có lý do. | Code-complete |
+| 20 | **`offers`** | Thư mời nhận việc; index partial đảm bảo mỗi đơn chỉ có một offer đang mở. Cột `currency` (v1.1) khớp `OfferWrite.currency`. | Code-complete |
 
 ### 2.5. Platform — định danh, phân quyền, audit, outbox
 
@@ -81,14 +84,14 @@ Tám bảng này **thuộc canonical schema**. Sáu bảng đầu mang dữ li�
 
 | STT | Tên Bảng | Chức Năng Chính | Trạng thái |
 | :---: | :--- | :--- | :--- |
-| 20 | **`users`** | Dữ liệu định danh của ứng dụng. `external_subject` mang tiền tố `local|` cho tài khoản do QLNS cấp, để dành không gian tên riêng nếu sau này federation với IdP ngoài. Quản trị qua `/api/v1/admin/users`. | Proposed |
-| 21 | **`user_credentials`** | Mật khẩu băm PBKDF2-HMAC-SHA512 kèm tham số trong chính chuỗi hash, cờ buộc đổi mật khẩu, bộ đếm sai và mốc hết khoá. Một dòng cho mỗi tài khoản đăng nhập được bằng mật khẩu. | Proposed |
-| 22 | **`user_roles`** | Gán vai trò kèm data scope (`self`/`department`/`organization`) — nguồn cho việc kiểm tra quyền phía server, bắt buộc trên mọi request. Quản trị qua `PUT /api/v1/admin/users/{userId}/roles`. | Proposed |
-| 23 | **`roles`** | Danh mục vai trò. Dữ liệu tham chiếu, nạp từ `seed_roles.sql`; `user_roles.role_code` tham chiếu tới đây. | Proposed |
-| 24 | **`role_permissions`** | Ma trận vai trò → permission. Đăng nhập resolve permission bằng `user_roles ⋈ role_permissions`, nên đổi ma trận không cần build lại code. Chỉ đọc qua API. | Proposed |
-| 25 | **`refresh_tokens`** | Refresh token dùng một lần: chỉ lưu bản băm SHA-256, ghi nhận token kế nhiệm và lý do thu hồi. Trình lại token đã thu hồi ⇒ thu hồi cả họ token của tài khoản. | Proposed |
-| 26 | **`audit_logs`** | Nhật ký hành động với before/after và `correlation_id`. **Cơ chế bắt buộc**: ghi cùng transaction với thay đổi nghiệp vụ — kể cả lần đăng nhập thất bại (`result = 'rejected'`). Không có endpoint tra cứu trong đợt này. | Proposed |
-| 27 | **`outbox_messages`** | Transactional outbox cho email và lịch. **Cơ chế bắt buộc**: ghi cùng transaction nghiệp vụ. Không có endpoint xem/retry delivery trong đợt này. | Proposed |
+| 21 | **`users`** | Dữ liệu định danh của ứng dụng. `external_subject` mang tiền tố `local|` cho tài khoản do QLNS cấp, để dành không gian tên riêng nếu sau này federation với IdP ngoài. Quản trị qua `/api/v1/admin/users`. | Code-complete |
+| 22 | **`user_credentials`** | Mật khẩu băm PBKDF2-HMAC-SHA512 kèm tham số trong chính chuỗi hash, cờ buộc đổi mật khẩu, bộ đếm sai và mốc hết khoá. Một dòng cho mỗi tài khoản đăng nhập được bằng mật khẩu. | Code-complete |
+| 23 | **`user_roles`** | Gán vai trò kèm data scope (`self`/`department`/`organization`) — nguồn cho việc kiểm tra quyền phía server, bắt buộc trên mọi request. Quản trị qua `PUT /api/v1/admin/users/{userId}/roles`. | Code-complete |
+| 24 | **`roles`** | Danh mục vai trò. Dữ liệu tham chiếu, nạp từ `seed_roles.sql`; `user_roles.role_code` tham chiếu tới đây. | Code-complete |
+| 25 | **`role_permissions`** | Ma trận vai trò → permission. Đăng nhập resolve permission bằng `user_roles ⋈ role_permissions`, nên đổi ma trận không cần build lại code. Chỉ đọc qua API. | Code-complete |
+| 26 | **`refresh_tokens`** | Refresh token dùng một lần: chỉ lưu bản băm SHA-256, ghi nhận token kế nhiệm và lý do thu hồi. Trình lại token đã thu hồi ⇒ thu hồi cả họ token của tài khoản. | Code-complete |
+| 27 | **`audit_logs`** | Nhật ký hành động với before/after và `correlation_id`. **Cơ chế bắt buộc**: ghi cùng transaction với thay đổi nghiệp vụ — kể cả lần đăng nhập thất bại (`result = 'rejected'`). Không có endpoint tra cứu trong đợt này. | Code-complete |
+| 28 | **`outbox_messages`** | Transactional outbox cho email và lịch. **Cơ chế bắt buộc**: ghi cùng transaction nghiệp vụ. Không có endpoint xem/retry delivery trong đợt này. | Code-complete |
 
 ### 2.6. Delta v1.1 — phát hiện khi triển khai
 

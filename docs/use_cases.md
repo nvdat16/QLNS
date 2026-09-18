@@ -364,7 +364,7 @@ flowchart LR
 | HR Manager | Đăng nhập, đổi mật khẩu của mình | Phê duyệt requisition/Offer | Phê duyệt biến động, quyết định hết thử việc, phê duyệt case thôi việc, quản lý phòng ban/chức danh | Phê duyệt hợp đồng/phụ lục |
 | Super Admin | **Cấp/thu hồi tài khoản, vai trò và phạm vi dữ liệu, đặt lại mật khẩu** | — | Vô hiệu hoá tài khoản đúng ngày làm việc cuối; không mặc định xem dữ liệu HR | — |
 
-Ma trận có bốn nhóm chức năng: ba nhóm nghiệp vụ trong phạm vi, cộng nhóm định danh được bổ sung theo [ADR-011](architecture.md#9-architecture-decisions-adr-index). Cột báo cáo vẫn không có (trụ cột Reports & Analytics ngoài phạm vi), và vai trò **Auditor** không có use case nào trong đợt này — nhật ký kiểm toán vẫn được ghi đầy đủ, nhưng không có màn hình hay API tra cứu.
+Ma trận có bốn nhóm chức năng: ba nhóm nghiệp vụ trong phạm vi, cộng nhóm định danh được bổ sung theo [ADR-011](adr/011-in-house-identity.md). Cột báo cáo vẫn không có (trụ cột Reports & Analytics ngoài phạm vi), và vai trò **Auditor** không có use case nào trong đợt này — nhật ký kiểm toán vẫn được ghi đầy đủ, nhưng không có màn hình hay API tra cứu.
 
 Chấm công / nghỉ phép không còn là một cột ở đây vì nhóm chức năng đó nằm ngoài phạm vi triển khai; use case của nó được giữ tại [deferred/attendance_leave/use_cases_att.md](deferred/attendance_leave/use_cases_att.md).
 

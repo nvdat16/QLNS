@@ -639,7 +639,7 @@ classDiagram
 
 `User` là **actor** của hệ thống, khác với `Employee` là **hồ sơ nhân sự**. Quan hệ 0..1–0..1: ứng viên chưa có user, nhân viên có thể chưa được cấp tài khoản, và interviewer có thể là user không phải employee.
 
-Định danh (`User`, `UserCredential`, `UserRole`, `Role`, `RolePermission`, `RefreshToken`) là **aggregate do hệ thống này sở hữu** kể từ [ADR-011](architecture.md#9-architecture-decisions-adr-index): QLNS tự cấp tài khoản, tự phát hành và thu hồi phiên. Audit (`AuditLog`, `OutboxMessage`) vẫn là cơ chế xuyên suốt bắt buộc và **không** có API tra cứu hay retry: chúng chỉ được ghi trong cùng transaction với thay đổi nghiệp vụ và được Worker đọc.
+Định danh (`User`, `UserCredential`, `UserRole`, `Role`, `RolePermission`, `RefreshToken`) là **aggregate do hệ thống này sở hữu** kể từ [ADR-011](adr/011-in-house-identity.md): QLNS tự cấp tài khoản, tự phát hành và thu hồi phiên. Audit (`AuditLog`, `OutboxMessage`) vẫn là cơ chế xuyên suốt bắt buộc và **không** có API tra cứu hay retry: chúng chỉ được ghi trong cùng transaction với thay đổi nghiệp vụ và được Worker đọc.
 
 ```mermaid
 classDiagram
@@ -1034,7 +1034,7 @@ classDiagram
 | Authorization policy `RecruitmentRead` / `RecruitmentAdvance` | `Qlns.Api` | **Proposed** — được tham chiếu bằng `[Authorize]` nhưng chưa có implementation |
 
 > [!IMPORTANT]
-> `GetDataScope()` đọc claim `data_scope` và `department_id` từ token — những claim do `JwtAccessTokenIssuer` phát hành khi đăng nhập, dựng từ `user_roles` của chính người dùng ([ADR-011](architecture.md#9-architecture-decisions-adr-index)). Phần chưa được kiểm chứng trên PostgreSQL thật là các truy vấn áp scope trong SQL — xem [risk register](architecture.md#11-risks-and-technical-debt).
+> `GetDataScope()` đọc claim `data_scope` và `department_id` từ token — những claim do `JwtAccessTokenIssuer` phát hành khi đăng nhập, dựng từ `user_roles` của chính người dùng ([ADR-011](adr/011-in-house-identity.md)). Phần chưa được kiểm chứng trên PostgreSQL thật là các truy vấn áp scope trong SQL — xem [risk register](architecture.md#11-risks-and-technical-debt).
 
 ---
 

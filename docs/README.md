@@ -17,6 +17,7 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 |---|---|---|
 | [INVEST User Stories](user_stories.md) | 28 user story theo INVEST cho hai phân hệ nghiệp vụ và phân hệ định danh, có acceptance criteria Gherkin và traceability | Proposed · Authoritative for delivery |
 | [Deferred — Attendance & Leave](deferred/attendance_leave/README.md) | Toàn bộ thiết kế của phân hệ đã tách khỏi phạm vi: SRS, 13 story, use case, 3 sequence, DDL 13 bảng, OpenAPI fragment, Open Decisions | **Out of scope · Parked** |
+| [Architecture Decision Records](adr/README.md) | 11 ADR, mỗi quyết định một file: bối cảnh, phương án đã cân nhắc, hệ quả và trạng thái | Mixed — 6 Accepted · 5 Proposed |
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules | Proposed · Authoritative |
 | [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ trong phạm vi: Core HR và Recruitment | Proposed · Supporting |
@@ -50,7 +51,7 @@ Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
 | Audit & outbox (crosscutting) | `audit_logs` và `outbox_messages` là **cơ chế bắt buộc** của mọi command, ghi cùng transaction nghiệp vụ; đã có trong canonical schema | persistence và outbox dispatcher runtime | migration, email/calendar provider |
 | Deployment / Operations | topology mục tiêu trong tài liệu kiến trúc; hai probe `/health/live`, `/health/ready` trong hợp đồng (tag `Operations`, thuộc deployment view chứ không phải chức năng nghiệp vụ) | container image, Docker Compose, CI/CD, monitoring, backup runtime | ADR hạ tầng |
 
-**Quản trị tài khoản và vai trò thuộc phạm vi** (phân hệ `[ADM]`, [ADR-011](architecture.md#9-architecture-decisions-adr-index)): QLNS tự phát hành và thu hồi phiên, không dùng Identity Provider bên ngoài. Vẫn không có API cho audit log, delivery hay integration: cấu hình integration/notification/approval nằm trong `appsettings` (không UI, không API). Yêu cầu kiểm tra permission và data scope phía server trên mọi request không đổi — quality goal Q1 giữ nguyên.
+**Quản trị tài khoản và vai trò thuộc phạm vi** (phân hệ `[ADM]`, [ADR-011](adr/011-in-house-identity.md)): QLNS tự phát hành và thu hồi phiên, không dùng Identity Provider bên ngoài. Vẫn không có API cho audit log, delivery hay integration: cấu hình integration/notification/approval nằm trong `appsettings` (không UI, không API). Yêu cầu kiểm tra permission và data scope phía server trên mọi request không đổi — quality goal Q1 giữ nguyên.
 
 Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác mô phỏng. Chúng không phải frontend application và không được dùng làm bằng chứng rằng business rule đã hoạt động. Một số prototype (ví dụ Workforce Dashboard) mô tả chức năng **ngoài phạm vi** và chỉ được giữ làm tham chiếu thiết kế.
 
@@ -71,7 +72,7 @@ Các file HTML trong `uiux/` sử dụng dữ liệu minh họa và tương tác
 2. [Constraints](architecture.md#2-constraints)
 3. [C4 building blocks](architecture.md#5-building-block-view)
 4. [Class diagrams](class_diagrams.md)
-5. [Architecture decisions](architecture.md#9-architecture-decisions-adr-index)
+5. [Architecture decisions](adr/README.md)
 6. [Risks and technical debt](architecture.md#11-risks-and-technical-debt)
 
 ### Developer starting implementation
@@ -139,14 +140,14 @@ Performance Management và Compensation & Benefits (gồm payroll) chưa thuộc
 Trước khi bắt đầu frontend/backend, tối thiểu cần:
 
 - Chấp thuận stack frontend/backend và phiên bản bằng ADR.
-- Chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và chính sách vòng đời phiên (access token 30 phút, refresh token 14 ngày). Authentication flow đã chốt ở [ADR-011](architecture.md#9-architecture-decisions-adr-index); ma trận permission và data scope nằm ở `database/seed_roles.sql`.
+- Chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và chính sách vòng đời phiên (access token 30 phút, refresh token 14 ngày). Authentication flow đã chốt ở [ADR-011](adr/011-in-house-identity.md); ma trận permission và data scope nằm ở `database/seed_roles.sql`.
 - Review canonical schema **28 bảng (v1.2)** và sinh EF Core migration đầu tiên có version.
 - Chốt API convention, error model, pagination và concurrency strategy. ✅ đã có trong `docs/api/README.md`.
 - Chọn vertical slice đầu tiên cùng acceptance test end-to-end.
 - Thiết lập architecture, security, migration và contract gates trong CI.
 - Tạo integration test project chạy trên PostgreSQL thật — bắt buộc, vì các invariant quan trọng của Core HR (partial unique index, conditional update) không thể verify bằng mock.
 
-Các open decision đầy đủ được theo dõi tại [Architecture Decisions](architecture.md#9-architecture-decisions-adr-index).
+Các open decision đầy đủ được theo dõi tại [ADR index](adr/README.md); mỗi quyết định có một file riêng trong [`docs/adr/`](adr/README.md).
 
 ---
 

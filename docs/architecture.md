@@ -89,7 +89,7 @@ flowchart LR
     style storage fill:#999,color:#fff
 ```
 
-Không còn Identity Provider bên ngoài trong context: QLNS tự phát hành, xác thực và thu hồi phiên của mình (phân hệ `[ADM]`). Đây là thay đổi so với baseline đầu tiên — lý do và hệ quả ở [ADR-011](#9-architecture-decisions-adr-index).
+Không còn Identity Provider bên ngoài trong context: QLNS tự phát hành, xác thực và thu hồi phiên của mình (phân hệ `[ADM]`). Đây là thay đổi so với baseline đầu tiên — lý do và hệ quả ở [ADR-011](adr/011-in-house-identity.md).
 
 
 ### 3.2 External interfaces
@@ -426,7 +426,7 @@ Hai module nghiệp vụ được chọn triển khai trước — **Core HR** (
 | Core HR — Lifecycle | onboarding, events, documents, probation, offboarding | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | UI prototype (onboarding) + canonical schema + OpenAPI + story có AC |
 | Core HR — Contracts | contract lifecycle, expiry alert, addendum | `contracts`, `contract_addenda` | UI prototype + canonical schema + OpenAPI + story có AC |
 | Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + story có AC + backend code-complete (REC-01 … REC-06) |
-| Identity & Access (ADM) | tài khoản, thông tin đăng nhập, vai trò/data scope, luân chuyển refresh token — **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](#9-architecture-decisions-adr-index)) | `users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens` | canonical schema v1.2 + OpenAPI + story có AC + backend code-complete (ADM-01, ADM-02) |
+| Identity & Access (ADM) | tài khoản, thông tin đăng nhập, vai trò/data scope, luân chuyển refresh token — **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](adr/011-in-house-identity.md)) | `users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens` | canonical schema v1.2 + OpenAPI + story có AC + backend code-complete (ADM-01, ADM-02) |
 | Audit & Outbox | audit trail và delivery state — **cơ chế xuyên suốt bắt buộc của mọi command, không có API quản trị trong đợt này** | `audit_logs`, `outbox_messages` | canonical schema v1.2 + ghi cùng transaction nghiệp vụ trong mọi repository |
 
 
@@ -663,29 +663,36 @@ Docker Compose ba service có thể dùng cho local development sau này, nhưng
 
 ## 9. Architecture Decisions (ADR index)
 
+Mỗi ADR là một file riêng tại [`docs/adr/`](adr/README.md); bảng dưới đây chỉ là chỉ mục. Quy ước trạng thái và danh sách
+ADR mà code đã phụ thuộc trong khi vẫn còn `Proposed` nằm ở [`docs/adr/README.md`](adr/README.md).
+
 | ADR | Decision | Status |
 |---|---|---|
-| ADR-001 | Kiến trúc 3-tier React – ASP.NET Core API – PostgreSQL và backend 3-layer | Accepted 2026-09-15 |
-| ADR-002 | Backend modular monolith trước microservices | Proposed |
-| ADR-003 | Backend thực thi authorization và business rules | Proposed |
-| ADR-004 | REST/JSON, DTO và contract-first OpenAPI 3.0.3 | Accepted 2026-09-15 |
-| ADR-005 | PostgreSQL system of record và versioned migration | Proposed |
-| ADR-006 | Explicit commands và state transitions | Proposed |
-| ADR-007 | Ports/adapters, outbox và reliable delivery | Proposed |
-| ADR-008 | Feature-based React frontend và shared API client | Accepted 2026-09-15 |
-| ADR-009 | .NET 10, ASP.NET Core, EF Core và PostgreSQL | Accepted 2026-09-15 |
-| ADR-010 | Thu hẹp phạm vi giao hàng về các chức năng lá in đậm dưới Recruitment và Core HR theo `topdown-approach.png`; System Administration, Reports & Analytics, Performance, C&B, Attendance & Leave cùng bốn chức năng không in đậm (Headcount & Budget Validation, Recruitment Channel Management, Organizational Chart, Suspension & Return to Work) ra ngoài phạm vi, trong khi authorization, audit và outbox vẫn là cơ chế bắt buộc | Accepted 2026-09-17 |
-| ADR-011 | Xác thực và quản trị tài khoản làm **nội bộ** thay vì tích hợp Identity Provider bên ngoài: mật khẩu băm PBKDF2-HMAC-SHA512 trong `user_credentials`, access token JWT HS256 do chính API phát hành, refresh token dùng một lần lưu dạng băm trong `refresh_tokens`, ma trận vai trò → permission là dữ liệu tham chiếu trong `roles`/`role_permissions` | Accepted 2026-09-18 |
+| [ADR-001](adr/001-three-tier-three-layer.md) | Kiến trúc 3-tier React – ASP.NET Core API – PostgreSQL và backend 3-layer | Accepted 2026-09-15 |
+| [ADR-002](adr/002-modular-monolith.md) | Backend modular monolith trước microservices | Proposed |
+| [ADR-003](adr/003-backend-enforces-authorization.md) | Backend thực thi authorization và business rules | Proposed |
+| [ADR-004](adr/004-contract-first-openapi.md) | REST/JSON, DTO và contract-first OpenAPI 3.0.3 | Accepted 2026-09-15 |
+| [ADR-005](adr/005-postgresql-system-of-record.md) | PostgreSQL system of record và versioned migration | Proposed |
+| [ADR-006](adr/006-explicit-commands-and-state-machines.md) | Explicit commands và state transitions | Proposed |
+| [ADR-007](adr/007-ports-adapters-and-outbox.md) | Ports/adapters, outbox và reliable delivery | Proposed |
+| [ADR-008](adr/008-feature-based-react-frontend.md) | Feature-based React frontend và shared API client | Accepted 2026-09-15 |
+| [ADR-009](adr/009-dotnet-10-efcore-postgresql.md) | .NET 10, ASP.NET Core, EF Core và PostgreSQL | Accepted 2026-09-15 |
+| [ADR-010](adr/010-delivery-scope-two-pillars.md) | Thu hẹp phạm vi giao hàng về các chức năng lá in đậm dưới Recruitment và Core HR theo `topdown-approach.png` | Accepted 2026-09-17 |
+| [ADR-011](adr/011-in-house-identity.md) | Xác thực và quản trị tài khoản làm **nội bộ** thay vì tích hợp Identity Provider bên ngoài | Accepted 2026-09-18 |
 
-**ADR-011 — chi tiết.** *Bối cảnh:* baseline đầu tiên để trống provider (§3.2, "chưa chọn provider"), nên hệ thống có đủ authorization nhưng **không có đường đăng nhập nào** ngoài endpoint `/dev/token` chỉ chạy ở môi trường Development. *Quyết định:* đưa hai chức năng lá Account Management và Roles/Permissions của trụ cột System Administration vào phạm vi và tự phát hành phiên. *Phương án đã cân nhắc:* (a) tích hợp Keycloak/Entra ID — loại bỏ vì cần thêm một thành phần vận hành và một quyết định mua sắm chưa có; (b) chỉ làm đăng nhập, để việc cấp tài khoản chạy bằng SQL tay — loại bỏ vì không có vết audit cho hành vi nâng quyền. *Hệ quả:* (1) hệ thống nay tự chịu trách nhiệm lưu mật khẩu — rủi ro được giảm bằng PBKDF2 210.000 vòng, khoá tạm sau 5 lần sai và audit mọi lần đăng nhập; (2) access token stateless **không thu hồi được**, nên vòng đời 30 phút chính là giới hạn trên của việc thu hồi quyền, và refresh token là tạo tác thu hồi được; (3) khoá ký `Authentication:Jwt:SigningKey` trở thành secret hạng nhất của hệ thống; (4) claim trong token giữ **nguyên** hình dạng cũ (`qlns_user_id`, `qlns_employee_id`, `data_scope`, `department_id`, `permission`) nên không module nghiệp vụ nào phải sửa — nếu sau này federation với IdP ngoài, chỉ cần provider phát hành đúng bộ claim đó và thay cụm `/api/v1/auth/*`, phần authorization không đổi. *Chưa làm:* MFA, quên mật khẩu qua email, rate limit theo IP (thuộc reverse proxy).
+**Nợ quản trị.** Năm ADR còn `Proposed` — 002, 003, 005, 006, 007 — đã được code hiện thực hóa đầy đủ. Nếu một trong số
+chúng bị bác bỏ thì phần code tương ứng phải viết lại, không phải chỉnh cấu hình. Chi tiết ở [`docs/adr/README.md`](adr/README.md#nợ-quản-trị-đang-mở).
 
-ADR-010 là quyết định phạm vi sản phẩm, được ghi nhận từ bản đồ phân rã chức năng `topdown-approach.png` cập nhật ngày 2026-09-17; **owner và alternatives/consequences đầy đủ chờ Project Owner xác nhận** trước khi ADR này được coi là hoàn chỉnh theo quy ước ở cuối mục này. Hệ quả kiến trúc đã được áp dụng ở [mục 2 của README](../README.md#2-delivery-scope--seven-pillars-two-selected), §5.2–§5.6, §10 và §12.
+**Open decisions:** object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency. (Identity
+Provider đã được chốt: xác thực và quản trị tài khoản làm nội bộ — [ADR-011](adr/011-in-house-identity.md).) EF Core
+migration là công cụ migration mục tiêu nhưng migration đầu tiên chỉ được sinh sau khi cài .NET 10 SDK và review
+model/schema drift.
 
-**Open decisions:** object storage; worker/queue; hosting platform; SLA; RPO/RTO; retention và data residency. (Identity Provider đã được chốt: xác thực và quản trị tài khoản làm nội bộ — [ADR-011](#9-architecture-decisions-adr-index).) EF Core migration là công cụ migration mục tiêu nhưng migration đầu tiên chỉ được sinh sau khi cài .NET 10 SDK và review model/schema drift.
-
-Không ADR nào chuyển sang Accepted chỉ vì công nghệ xuất hiện trong prototype, sơ đồ hoặc file DDL. ADR Accepted phải có owner, ngày phê duyệt, alternatives và consequences.
+Không ADR nào chuyển sang Accepted chỉ vì công nghệ xuất hiện trong prototype, sơ đồ, file DDL hay source code. ADR
+Accepted phải có owner, ngày phê duyệt, alternatives và consequences.
 
 ---
+
 
 ## 10. Quality Requirements (stimulus → response → measure)
 

@@ -2,7 +2,7 @@
 
 > **Trạng thái:** Proposed runtime design. Các sequence tuân theo 3-tier và 3-layer: React Web → ASP.NET Core Presentation → Business Logic → Data Access/EF Core → PostgreSQL.
 >
-> **Phạm vi:** các sequence dưới đây mô tả những chức năng lá được in đậm dưới hai trụ cột **Recruitment** và **Core HR** trên bản đồ `topdown-approach.png` (xem mục 2 của [README](../README.md)), cộng luồng đăng nhập của phân hệ định danh `[ADM]` ([ADR-011](architecture.md#9-architecture-decisions-adr-index)). Không có sequence cho kiểm tra định biên/ngân sách khi phê duyệt requisition, quản lý nhiều kênh đăng tin, sơ đồ cây tổ chức, tạm hoãn/trở lại làm việc, báo cáo & phân tích hay cấu hình hệ thống — tất cả đều ngoài phạm vi.
+> **Phạm vi:** các sequence dưới đây mô tả những chức năng lá được in đậm dưới hai trụ cột **Recruitment** và **Core HR** trên bản đồ `topdown-approach.png` (xem mục 2 của [README](../README.md)), cộng luồng đăng nhập của phân hệ định danh `[ADM]` ([ADR-011](adr/011-in-house-identity.md)). Không có sequence cho kiểm tra định biên/ngân sách khi phê duyệt requisition, quản lý nhiều kênh đăng tin, sơ đồ cây tổ chức, tạm hoãn/trở lại làm việc, báo cáo & phân tích hay cấu hình hệ thống — tất cả đều ngoài phạm vi.
 >
 > Ba sequence của phân hệ Attendance & Leave (đơn nghỉ, chấm công, khóa kỳ công) đã được tách ra ngoài phạm vi và giữ tại [deferred/attendance_leave/sequence_diagrams_att.md](deferred/attendance_leave/sequence_diagrams_att.md).
 

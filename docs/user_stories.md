@@ -21,7 +21,7 @@ Những phần **không** thuộc phạm vi và vì vậy không có story trong
 - **Organizational Chart** — không có màn hình sơ đồ cây tổ chức. Phân cấp phòng ban (`parent_department_id`), quan hệ cha con và ràng buộc xóa phòng ban vẫn trong phạm vi (xem `EMP-02.1`); chỉ phần trình bày dạng cây bị loại.
 - **Suspension & Return to Work** — không có nghiệp vụ tạm hoãn và trở lại làm việc. Trạng thái `suspended` cùng các `employee_events.event_type` tương ứng được giữ trong schema ở dạng *reserved*, không endpoint nào đặt được trong đợt này.
 - **Reports & Analytics, Performance Management, Compensation & Benefits, Attendance & Leave Management** — toàn bộ các trụ cột này ngoài phạm vi.
-- **System Administration** — chỉ hai chức năng lá Account Management và Roles/Permissions & Data Access Scope vào phạm vi, dưới mã `ADM-*` (mục 5 của tài liệu này và [ADR-011](architecture.md#9-architecture-decisions-adr-index)). Cấu hình workflow/thông báo/integration và màn hình tra cứu audit trail vẫn ngoài phạm vi; ghi audit log và transactional outbox vẫn là yêu cầu xuyên suốt của mọi story.
+- **System Administration** — chỉ hai chức năng lá Account Management và Roles/Permissions & Data Access Scope vào phạm vi, dưới mã `ADM-*` (mục 5 của tài liệu này và [ADR-011](adr/011-in-house-identity.md)). Cấu hình workflow/thông báo/integration và màn hình tra cứu audit trail vẫn ngoài phạm vi; ghi audit log và transactional outbox vẫn là yêu cầu xuyên suốt của mọi story.
 
 ---
 
@@ -648,7 +648,7 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
 
 ## 5. Phân Hệ Định Danh & Phân Quyền (Identity & Access)
 
-> Phân hệ này được bổ sung khi quyết định **không** dùng Identity Provider bên ngoài ([ADR-011](architecture.md#9-architecture-decisions-adr-index)). Nó là tiền đề của mọi story còn lại: không có actor đã xác thực thì không story nào kiểm tra được permission và data scope.
+> Phân hệ này được bổ sung khi quyết định **không** dùng Identity Provider bên ngoài ([ADR-011](adr/011-in-house-identity.md)). Nó là tiền đề của mọi story còn lại: không có actor đã xác thực thì không story nào kiểm tra được permission và data scope.
 
 ### ADM-01: Đăng nhập & Quản lý Phiên
 
@@ -777,7 +777,7 @@ Mỗi User Story trong tài liệu này được cấu trúc nhất quán gồm:
     - **Given** hai Super Admin cùng mở một tài khoản ở `version = 5`,
     - **When** người thứ nhất lưu thành công và người thứ hai lưu với `If-Match: "5"`,
     - **Then** yêu cầu của người thứ hai trả `409` và không ghi gì — kể cả khi thao tác là thay vai trò, vì chốt đồng thời là `users.version`.
-- **Ràng buộc kỹ thuật**: Mọi lệnh ghi dùng `ExecuteUpdate … WHERE id = @id AND version = @expected`, kèm audit trong cùng transaction. Access token đã phát hành **không thu hồi được**; vòng đời 30 phút là giới hạn trên của việc thu hồi quyền và được ghi rõ trong [ADR-011](architecture.md#9-architecture-decisions-adr-index).
+- **Ràng buộc kỹ thuật**: Mọi lệnh ghi dùng `ExecuteUpdate … WHERE id = @id AND version = @expected`, kèm audit trong cùng transaction. Access token đã phát hành **không thu hồi được**; vòng đời 30 phút là giới hạn trên của việc thu hồi quyền và được ghi rõ trong [ADR-011](adr/011-in-house-identity.md).
 
 ---
 
@@ -871,5 +871,5 @@ Phạm vi dữ liệu được kiểm tra phía server theo `user_roles.data_sco
 | Nhóm story | Điều kiện bắt buộc |
 | :--- | :--- |
 | `REC-*`, `EMP-01`…`EMP-05`, `CON-*` | `ADM-01`/`ADM-02` phải có trước, vì mọi story khác đều cần một actor đã xác thực kèm permission và data scope; sinh EF Core migration đầu tiên từ canonical schema. |
-| `ADM-01`, `ADM-02` | Chốt chính sách mật khẩu và vòng đời phiên với Security (đã ghi ở [ADR-011](architecture.md#9-architecture-decisions-adr-index)); chốt nơi quản lý secret `Authentication:Jwt:SigningKey`; đặt rate limit theo IP ở reverse proxy trước `POST /auth/login`. |
+| `ADM-01`, `ADM-02` | Chốt chính sách mật khẩu và vòng đời phiên với Security (đã ghi ở [ADR-011](adr/011-in-house-identity.md)); chốt nơi quản lý secret `Authentication:Jwt:SigningKey`; đặt rate limit theo IP ở reverse proxy trước `POST /auth/login`. |
 | `EMP-06`, `EMP-07` | Chốt template checklist offboarding theo đơn vị; chốt danh mục khoản thanh toán khi chấm dứt — việc tính và chi trả thuộc Compensation & Benefits nên nằm ngoài phạm vi, phần trong phạm vi chỉ là trạng thái chốt công nợ trên hồ sơ thôi việc. |

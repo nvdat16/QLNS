@@ -24,7 +24,7 @@
 | **Platform (audit, outbox)** | `audit_logs`, `outbox_messages` | 2 |
 | **Tổng** | | **28** |
 
-Sáu bảng Identity & Access là **aggregate do hệ thống này sở hữu**: `users` + `user_credentials` mang danh tính và mật khẩu, `user_roles` + `roles` + `role_permissions` mang phân quyền và data scope, `refresh_tokens` mang phiên dài hạn thu hồi được. Chúng **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](../docs/architecture.md#9-architecture-decisions-adr-index)).
+Sáu bảng Identity & Access là **aggregate do hệ thống này sở hữu**: `users` + `user_credentials` mang danh tính và mật khẩu, `user_roles` + `roles` + `role_permissions` mang phân quyền và data scope, `refresh_tokens` mang phiên dài hạn thu hồi được. Chúng **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](../docs/adr/011-in-house-identity.md)).
 
 Hai bảng Platform còn lại là **cơ chế xuyên suốt bắt buộc**, ghi cùng transaction với thay đổi nghiệp vụ, và **không** có API: không endpoint tra cứu audit log, không endpoint xem và retry delivery.
 
@@ -769,6 +769,6 @@ Tám bảng này không thuộc một phân hệ nghiệp vụ nào nhưng mọi
 ## 6. Điều kiện trước khi sinh migration
 
 1. `employees.work_email` là **nullable** với partial unique index `ux_employees_work_email` (case-insensitive): nhân viên do offer-acceptance handoff tạo ra chưa có email công vụ; `ck_employee_active_requires_work_email` chặn chuyển `active` khi còn trống. `employee_code` lấy từ sequence `employee_code_seq`. §2.3 phía trên là bản mô tả lịch sử và vẫn ghi `email NOT NULL` — canonical thắng.
-2. ~~Chốt Identity Provider~~ — đã chốt: xác thực làm nội bộ ([ADR-011](../docs/architecture.md#9-architecture-decisions-adr-index)). Việc còn lại là chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và đưa `seed_roles.sql` vào quy trình triển khai của mọi môi trường.
+2. ~~Chốt Identity Provider~~ — đã chốt: xác thực làm nội bộ ([ADR-011](../docs/adr/011-in-house-identity.md)). Việc còn lại là chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và đưa `seed_roles.sql` vào quy trình triển khai của mọi môi trường.
 3. Cần integration test trên PostgreSQL thật cho từng invariant chặn-ghi: một offer đang mở mỗi đơn ứng tuyển, một hợp đồng chính đang hiệu lực, một phiếu thử việc mỗi hợp đồng, một case thôi việc đang mở, `application_stage_events` duy nhất theo phiên bản.
 4. Cần test cho luồng áp dụng `employee_events` đúng `effective_date` và cho tính idempotent của offer-acceptance handoff.

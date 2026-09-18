@@ -1,6 +1,6 @@
 # Use Cases — Tổng Quan và Các Chức Năng Quản Lý Chính
 
-> **Trạng thái:** Proposed business design. Các mã trong ngoặc vuông truy vết tới `user_stories.md` hoặc `functional_specifications.md`. Chưa use case nào được xem là implemented; source trong `src/` chỉ là skeleton cấu trúc.
+> **Trạng thái:** Proposed business design. Các mã trong ngoặc vuông truy vết tới `user_stories.md` hoặc `functional_specifications.md`. Backend trong `src/backend` đã **code-complete** cho mọi use case dưới đây, nhưng chưa use case nào đạt `implemented`: còn thiếu integration test trên PostgreSQL thật.
 
 ## Quy ước
 

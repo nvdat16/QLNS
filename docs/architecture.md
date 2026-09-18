@@ -42,7 +42,7 @@ Q1–Q3 là các mục tiêu định hình kiến trúc. Mọi quyết định l
 
 | # | Constraint | Type | Implication |
 |---|---|---|---|
-| C1 | Hiện trạng gồm UI/UX prototype và skeleton source (cấu trúc dự án + một module mẫu); chưa có runtime đã xác minh | Project | phân biệt skeleton với implemented, build-tested, integrated và production-ready |
+| C1 | Hiện trạng gồm UI/UX prototype, frontend React và backend .NET 10 **code-complete** cho cả 79 operation; chưa có integration test, migration và runtime đã xác minh | Project | phân biệt code-complete với implemented, integrated và production-ready; chỉ integration test trên PostgreSQL thật mới nâng được trạng thái |
 | C2 | Frontend không truy cập database trực tiếp | Security | mọi query/command đi qua Backend API và server-side authorization |
 | C3 | PostgreSQL là database chuẩn; `database/schema.sql` là canonical contract tạm thời | Technical | schema phải được review, chuyển thành EF Core migration và kiểm thử constraint trước khi dùng |
 | C4 | React/Vite, ASP.NET Core .NET 10, EF Core và PostgreSQL | Technical | được Project Owner chấp thuận ngày 2026-09-15; package patch phải được pin trước release |
@@ -70,7 +70,7 @@ flowchart LR
     admin(["👤 Super Admin"])
 
     subgraph boundary["QLNS System Boundary"]
-        qlns["QLNS<br/><i>[Software System — Proposed]</i><br/>Recruitment and HR lifecycle management"]
+        qlns["QLNS<br/><i>[Software System — Code-complete]</i><br/>Recruitment and HR lifecycle management"]
     end
 
     comms["Email / Calendar<br/><i>[External System]</i>"]
@@ -161,8 +161,8 @@ flowchart LR
 
     subgraph system["QLNS System Boundary"]
         direction TB
-        web["React Web Application<br/><i>[Container · Presentation Tier — Skeleton]</i><br/>Candidate portal and internal HR workspace"]
-        api["ASP.NET Core Backend API<br/><i>[Container · Application Tier — Skeleton]</i><br/>Authorization, use cases, workflow and transactions"]
+        web["React Web Application<br/><i>[Container · Presentation Tier — Code-complete]</i><br/>Candidate portal and internal HR workspace"]
+        api["ASP.NET Core Backend API<br/><i>[Container · Application Tier — Code-complete]</i><br/>Authorization, use cases, workflow and transactions"]
         worker[".NET Background Worker<br/><i>[Container · Application Tier — Proposed]</i><br/>Scheduled jobs, outbox delivery and reconciliation"]
         db[("PostgreSQL HRMS Database<br/><i>[Container · Data Tier — Schema contract]</i><br/>Transactional system of record")]
     end
@@ -213,7 +213,7 @@ React Web Application → ASP.NET Core API ─┬→ Business/Data Layer → Pos
 - **.NET Background Worker:** xử lý tác vụ bất đồng bộ hoặc theo lịch sau khi business state đã được commit; không nhận request trực tiếp từ người dùng.
 - **PostgreSQL:** system of record. `database/schema.sql` hiện là canonical contract; migration/runtime database chưa được xác minh.
 - **Private Object Storage:** giữ nội dung file; PostgreSQL chỉ giữ metadata và quyền tham chiếu.
-- Màu xanh dương là skeleton source (cấu trúc, chưa implement), tím là thiết kế đề xuất, xanh lá là contract dữ liệu, xám là hệ thống ngoài.
+- Màu xanh dương là code-complete (có code và unit test, chưa có integration test), tím là thiết kế đề xuất chưa có code, xanh lá là contract dữ liệu, xám là hệ thống ngoài.
 
 <a id="c4-level-3-web"></a>
 
@@ -227,17 +227,17 @@ flowchart TB
 
     subgraph web["React Web Application [Container · Presentation Tier]"]
         direction TB
-        shell["Application Shell & Router<br/><i>[Component — Partial]</i><br/>layout, routes, navigation and error boundary"]
-        auth["Session & Route Guards<br/><i>[Component]</i><br/>Password sign-in, refresh rotation, claims and route access"]
+        shell["Application Shell & Router<br/><i>[Component — Code-complete]</i><br/>layout, routes, navigation and error boundary"]
+        auth["Session & Route Guards<br/><i>[Component — Code-complete]</i><br/>Password sign-in, refresh rotation, claims and route access"]
 
         subgraph features["Feature components"]
             direction LR
-            recruitment["Recruitment<br/><i>[Partial]</i><br/>jobs, candidates, interviews, offers"]
-            corehr["Core HR<br/><i>[Proposed]</i><br/>employees, organization, contracts, onboarding"]
+            recruitment["Recruitment<br/><i>[Code-complete]</i><br/>jobs, candidates, interviews, offers"]
+            corehr["Core HR<br/><i>[Code-complete]</i><br/>employees, organization, contracts, onboarding"]
         end
 
-        shared["Shared UI & Accessibility<br/><i>[Component — Partial]</i><br/>design tokens, forms, tables, feedback and WCAG states"]
-        client["Typed API Client<br/><i>[Component — Partial]</i><br/>DTO, token, Problem Details, concurrency and correlation"]
+        shared["Shared UI & Accessibility<br/><i>[Component — Code-complete]</i><br/>design tokens, forms, tables, feedback and WCAG states"]
+        client["Typed API Client<br/><i>[Component — Code-complete]</i><br/>DTO, token, Problem Details, concurrency and correlation"]
         telemetry["Client Telemetry<br/><i>[Component — Proposed]</i><br/>diagnostics without sensitive payloads"]
 
         shell --> auth
@@ -260,12 +260,12 @@ flowchart TB
     classDef partial fill:#1168bd,color:#fff,stroke:#0b4884
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
-    class shell,recruitment,shared,client partial
-    class auth,corehr,telemetry proposed
+    class shell,auth,recruitment,corehr,shared,client partial
+    class telemetry proposed
     class api,observe external
 ```
 
-Prototype trong `uiux/` là nguồn tham khảo cho các feature/component trên, không phải frontend implementation. Mỗi feature chỉ phụ thuộc `shared` và `client`; feature không import trực tiếp internals của feature khác. Route guard giúp trải nghiệm người dùng, nhưng Backend API vẫn phải kiểm tra quyền cho mọi request.
+Prototype HTML trong `uiux/` là nguồn tham khảo thiết kế cho các feature/component trên; frontend thật là ứng dụng React tại `src/frontend`, không phải các file prototype đó. Mỗi feature chỉ phụ thuộc `shared` và `client`; feature không import trực tiếp internals của feature khác. Route guard giúp trải nghiệm người dùng, nhưng Backend API vẫn phải kiểm tra quyền cho mọi request.
 
 <a id="c4-level-3-backend"></a>
 
@@ -282,32 +282,32 @@ flowchart TB
 
         subgraph presentation["Qlns.Api — Presentation Layer"]
             direction LR
-            pipeline["HTTP Pipeline<br/><i>[Component — Partial]</i><br/>auth, correlation, validation and Problem Details"]
-            recApi["Recruitment API<br/><i>[Partial]</i>"]
-            hrApi["Core HR API<br/><i>[Proposed]</i>"]
-            contractApi["Contract & Onboarding API<br/><i>[Proposed]</i>"]
-            admApi["Identity & Access API<br/><i>[Partial]</i><br/>sign-in, refresh, account administration"]
+            pipeline["HTTP Pipeline<br/><i>[Component — Code-complete]</i><br/>auth, correlation, validation and Problem Details"]
+            recApi["Recruitment API<br/><i>[Code-complete]</i>"]
+            hrApi["Core HR API<br/><i>[Code-complete]</i>"]
+            contractApi["Contract & Onboarding API<br/><i>[Code-complete]</i>"]
+            admApi["Identity & Access API<br/><i>[Code-complete]</i><br/>sign-in, refresh, account administration"]
         end
 
         subgraph business["Qlns.BusinessLogic — Business Layer"]
             direction LR
-            authorization["Authorization Policies<br/><i>[Component — Proposed]</i><br/>RBAC + data scope + field policy"]
-            recLogic["Recruitment Services & Domain<br/><i>[Partial]</i>"]
-            hrLogic["Core HR Services & Domain<br/><i>[Proposed]</i>"]
-            contractLogic["Contract & Onboarding Services<br/><i>[Proposed]</i>"]
-            auditOutbox["Audit & Outbox Policies<br/><i>[Component — Proposed]</i>"]
-            adm["Identity & Access Services<br/><i>[Partial]</i><br/>password verification, lockout, token rotation, role grants"]
+            authorization["Authorization Policies<br/><i>[Component — Code-complete]</i><br/>RBAC + data scope + field policy"]
+            recLogic["Recruitment Services & Domain<br/><i>[Code-complete]</i>"]
+            hrLogic["Core HR Services & Domain<br/><i>[Code-complete]</i>"]
+            contractLogic["Contract & Onboarding Services<br/><i>[Code-complete]</i>"]
+            auditOutbox["Audit & Outbox Policies<br/><i>[Component — Code-complete]</i>"]
+            adm["Identity & Access Services<br/><i>[Code-complete]</i><br/>password verification, lockout, token rotation, role grants"]
         end
 
         subgraph data["Qlns.DataAccess — Data Layer"]
             direction LR
-            recRepo["Recruitment Repositories<br/><i>[Partial]</i>"]
-            hrRepo["Core HR Repositories<br/><i>[Proposed]</i>"]
-            contractRepo["Contract Repositories<br/><i>[Proposed]</i>"]
-            auditRepo["Audit & Outbox Repositories<br/><i>[Proposed]</i>"]
-            uow["EF Core DbContext & Unit of Work<br/><i>[Component — Partial]</i>"]
-            objectAdapter["Object Storage Adapter<br/><i>[Component — Proposed]</i>"]
-            admRepo["Identity Repositories &amp; Crypto Adapters<br/><i>[Partial]</i><br/>PBKDF2 hasher, JWT issuer, refresh-token store"]
+            recRepo["Recruitment Repositories<br/><i>[Code-complete]</i>"]
+            hrRepo["Core HR Repositories<br/><i>[Code-complete]</i>"]
+            contractRepo["Contract Repositories<br/><i>[Code-complete]</i>"]
+            auditRepo["Audit & Outbox Repositories<br/><i>[Code-complete]</i>"]
+            uow["EF Core DbContext & Unit of Work<br/><i>[Component — Code-complete]</i>"]
+            objectAdapter["Object Storage Adapter<br/><i>[Component — Dev adapter]</i><br/>FileSystemDocumentStorage; object store thật chưa có"]
+            admRepo["Identity Repositories &amp; Crypto Adapters<br/><i>[Code-complete]</i><br/>PBKDF2 hasher, JWT issuer, refresh-token store"]
         end
     end
 
@@ -347,8 +347,8 @@ flowchart TB
     classDef partial fill:#1168bd,color:#fff,stroke:#0b4884
     classDef proposed fill:#6b4f9b,color:#fff,stroke:#463267
     classDef external fill:#777,color:#fff,stroke:#555
-    class pipeline,recApi,recLogic,recRepo,uow,admApi,adm,admRepo partial
-    class authorization,hrApi,contractApi,hrLogic,contractLogic,auditOutbox,hrRepo,contractRepo,auditRepo,objectAdapter proposed
+    class pipeline,recApi,hrApi,contractApi,admApi,authorization,recLogic,hrLogic,contractLogic,auditOutbox,adm,recRepo,hrRepo,contractRepo,auditRepo,uow,admRepo partial
+    class objectAdapter proposed
     class web,db,objects external
 ```
 
@@ -418,40 +418,47 @@ Worker chưa có implementation đã xác minh. Mọi handler phải idempotent,
 
 ### 5.5 Business modules and data ownership
 
-Hai module nghiệp vụ được chọn triển khai trước — **Core HR** (gồm Contracts) và **Recruitment** — đều đã có bảng trong canonical schema v1 (23 bảng). Attendance & Leave nằm ngoài phạm vi; thiết kế của nó được giữ tại [deferred/attendance_leave/](deferred/attendance_leave/README.md).
+Hai module nghiệp vụ được chọn triển khai trước — **Core HR** (gồm Contracts) và **Recruitment** — cùng phân hệ định danh `[ADM]` đều đã có bảng trong canonical schema v1.2 (28 bảng). Attendance & Leave nằm ngoài phạm vi; thiết kế của nó được giữ tại [deferred/attendance_leave/](deferred/attendance_leave/README.md).
 
 | Module | Responsibilities | Canonical tables | Current evidence |
 |---|---|---|---|
 | Core HR — Profile & Organization | employee, department, position | `employees`, `departments`, `positions` | UI prototype + canonical schema + OpenAPI + story có AC |
 | Core HR — Lifecycle | onboarding, events, documents, probation, offboarding | `onboarding_tasks`, `employee_events`, `employee_documents`, `probation_reviews`, `offboarding_cases`, `offboarding_tasks` | UI prototype (onboarding) + canonical schema + OpenAPI + story có AC |
 | Core HR — Contracts | contract lifecycle, expiry alert, addendum | `contracts`, `contract_addenda` | UI prototype + canonical schema + OpenAPI + story có AC |
-| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + module mẫu trong skeleton |
-| Identity/Audit/Notification | actor, roles/data scope, audit, delivery state — **cơ chế xuyên suốt, không có API quản trị trong đợt này** | `users`, `user_roles`, `audit_logs`, `outbox_messages` | canonical v1 design |
+| Recruitment | job, candidate, application, interview, evaluation, offer | `job_postings`, `candidates`, `resumes`, `applications`, `application_stage_events`, `interviews`, `evaluations`, `offers` | UI prototype + canonical schema + OpenAPI + story có AC + backend code-complete (REC-01 … REC-06) |
+| Identity & Access (ADM) | tài khoản, thông tin đăng nhập, vai trò/data scope, luân chuyển refresh token — **có API quản trị** tại `/api/v1/auth/*` và `/api/v1/admin/*` ([ADR-011](#9-architecture-decisions-adr-index)) | `users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens` | canonical schema v1.2 + OpenAPI + story có AC + backend code-complete (ADM-01, ADM-02) |
+| Audit & Outbox | audit trail và delivery state — **cơ chế xuyên suốt bắt buộc của mọi command, không có API quản trị trong đợt này** | `audit_logs`, `outbox_messages` | canonical schema v1.2 + ghi cùng transaction nghiệp vụ trong mọi repository |
 
 
 ### 5.6 Target code structure
 
 ```text
-frontend/
+src/frontend/
 ├── src/app/                      # composition, routing, session
 ├── src/features/
-│   ├── recruitment/              # api, components, hooks, pages — sample module (skeleton)
-│   ├── core-hr/                  # proposed
-│   └── contracts/                # proposed
+│   ├── auth/                     # ADM-01 — sign-in, refresh rotation, route guards
+│   ├── admin/                    # ADM-02 — accounts and role grants
+│   ├── employees/                # EMP-01, EMP-03 … EMP-07
+│   ├── organization/             # EMP-02
+│   ├── contracts/                # CON-01 … CON-03
+│   └── recruitment/              # REC-01 … REC-06
 ├── src/shared/                   # design system and generic UI
 └── src/api/                      # shared client and Problem Details mapping
 
-backend/
+src/backend/
 ├── src/Qlns.Api/                 # Presentation layer
 ├── src/Qlns.BusinessLogic/       # module services/domain + repository contracts
 ├── src/Qlns.DataAccess/          # module repositories + EF Core/adapters
-├── src/Qlns.Worker/              # proposed background processing container
 ├── tests/Qlns.BusinessLogic.UnitTests/
-└── tests/Qlns.IntegrationTests/  # proposed — required before the first slice
+├── tests/smoke/                  # corehr_smoke.py, identity_smoke.py — HTTP thật trên PostgreSQL
+├── src/Qlns.Worker/              # proposed — background processing container, chưa tồn tại
+└── tests/Qlns.IntegrationTests/  # proposed — required before any operation counts as implemented
 
-api/openapi.yaml                  # contract-first OpenAPI 3.0.3 (51 paths, 66 operations, 16 tags)
+docs/api/openapi.yaml             # contract-first OpenAPI 3.0.3 (62 paths, 79 operations, 17 tags)
 database/schema.sql               # canonical schema contract before EF migrations (28 tables, v1.2)
 ```
+
+Ba thư mục ghi `proposed` ở trên chưa tồn tại trong repository; mọi thứ còn lại đã có code. Không có `Qlns.Worker` nghĩa là ba điểm vào worker (`EmployeeMovementService.ApplyDueEventsAsync`, `OfferService.ExpireDueOffersAsync`, `ContractService.ExpireDueContractsAsync`) và outbox dispatcher hiện chỉ gọi được từ test, chưa có host chạy theo lịch.
 
 `tests/Qlns.IntegrationTests/` chưa tồn tại nhưng là điều kiện bắt buộc trước slice đầu tiên: các invariant quan trọng nhất của Core HR (một offer đang mở mỗi đơn, một hợp đồng chính đang hiệu lực, một case thôi việc đang mở, áp dụng biến động đúng ngày hiệu lực) là partial unique index và conditional update ở database, không thể verify bằng repository giả lập.
 
@@ -703,7 +710,7 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 | # | Risk | Impact | Likelihood | Mitigation | Owner |
 |---|---|---|---|---|---|
 | R1 | UI prototype bị hiểu nhầm là frontend đã hoàn thành | High | High | nhãn Design-only, acceptance criteria và không dùng mock data fallback production | Product + Architecture |
-| R1b | Có OpenAPI contract đầy đủ bị hiểu nhầm là API đã hoạt động | High | High | `x-implementation-status` trên từng operation; hiện **chưa operation nào** ở trạng thái implemented — source trong `src/` chỉ là skeleton cấu trúc | Architecture |
+| R1b | `code-complete` bị hiểu nhầm là API đã chạy được trên môi trường thật | High | High | `x-implementation-status` trên từng operation; cả 79 operation đang ở `code-complete`, **chưa operation nào** đạt `implemented` vì `tests/Qlns.IntegrationTests` và EF Core migration chưa tồn tại | Architecture |
 | R2 | Canonical schema chưa được chuyển thành EF migration có version | High | High | migration plan và constraint/invariant integration tests trên PostgreSQL thật | Data + Backend |
 | R2b | Thiết kế Attendance & Leave đã tách ra `deferred/` có thể drift khỏi canonical (bảng `employees`, `users`, error model) nếu module đó quay lại phạm vi | Medium | Medium | ghi rõ phụ thuộc trong `deferred/attendance_leave/README.md`; review lại toàn bộ fragment trước khi ghép về | Architecture |
 | R3 | Stack được chọn theo sơ đồ mà không qua decision process | Medium | High | ADR framework/version và proof-of-concept vertical slice | Architecture |
@@ -722,7 +729,7 @@ Các budget chưa có dữ liệu tải hoặc hạ tầng được coi là **pr
 
 ## 12. Architecture Fitness Functions
 
-Các gate dưới đây là target bắt buộc. Skeleton source chỉ mới có unit test cho module mẫu; những gate chưa có executable job vẫn phải giữ trạng thái Planned.
+Các gate dưới đây là target bắt buộc. Hiện mới có unit test ở tầng nghiệp vụ và một link-check cho tài liệu; những gate chưa có executable job vẫn phải giữ trạng thái Planned.
 
 | Test / Gate | Rule enforced | Fails when | Status / planned location |
 |---|---|---|---|

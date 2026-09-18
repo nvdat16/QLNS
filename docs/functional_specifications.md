@@ -5,7 +5,7 @@
 
 ## 1. Giới Thiệu Tổng Quan
 
-> **Trạng thái triển khai:** tài liệu này là đặc tả yêu cầu mục tiêu. Project có UI/UX prototype, canonical database/OpenAPI contract và skeleton source React/.NET 10 (cấu trúc, chưa phải code chính thức); runtime chưa được build/tích hợp. Mọi hành vi được ghi trong `user_stories.md` vẫn là yêu cầu tương lai, không phải chức năng đang chạy.
+> **Trạng thái triển khai:** tài liệu này là đặc tả yêu cầu mục tiêu. Project có UI/UX prototype, canonical database/OpenAPI contract, frontend React và backend .NET 10 **code-complete** cho cả 79 operation (controller, authorization policy, workflow, persistence kèm audit/outbox, unit test). Chưa có integration test trên PostgreSQL, EF Core migration và background worker, nên chưa hành vi nào được xác minh end-to-end; `code-complete` chưa phải production-ready.
 
 ### 1.1. Mục tiêu Dự án
 Hệ thống **QLNS / NexusHR** là giải pháp phần mềm quản trị nguồn nhân lực (HRMS) và tuyển dụng thông minh (ATS) toàn diện, nhằm:

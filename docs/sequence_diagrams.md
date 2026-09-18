@@ -123,7 +123,7 @@ sequenceDiagram
 
 ## 3. Chuyển application sang giai đoạn tiếp theo
 
-**User Story:** `REC-03.2` · **Trạng thái:** Proposed. Module mẫu trong skeleton source minh hoạ luồng này, chưa phải implementation chính thức.
+**User Story:** `REC-03.2` · **Trạng thái:** Proposed. `RecruitmentPipelineService` trong `src/backend` đã hiện thực luồng này ở mức code-complete; chưa có integration test xác minh conditional update trên PostgreSQL thật.
 
 ```mermaid
 sequenceDiagram

@@ -1,6 +1,6 @@
 # 📑 HRMS Database Design
 
-> **Trạng thái:** Design artifact mô tả **canonical schema — 28 bảng (v1.2)**, bao phủ hai phân hệ nghiệp vụ (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access. ERD Mermaid ở mục 1 vẫn vẽ theo 23 bảng của v1; bảng `interview_panelists` (v1.1) và bốn bảng định danh (v1.2) chưa được đưa vào sơ đồ — xem [README §2.6](README.md#26-delta-v11--phát-hiện-khi-triển-khai) và [§2.7](README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ). Source backend hiện chỉ là skeleton cấu trúc, chưa implement bảng nào; EF Core migration pipeline và database runtime chưa được xác minh.
+> **Trạng thái:** Design artifact mô tả **canonical schema — 28 bảng (v1.2)**, bao phủ hai phân hệ nghiệp vụ (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access. ERD Mermaid ở mục 1 vẫn vẽ theo 23 bảng của v1; bảng `interview_panelists` (v1.1) và bốn bảng định danh (v1.2) chưa được đưa vào sơ đồ — xem [README §2.6](README.md#26-delta-v11--phát-hiện-khi-triển-khai) và [§2.7](README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ). Backend đã code-complete trên toàn bộ các bảng này, nhưng EF Core migration pipeline chưa tồn tại và database runtime chưa được xác minh bằng integration test.
 
 > [!IMPORTANT]
 > [`schema.sql`](schema.sql) là **canonical schema contract** và là nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. Tài liệu này mô tả mục đích nghiệp vụ và invariant của từng bảng. Khi hai bên lệch nhau, `schema.sql` thắng và tài liệu này phải được sửa.

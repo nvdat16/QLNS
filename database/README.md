@@ -2,7 +2,7 @@
 
 > Thư mục chứa cấu trúc lược đồ dữ liệu quan hệ (Relational Schema), sơ đồ thực thể liên kết (ERD), ảnh DBML trực quan, file DDL PostgreSQL và dữ liệu khởi tạo mẫu (Seed Data) cho hệ thống **QLNS**.
 
-> **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Source backend hiện chỉ là skeleton cấu trúc; EF Core migration pipeline và PostgreSQL runtime chưa được cấu hình/xác minh. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các luồng nghiệp vụ đã hoạt động.
+> **Trạng thái:** đây là **thiết kế cơ sở dữ liệu và DDL tham chiếu**. Backend đã code-complete và đọc/ghi đúng các bảng này, nhưng schema vẫn được nạp thủ công bằng `psql`: EF Core migration pipeline chưa tồn tại và chưa có integration test nào chạy trên PostgreSQL thật. Việc có file SQL không đồng nghĩa database đã được triển khai hoặc các invariant đã được kiểm chứng.
 
 > [!IMPORTANT]
 > Chỉ [`schema.sql`](schema.sql) là canonical — **28 bảng** (baseline v1.2), bao phủ hai phân hệ nghiệp vụ trong phạm vi (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access (ADM). DDL Attendance & Leave (13 bảng) được giữ ngoài phạm vi tại [docs/deferred/attendance_leave/schema_attendance_leave.sql](../docs/deferred/attendance_leave/schema_attendance_leave.sql). `init.sql` và `postgres_db.sql` đã được đánh dấu **DEPRECATED** trong chính file và không khớp canonical; không sinh migration từ chúng.

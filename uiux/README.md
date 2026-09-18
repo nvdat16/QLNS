@@ -46,7 +46,7 @@ Hệ thống cung cấp 4 file HTML độc lập hoàn chỉnh, chạy trực ti
 
 ### 2.1. Dashboard tổng quan (`main.html?view=dashboard`)
 
-⏸️ **Ngoài phạm vi triển khai** (giữ làm concept) — thuộc trụ cột Reports & Analytics. Không có endpoint báo cáo nào trong `api/openapi.yaml`.
+⏸️ **Ngoài phạm vi triển khai** (giữ làm concept) — thuộc trụ cột Reports & Analytics. Không có endpoint báo cáo nào trong `docs/api/openapi.yaml`.
 
 Trang mặc định cung cấp KPI nhân sự, biểu đồ biến động, đơn nghỉ gần đây, cơ cấu trạng thái và danh sách nhân sự mới. Các view nghiệp vụ cũ tiếp tục truy cập qua sidebar.
 

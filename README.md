@@ -190,6 +190,7 @@ Detail: [Use Cases](docs/use_cases.md#1-use-case-tổng-quát) ·
 | **Recruiter** | vacancies, CV screening, the ATS pipeline, interview scheduling, offer preparation |
 | **Hiring Manager / Interviewer** | hiring requests, interviews, candidate scorecards |
 | **HR Officer (C&B / Records)** | employee records, employment contracts, onboarding checklists |
+| **Line Manager** | probation reviews, handover sign-off and movement requests for their own team — data scope `department` |
 | **Employee / Candidate** | permitted profile fields, own contract and org information, applications |
 
 ```mermaid
@@ -557,8 +558,8 @@ Read in this order:
 | 03 | [INVEST user stories](docs/user_stories.md) | **28 stories with Gherkin acceptance criteria** and traceability |
 | 04 | [Use cases](docs/use_cases.md) | Actors, boundaries and the actor-to-function matrix |
 | 05 | [Architecture (arc42 + C4)](docs/architecture.md) | **The main design document** — context, containers, components, runtime, deployment |
-| 06 | [Sequence diagrams](docs/sequence_diagrams.md) | Six flows across the three layers, success *and* failure branches |
-| 07 | [Class diagrams](docs/class_diagrams.md) | The domain model per module, the design model of the one slice that has code, and the 3-layer pattern for the rest |
+| 06 | [Sequence diagrams](docs/sequence_diagrams.md) | Seven flows across the three layers, success *and* failure branches |
+| 07 | [Class diagrams](docs/class_diagrams.md) | The domain model per module (27 classes, 13 enumerations), the design model of the "advance application" slice, and the 3-layer pattern every module follows |
 | 08 | [Database design](database/database_design.md) · [schema](database/schema.sql) | The ERD, the field specification, the canonical DDL |
 | 09 | [API contract](docs/api/README.md) · [OpenAPI](docs/api/openapi.yaml) · [reference](docs/api/API_REFERENCE.md) | Conventions, 79 operations across 62 paths, per-operation status |
 | 10 | [UI/UX prototypes](uiux/README.md) | Every prototype screen and the interactions it simulates |

@@ -2,7 +2,7 @@
 
 Target: .NET 10, ASP.NET Core, Entity Framework Core and PostgreSQL.
 
-**Status:** every one of the 79 operations in [`api/openapi.yaml`](../../docs/api/openapi.yaml) is `code-complete` — controller,
+**Status:** every one of the 79 operations in [`docs/api/openapi.yaml`](../../docs/api/openapi.yaml) is `code-complete` — controller,
 endpoint authorization policy, business workflow, transactional persistence (audit + outbox in the same transaction) and
 unit tests (1 347 passing). What is still missing before an operation counts as `implemented` is listed in
 [API_REFERENCE §7](../../docs/api/API_REFERENCE.md#7-trạng-thái-triển-khai): integration tests against PostgreSQL, EF Core
@@ -149,13 +149,13 @@ Persona khả dụng (khớp `seed_dev.sql` và ma trận vai trò trong `docs/u
 `line-manager` (kiêm Hiring Manager / Interviewer, scope phòng ban 2 và 4), `recruiter`, `employee`, `it-admin`.
 Token phản hồi Offer của ứng viên lấy bằng `GET /dev/offer-token?offerId=` sau khi Offer đã `send`.
 
-> Cổng local là **5080**, không phải 5000 như `servers` trong `api/openapi.yaml`, vì trên macOS cổng 5000 bị AirPlay Receiver chiếm và trả 403 cho mọi request. Đổi cổng tại `Properties/launchSettings.json`, nhớ đổi kèm `Documents:PublicBaseUrl` trong `appsettings.Development.json` để signed URL trỏ đúng.
+> Cổng local là **5080**, không phải cổng mặc định 5000 của .NET, vì trên macOS cổng 5000 bị AirPlay Receiver chiếm và trả 403 cho mọi request. `servers` trong `docs/api/openapi.yaml` đã trỏ đúng 5080. Đổi cổng tại `Properties/launchSettings.json`, nhớ đổi kèm `Documents:PublicBaseUrl` trong `appsettings.Development.json` để signed URL trỏ đúng.
 
 Công cụ gửi request có sẵn: `CoreHr.http` (REST Client), `tests/smoke/corehr_smoke.py` và `tests/smoke/identity_smoke.py`
 (phủ toàn bộ ADM-01/ADM-02: đăng nhập, luân chuyển refresh token, phát hiện replay, khoá tạm, buộc đổi mật khẩu, cấp/thu
 hồi vai trò — tự tạo tài khoản dùng một lần nên chạy lại được nhiều lần). Các module Recruitment,
 Contracts, Probation và Offboarding chưa có collection riêng; dùng `/openapi/v1.json` do `MapOpenApi` sinh ra hoặc Postman import
-`api/openapi.yaml`.
+`docs/api/openapi.yaml`.
 
 **3. Integration test** — `tests/Qlns.IntegrationTests` chưa tồn tại. `docs/architecture.md` §5.6 coi đây là điều kiện bắt buộc trước khi một operation được tính là `implemented`, vì các invariant mạnh nhất (partial unique index `ux_offers_one_open_per_application`, `ux_contracts_primary_active`, `ux_offboarding_open_case`, `ux_probation_review_contract`; conditional update theo version; các truy vấn EF phức tạp như cửa sổ cảnh báo hết hạn hay đếm task chặn) chỉ có thể kiểm chứng trên PostgreSQL thật. Ngăn xếp đề xuất: `WebApplicationFactory` cộng Testcontainers.
 

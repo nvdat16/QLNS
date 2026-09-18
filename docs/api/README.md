@@ -26,7 +26,7 @@ Every operation now carries `x-implementation-status: code-complete`: controller
 
 `code-complete` is deliberately not `implemented`: the repository's definition of *implemented* also requires integration/contract tests against PostgreSQL (`tests/Qlns.IntegrationTests`, still to be created). Until then the strongest invariants — partial unique indexes and conditional updates — are only exercised by the database itself. The ADM module has not yet been exercised end-to-end against a live PostgreSQL instance either; its unit tests cover the decisions, not the SQL.
 
-Two schema deltas surfaced while implementing and were folded into `database/schema.sql` v1.1: `offers.currency` / `contracts.currency`, the `interview_panelists` table behind `InterviewWrite.interviewerUserIds`, and `contract_addenda.version` as the addendum ETag (see [database/README.md §2.6](../../database/README.md#26-delta-v11--phát-hiện-khi-triển-khai)).
+Four schema deltas surfaced while implementing and were folded into `database/schema.sql` v1.1: `offers.currency`, `contracts.currency`, the `interview_panelists` table behind `InterviewWrite.interviewerUserIds`, and `contract_addenda.version` reinterpreted as the addendum ETag (see [database/README.md §2.6](../../database/README.md#26-delta-v11--phát-hiện-khi-triển-khai)). Moving authentication in-house then added four more tables in v1.2 (see [§2.7](../../database/README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ)).
 
 ## Where server-side calculation is mandatory
 

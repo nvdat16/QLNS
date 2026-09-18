@@ -36,7 +36,7 @@ convenience only — the server re-checks permission and data scope on every req
 
 ```bash
 npm install
-npm run dev     # http://localhost:5173, expects the API on http://localhost:5000
+npm run dev     # http://localhost:5173, expects the API on http://localhost:5080
 npm run build   # tsc -b && vite build
 ```
 
@@ -47,4 +47,5 @@ environment.
 
 Seeded development accounts all use the password `Qlns@2026`: `admin@qlns.local` (Super Admin — the only one that sees
 *Tài khoản & phân quyền*), `hr.manager@qlns.local`, `hr.officer@qlns.local`, `eng.manager@qlns.local`,
-`recruiter@qlns.local`, `dev.nguyen@qlns.local`, `it.admin@qlns.local`.
+`recruiter@qlns.local`, `dev.nguyen@qlns.local`, `it.admin@qlns.local`. An eighth account, `ceo@qlns.local`, is seeded
+with `must_change_password` and no roles — use it to exercise the restricted session and the 401/403 boundaries.

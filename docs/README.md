@@ -20,9 +20,9 @@ Thư mục `docs/` là trung tâm đặc tả nghiệp vụ và kiến trúc c�
 | [Architecture — arc42 + C4](architecture.md) | Tài liệu thiết kế chính: goals, constraints, C4 Level 1/2/3, runtime, deployment, crosscutting concepts, ADR, quality scenarios, risks và fitness functions | Proposed · Authoritative |
 | [Functional Specifications](functional_specifications.md) | Đặc tả yêu cầu, vai trò, quyền hạn, precondition, business flow và acceptance rules | Proposed · Authoritative |
 | [Use Cases](use_cases.md) | Use case tổng quát và chi tiết cho hai phân hệ trong phạm vi: Core HR và Recruitment | Proposed · Supporting |
-| [Sequence Diagrams](sequence_diagrams.md) | 6 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
-| [Class Diagrams](class_diagrams.md) | Domain model 23 class theo module, design class diagram của vertical slice đã có code, và pattern 3-layer cho module còn lại | Proposed · Supporting |
-| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng v1; bảng thứ 24 (delta v1.1) và bốn bảng định danh (delta v1.2) ở Database README | Design artifact |
+| [Sequence Diagrams](sequence_diagrams.md) | 7 sequence theo 3-tier/3-layer, gồm success và failure branches | Proposed · Supporting |
+| [Class Diagrams](class_diagrams.md) | Domain model 27 class và 13 enumeration theo module, design class diagram của vertical slice "Advance application", và pattern 3-layer dùng chung cho mọi module | Proposed · Supporting |
+| [Database Design](../database/database_design.md) | ERD và đặc tả canonical 23 bảng v1; 5 bảng bổ sung — `interview_panelists` (delta v1.1) và 4 bảng định danh mới của delta v1.2 — mô tả ở Database README, chưa có trên ERD | Design artifact |
 | [Database README](../database/README.md) | Chỉ mục schema canonical, DDL legacy đã deprecated và hướng dẫn kiểm tra | Design artifact |
 | [API Contract](api/README.md) | OpenAPI 3.0.3, 79 operation trên 62 path, kèm `x-implementation-status` từng operation | Design artifact |
 | [UI/UX README](../uiux/README.md) | Chỉ mục HTML prototype và ảnh giao diện cho các chức năng đã thiết kế | Prototype artifact |
@@ -32,7 +32,7 @@ Thứ tự ưu tiên khi hai tài liệu mâu thuẫn:
 1. **Ranh giới kỹ thuật** → `architecture.md`.
 2. **Business rule và acceptance criteria** → `functional_specifications.md` / `user_stories.md`.
 3. **Kiểu dữ liệu, constraint và invariant** → `database/schema.sql` (canonical, thắng cả `database_design.md`).
-4. **Hợp đồng API** → `api/openapi.yaml` (thắng `API_REFERENCE.md`).
+4. **Hợp đồng API** → `docs/api/openapi.yaml` (thắng `API_REFERENCE.md`).
 5. **Nội dung trong `deferred/`** không có thẩm quyền với phạm vi hiện tại; nó chỉ là điểm khởi đầu nếu module tương ứng quay lại phạm vi.
 
 ---
@@ -141,7 +141,7 @@ Trước khi bắt đầu frontend/backend, tối thiểu cần:
 - Chấp thuận stack frontend/backend và phiên bản bằng ADR.
 - Chốt nơi quản lý secret `Authentication:Jwt:SigningKey` và chính sách vòng đời phiên (access token 30 phút, refresh token 14 ngày). Authentication flow đã chốt ở [ADR-011](architecture.md#9-architecture-decisions-adr-index); ma trận permission và data scope nằm ở `database/seed_roles.sql`.
 - Review canonical schema **28 bảng (v1.2)** và sinh EF Core migration đầu tiên có version.
-- Chốt API convention, error model, pagination và concurrency strategy. ✅ đã có trong `api/README.md`.
+- Chốt API convention, error model, pagination và concurrency strategy. ✅ đã có trong `docs/api/README.md`.
 - Chọn vertical slice đầu tiên cùng acceptance test end-to-end.
 - Thiết lập architecture, security, migration và contract gates trong CI.
 - Tạo integration test project chạy trên PostgreSQL thật — bắt buộc, vì các invariant quan trọng của Core HR (partial unique index, conditional update) không thể verify bằng mock.

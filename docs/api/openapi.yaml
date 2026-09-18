@@ -25,8 +25,11 @@ info:
     Audit logging and outbox delivery remain crosscutting mechanisms; the
     administration endpoints that would expose or configure them are out of scope.
 servers:
-  - url: http://localhost:5000
-    description: Local ASP.NET Core development server
+  - url: http://localhost:5080
+    description: >-
+      Local ASP.NET Core development server. The port is 5080, not the .NET default 5000,
+      because macOS AirPlay Receiver occupies 5000 and answers 403 to every request.
+      It is set in src/backend/src/Qlns.Api/Properties/launchSettings.json.
 security:
   - bearerAuth: []
 tags:

@@ -1,6 +1,6 @@
 # 📑 HRMS Database Design
 
-> **Trạng thái:** Design artifact mô tả **canonical schema — 28 bảng (v1.2)**, bao phủ hai phân hệ nghiệp vụ (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access. ERD Mermaid ở mục 1 vẫn vẽ theo 23 bảng của v1; bảng `interview_panelists` (v1.1) và bốn bảng định danh (v1.2) chưa được đưa vào sơ đồ — xem [README §2.6](README.md#26-delta-v11--phát-hiện-khi-triển-khai) và [§2.7](README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ). Backend đã code-complete trên toàn bộ các bảng này, nhưng EF Core migration pipeline chưa tồn tại và database runtime chưa được xác minh bằng integration test.
+> **Trạng thái:** Design artifact mô tả **canonical schema — 28 bảng (v1.2)**, bao phủ hai phân hệ nghiệp vụ (Core HR gồm Contracts, và Recruitment) cùng phân hệ định danh Identity & Access. ERD Mermaid ở mục 1 phủ đủ 28 bảng của v1.2, gồm `interview_panelists` (delta v1.1) và bốn bảng định danh của delta v1.2 — xem [README §2.6](README.md#26-delta-v11--phát-hiện-khi-triển-khai) và [§2.7](README.md#27-delta-v12--đưa-xác-thực-về-nội-bộ). Backend đã code-complete trên toàn bộ các bảng này, nhưng EF Core migration pipeline chưa tồn tại và database runtime chưa được xác minh bằng integration test.
 
 > [!IMPORTANT]
 > [`schema.sql`](schema.sql) là **canonical schema contract** và là nguồn chuẩn duy nhất cho kiểu dữ liệu, constraint, index và exclusion constraint. Tài liệu này mô tả mục đích nghiệp vụ và invariant của từng bảng. Khi hai bên lệch nhau, `schema.sql` thắng và tài liệu này phải được sửa.
@@ -41,190 +41,386 @@ Hai bảng Platform còn lại là **cơ chế xuyên suốt bắt buộc**, ghi
 
 ## 1. Overall Entity–Relationship Diagram (Mermaid ERD)
 
+Sơ đồ dưới đây phủ **cả 28 bảng canonical của v1.2** và được sinh theo đúng `schema.sql`. Để đọc được, mỗi entity chỉ liệt kê
+khóa chính, khóa ngoại, khóa duy nhất và các cột mang ý nghĩa phân biệt (trạng thái, mốc vòng đời, `version` dùng làm ETag);
+đặc tả đầy đủ từng trường nằm ở [§2](#2-employee-records-module--field-level-view)–[§5](#5-identity--access--platform-tables).
+Cột `created_at` / `updated_at` có ở hầu hết bảng và được lược bỏ khỏi sơ đồ.
+
 ```mermaid
 erDiagram
-    departments ||--o{ employees : "has"
-    positions ||--o{ employees : "has"
-    employees ||--o{ onboarding_tasks : "has"
-    employees ||--o{ employee_documents : "has"
-    employees ||--o{ contracts : "has"
-    employees ||--o{ employee_events : "has"
+    %% ---------- Identity & Access (ADM) ----------
+    roles ||--o{ role_permissions : "grants"
+    roles ||--o{ user_roles : "assigned through"
+    users ||--o| user_credentials : "signs in with"
+    users ||--o{ user_roles : "holds"
+    users ||--o{ refresh_tokens : "owns session"
+    refresh_tokens |o--o| refresh_tokens : "replaced by"
+    users ||--o{ audit_logs : "acts in"
+
+    %% ---------- Organization & Profile ----------
+    departments |o--o{ departments : "parent of"
+    departments ||--o{ employees : "employs"
+    positions ||--o{ employees : "classifies"
+    employees |o--o{ employees : "manages"
+    users |o--o| employees : "is"
+
+    %% ---------- Recruitment (ATS) ----------
     departments ||--o{ job_postings : "owns"
-    candidates |o--o{ resumes : "owns after confirmation"
+    positions |o--o{ job_postings : "classifies"
     job_postings ||--o{ resumes : "receives intake"
+    candidates |o--o{ resumes : "owns after confirmation"
     candidates ||--o{ applications : "submits"
     job_postings ||--o{ applications : "receives"
-    resumes ||--o{ applications : "supports"
-    applications ||--o{ interviews : "includes"
+    resumes |o--o{ applications : "supports"
     applications ||--o{ application_stage_events : "logs"
-    interviews ||--o{ evaluations : "receives"
+    applications ||--o{ interviews : "includes"
+    interviews ||--o{ interview_panelists : "panel of"
+    users ||--o{ interview_panelists : "sits on"
+    interviews ||--o{ evaluations : "scored by"
     applications ||--o{ offers : "receives"
-    offers ||--o| employees : "creates"
-    contracts ||--o{ contract_addenda : "amended by"
-    contracts ||--o| probation_reviews : "reviewed by"
-    employees ||--o{ offboarding_cases : "exits via"
-    offboarding_cases ||--o{ offboarding_tasks : "has"
+    applications |o--o| employees : "hired as"
 
-    departments {
-        integer id PK
+    %% ---------- Contracts ----------
+    employees ||--o{ contracts : "signs"
+    contracts ||--o{ contract_addenda : "amended by"
+
+    %% ---------- Employee Lifecycle ----------
+    employees ||--o{ onboarding_tasks : "onboards through"
+    employees ||--o{ employee_documents : "files"
+    employees ||--o{ employee_events : "changes through"
+    employee_events |o--o| employee_events : "compensated by"
+    employees ||--o{ probation_reviews : "reviewed in"
+    contracts ||--o{ probation_reviews : "probation of"
+    probation_reviews |o--o| employee_events : "results in"
+    employees ||--o{ offboarding_cases : "exits via"
+    offboarding_cases ||--o{ offboarding_tasks : "handed over by"
+    offboarding_cases |o--o| employee_events : "results in"
+
+    %% ================= entities =================
+    roles {
+        varchar code PK
         varchar name
-        varchar code "UK"
-        text description
-        timestamp created_at
+        boolean is_assignable
+    }
+
+    role_permissions {
+        varchar role_code PK_FK
+        varchar permission PK
+    }
+
+    users {
+        bigint id PK
+        varchar external_subject UK "local| prefix for in-house accounts"
+        varchar email UK
+        varchar display_name
+        varchar status "active | disabled"
+        bigint version
+    }
+
+    user_credentials {
+        bigint user_id PK_FK
+        varchar password_hash "pbkdf2-sha512$iter$salt$hash"
+        boolean must_change_password
+        integer failed_attempts
+        timestamptz locked_until
+        timestamptz last_login_at
+        bigint version
+    }
+
+    user_roles {
+        bigint user_id PK_FK
+        varchar role_code PK_FK
+        varchar data_scope_type PK "self | department | organization"
+        bigint data_scope_id PK
+        bigint granted_by FK
+    }
+
+    refresh_tokens {
+        bigint id PK
+        bigint user_id FK
+        varchar token_hash UK "SHA-256 digest only"
+        timestamptz expires_at
+        timestamptz revoked_at
+        varchar revoked_reason "rotated | logout | reuse_detected | ..."
+        bigint replaced_by_token_id FK
+    }
+
+    %% ---------------------------------------------
+    departments {
+        bigint id PK
+        varchar code UK
+        varchar name
+        bigint parent_department_id FK
+        varchar cost_center
+        bigint version
     }
 
     positions {
-        integer id PK
+        bigint id PK
+        varchar code UK
         varchar name
-        varchar code "UK"
         varchar level
-        text description
-        timestamp created_at
+        bigint version
     }
 
     employees {
-        integer id PK
-        varchar employee_code "UK"
-        varchar first_name
-        varchar last_name
-        date date_of_birth
-        varchar gender
-        varchar email "UK"
-        varchar phone
-        text address
+        bigint id PK
+        varchar employee_code UK
+        bigint source_application_id FK_UK "handoff idempotency key"
+        bigint user_id FK_UK
+        varchar work_email "null until activation"
+        varchar personal_email
+        bigint manager_id FK
+        bigint department_id FK
+        bigint position_id FK
         date hire_date
-        varchar status
-        integer department_id FK
-        integer position_id FK
-        timestamp created_at
-        timestamp updated_at
+        varchar status "probation | active | suspended* | resigned | terminated"
+        bigint version
     }
 
-    onboarding_tasks {
-        integer id PK
-        integer employee_id FK
-        varchar task_name
-        text description
-        integer assigned_to
-        date due_date
-        varchar status
-        timestamp completed_at
-        timestamp created_at
-    }
-
-    employee_documents {
-        integer id PK
-        integer employee_id FK
-        varchar document_type
-        varchar file_name
-        varchar file_url
-        integer uploaded_by
-        timestamp uploaded_at
-    }
-
-    contracts {
-        integer id PK
-        integer employee_id FK
-        varchar contract_type
-        date start_date
-        date end_date
-        decimal salary
-        varchar status
-        varchar document_url
-        timestamp created_at
-    }
-
-    employee_events {
-        integer id PK
-        integer employee_id FK
-        varchar event_type
-        date effective_date
-        integer old_department_id FK
-        integer new_department_id FK
-        integer old_position_id FK
-        integer new_position_id FK
-        text description
-        integer created_by
-        timestamp created_at
-    }
-
+    %% ---------------------------------------------
     job_postings {
-        integer id PK
-        varchar job_code UK
-        varchar title
-        integer department_id FK
+        bigint id PK
+        varchar job_code UK "REQ-{yyyy}-{id:D5}"
+        bigint department_id FK
+        bigint position_id FK
         varchar employment_type
-        decimal salary_min
-        decimal salary_max
+        numeric salary_min
+        numeric salary_max
         integer target_headcount
-        varchar status
-        date closing_date
+        varchar status "draft | pending_approval | approved | active | closed"
+        bigint created_by FK
+        bigint version
     }
 
     candidates {
-        integer id PK
-        varchar first_name
-        varchar last_name
-        varchar email UK
-        varchar phone
-        varchar linkedin_url
-        varchar portfolio_url
+        bigint id PK
+        varchar email
+        varchar normalized_email "duplicate detection"
+        varchar normalized_phone
+        varchar privacy_notice_version
+        timestamptz consented_at
+        date retention_until
+        bigint version
     }
 
     resumes {
         bigint id PK
         uuid intake_id UK
         bigint job_posting_id FK
-        bigint candidate_id FK
-        varchar intake_status
+        bigint candidate_id FK "set at confirmation"
+        varchar object_key UK
+        varchar intake_status "scanning | parsing | awaiting_confirmation | ..."
         varchar malware_scan_status
         varchar parser_status
         jsonb parsed_data
         jsonb parse_confidence
-        timestamptz uploaded_at
-        timestamptz confirmed_at
+        bigint uploaded_by FK
+        bigint confirmed_by FK
     }
 
     applications {
-        integer id PK
-        integer candidate_id FK
-        integer job_posting_id FK
-        integer resume_id FK
-        varchar stage
-        integer ai_score
+        bigint id PK
+        bigint candidate_id FK
+        bigint job_posting_id FK
+        bigint resume_id FK
+        varchar stage "sourced_applied ... hired_ready"
+        numeric ai_score
         varchar source
-        jsonb stage_metadata
-        timestamp applied_at
+        bigint version
+    }
+
+    application_stage_events {
+        bigint id PK
+        bigint application_id FK
+        varchar from_stage
+        varchar to_stage
+        bigint changed_by FK
+        bigint application_version "lost-update guard"
     }
 
     interviews {
-        integer id PK
-        integer application_id FK
+        bigint id PK
+        bigint application_id FK
         varchar interview_type
-        timestamp scheduled_at
-        integer interviewer_id
-        varchar status
+        timestamptz starts_at
+        timestamptz ends_at
+        varchar timezone
+        bigint interviewer_user_id FK "panel lead"
+        varchar status "scheduled | completed | cancelled"
+        bigint version
+    }
+
+    interview_panelists {
+        bigint interview_id PK_FK
+        bigint user_id PK_FK
     }
 
     evaluations {
-        integer id PK
-        integer interview_id FK
-        integer evaluator_id
-        decimal overall_score
+        bigint id PK
+        bigint interview_id FK
+        bigint evaluator_user_id FK
+        numeric technical_score "0-5 step 0.5"
+        numeric communication_score
+        numeric problem_solving_score
+        numeric teamwork_score
+        numeric overall_score "server-computed"
         varchar recommendation
+        bigint unlocked_by FK
+        integer version "scorecard revision"
     }
 
     offers {
-        integer id PK
-        integer application_id FK
-        decimal base_salary
-        decimal bonus_amount
+        bigint id PK
+        bigint application_id FK
+        numeric base_salary
+        char currency
         date start_date
         date expiration_date
+        varchar status "draft | pending_approval | approved | sent | accepted | ..."
+        varchar document_object_key
+        bigint approved_by FK
+        bigint version
+    }
+
+    %% ---------------------------------------------
+    contracts {
+        bigint id PK
+        bigint employee_id FK
+        varchar contract_number UK
+        varchar contract_type "probation | fixed_term | indefinite | ..."
+        date start_date
+        date end_date
+        numeric salary
+        char currency
+        varchar status "draft | pending_approval | active | expired | terminated"
+        boolean is_primary "one active primary per employee"
+        bigint version
+    }
+
+    contract_addenda {
+        bigint id PK
+        bigint contract_id FK
+        varchar addendum_number UK
         varchar status
+        date effective_date
+        jsonb before_terms
+        jsonb after_terms
+        bigint created_by FK
+        bigint approved_by FK
+        bigint version "ETag, not sibling ordering"
+    }
+
+    %% ---------------------------------------------
+    onboarding_tasks {
+        bigint id PK
+        bigint employee_id FK
+        varchar template_key
+        bigint assigned_to_user_id FK
+        timestamptz due_at
+        varchar status "pending | in_progress | done | skipped"
+        bigint version
+    }
+
+    employee_documents {
+        bigint id PK
+        bigint employee_id FK
+        varchar document_type
+        integer version "document revision"
+        varchar object_key UK
+        bigint uploaded_by FK
+        date retention_until
+        timestamptz deleted_at
+    }
+
+    employee_events {
+        bigint id PK
+        bigint employee_id FK
+        varchar event_type "promotion | transfer | termination | suspension* | ..."
+        varchar status "draft | pending_approval | approved | applied | rejected"
+        date effective_date
+        jsonb before_data
+        jsonb after_data
+        bigint compensates_event_id FK
+        bigint created_by FK
+        bigint approved_by FK
+        timestamptz applied_at "set by the Effective-Date Worker"
+        bigint version
+    }
+
+    probation_reviews {
+        bigint id PK
+        bigint employee_id FK
+        bigint contract_id FK
+        date review_due_date
+        bigint reviewer_user_id FK
+        varchar status "pending | in_review | decided"
+        varchar outcome "confirmed | extended | terminated"
+        bigint decided_by FK
+        bigint employee_event_id FK "one-to-one, replay guard"
+        bigint version
+    }
+
+    offboarding_cases {
+        bigint id PK
+        bigint employee_id FK
+        bigint employee_event_id FK "one-to-one, replay guard"
+        varchar separation_type
+        date last_working_date
+        bigint handover_to_employee_id FK
+        varchar final_settlement_status "owned by Payroll, out of scope"
+        varchar status "draft | approved | in_progress | completed"
+        bigint created_by FK
+        bigint approved_by FK
+        bigint version
+    }
+
+    offboarding_tasks {
+        bigint id PK
+        bigint offboarding_case_id FK
+        varchar template_key
+        varchar category
+        bigint assigned_to_user_id FK
+        boolean blocks_last_working_day
+        varchar status
+        bigint version
+    }
+
+    %% ---------------------------------------------
+    audit_logs {
+        bigint id PK
+        bigint actor_user_id FK "null for anonymous sign-in attempts"
+        varchar action
+        varchar entity_type
+        varchar entity_id
+        jsonb before_data
+        jsonb after_data
+        varchar result "succeeded | rejected | failed"
+        varchar correlation_id
+        timestamptz occurred_at
+    }
+
+    outbox_messages {
+        uuid id PK
+        varchar message_type
+        varchar aggregate_type
+        varchar aggregate_id
+        jsonb payload
+        timestamptz available_at
+        timestamptz processed_at
+        integer attempts
+        text last_error
     }
 ```
 
+> [!NOTE]
+> `audit_logs` và `outbox_messages` không có khóa ngoại tới các aggregate nghiệp vụ — chúng tham chiếu bằng
+> `entity_type` + `entity_id` / `aggregate_type` + `aggregate_id` dạng chuỗi, để bản ghi audit sống lâu hơn dòng dữ liệu
+> mà nó mô tả. Các quan hệ vẽ ở trên chỉ gồm khóa ngoại thật trong `schema.sql`; riêng `users ||--o{ audit_logs` là
+> khóa ngoại của `actor_user_id`, không phải của đối tượng bị tác động.
+>
+> `*` đánh dấu giá trị **reserved, ngoài phạm vi đợt này**: `employees.status = 'suspended'` và
+> `employee_events.event_type IN ('suspension','return_to_work')` tồn tại trong schema nhưng không endpoint nào đặt được.
 ---
 
 ## 2. Employee Records Module — field-level view

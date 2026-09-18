@@ -747,7 +747,7 @@ Các gate dưới đây là target bắt buộc. Hiện mới có unit test ở 
 | `NoSensitiveDataInLogs` | §8 | log fixture chứa token, CV, salary hoặc restricted payload | Planned — security tests |
 | `CriticalFlowsMeetAccessibilityGate` | Q4 | axe/keyboard checks fail ở luồng ưu tiên | Planned — frontend CI |
 | `ReadPerformanceBudget` | Q5 | employee/recruitment list vượt provisional p95 budget | Planned — performance job |
-| `MarkdownLinksAndMermaidAreValid` | C9 | tài liệu có link nội bộ/anchor hỏng hoặc Mermaid không parse | Partially enforced — `scripts/check_doc_links.py` chạy trong `.github/workflows/docs.yml` phủ link và anchor; phần kiểm tra Mermaid vẫn Planned |
+| `MarkdownLinksAndMermaidAreValid` | C9 | tài liệu có link nội bộ/anchor hỏng hoặc Mermaid không parse | Planned — chưa có job tự động; link và anchor hiện được kiểm thủ công trước khi merge (§5 của `docs/README.md`) |
 
 CI tương lai phải chạy các gate phù hợp trên mọi pull request. Một rule chỉ được đánh dấu **Enforced** khi test/job thực sự tồn tại, có thể fail và được required trong CI.
 

@@ -24,7 +24,7 @@
 
 ## 1. Sơ Đồ Thực Thể Quan Hệ (ERD)
 
-Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd), render từ canonical 23 bảng của v1; bảng `interview_panelists` (v1.1) và bốn bảng định danh của v1.2 (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`) chưa được vẽ.
+Nguồn ERD hiện hành là sơ đồ Mermaid trong [`database_design.md`](./database_design.md#1-overall-entityrelationship-diagram-mermaid-erd), phủ đủ **28 bảng canonical của v1.2** — gồm `interview_panelists` (delta v1.1) và bốn bảng định danh của delta v1.2 (`roles`, `role_permissions`, `user_credentials`, `refresh_tokens`). Sơ đồ chỉ hiển thị khóa và cột phân biệt; đặc tả từng trường nằm ở các mục sau của `database_design.md`.
 
 > [!NOTE]
 > Sơ đồ DBML cũ (`dbml.txt` và ảnh `dbml.png`, theo mô hình 14 bảng) đã được xóa khỏi repository vì không khớp canonical schema. Đừng dựng lại nó song song với Mermaid ERD: hai nguồn sơ đồ sẽ lệch nhau.

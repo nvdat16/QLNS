@@ -8,22 +8,22 @@
 
 [![Status](https://img.shields.io/badge/status-code--complete%20%C2%B7%20integration%20pending-yellow)](docs/README.md#2-current-project-scope)
 [![Spec](https://img.shields.io/badge/spec-arc42%20%2B%20C4%20%2B%20ADR-informational)](docs/architecture.md)
-[![API](https://img.shields.io/badge/OpenAPI-3.0.3%20%C2%B7%2066%20ops%20%2F%2051%20paths-blue)](api/openapi.yaml)
-[![Schema](https://img.shields.io/badge/schema-24%20canonical%20tables%20%C2%B7%20v1.1-blue)](database/schema.sql)
-[![Stories](https://img.shields.io/badge/INVEST-24%20user%20stories-informational)](docs/user_stories.md)
-[![Code complete](https://img.shields.io/badge/code--complete-66%20of%2066%20operations-brightgreen)](api/API_REFERENCE.md#6-trạng-thái-triển-khai)
-[![Unit tests](https://img.shields.io/badge/unit%20tests-1248%20passing-brightgreen)](src/backend/README.md#local-testing)
+[![API](https://img.shields.io/badge/OpenAPI-3.0.3%20%C2%B7%2079%20ops%20%2F%2062%20paths-blue)](api/openapi.yaml)
+[![Schema](https://img.shields.io/badge/schema-28%20canonical%20tables%20%C2%B7%20v1.2-blue)](database/schema.sql)
+[![Stories](https://img.shields.io/badge/INVEST-28%20user%20stories-informational)](docs/user_stories.md)
+[![Code complete](https://img.shields.io/badge/code--complete-79%20of%2079%20operations-brightgreen)](api/API_REFERENCE.md#7-trạng-thái-triển-khai)
+[![Unit tests](https://img.shields.io/badge/unit%20tests-1347%20passing-brightgreen)](src/backend/README.md#local-testing)
 
 </div>
 
 ```mermaid
 flowchart LR
-    S["Specification<br/><small>SRS · 24 stories · use cases</small>"]
+    S["Specification<br/><small>SRS · 28 stories · use cases</small>"]
     A["Architecture<br/><small>arc42 + C4 + 9 ADR</small>"]
-    D["Data contract<br/><small>23 canonical tables</small>"]
-    C["API contract<br/><small>66 operations</small>"]
-    K["Backend code<br/><small>66 operations · 3 layers · 1248 unit tests</small>"]
-    R["Runtime<br/><small>integration tests · migration · IdP · worker · deployment</small>"]
+    D["Data contract<br/><small>28 canonical tables</small>"]
+    C["API contract<br/><small>79 operations</small>"]
+    K["Backend code<br/><small>79 operations · 3 layers · 1347 unit tests</small>"]
+    R["Runtime<br/><small>integration tests · migration · worker · deployment</small>"]
 
     S --> A --> D --> C --> K --> R
 
@@ -34,7 +34,7 @@ flowchart LR
     class R todo
 ```
 
-**Blue is written and reviewable. Grey does not exist yet.** Every operation is `code-complete` (controller, policy, workflow, transactional persistence with audit/outbox, unit tests); integration tests against PostgreSQL and the real Identity Provider are the remaining gate to `implemented`.
+**Blue is written and reviewable. Grey does not exist yet.** Every operation is `code-complete` (controller, policy, workflow, transactional persistence with audit/outbox, unit tests); integration tests against PostgreSQL are the remaining gate to `implemented`.
 
 <div align="center">
 
@@ -136,7 +136,7 @@ delivered. They are not.
 |---|---|
 | **Attendance & Leave Management** | Fully designed, then parked — kept intact at [docs/deferred/attendance_leave/](docs/deferred/attendance_leave/README.md). |
 | **Reports & Analytics** | Workforce Dashboard, Recruitment Analytics, Attendance & Leave Reports, Payroll & Personnel Cost Reports, Performance & Training Reports, Authorized Report Export. No reporting or export endpoint is part of the contract. |
-| **System Administration** | Account Management, Roles/Permissions & Data Access Scope, Approval Workflow & Delegation Configuration, Notifications & Reminder Configuration, Integration Configuration, Audit Trail. |
+| **System Administration** | Partially in scope. **Account Management and Roles/Permissions & Data Access Scope are delivered** as the Identity & Access (ADM) module — see [section 2.6](#26-identity--access-adm--delivered-in-house). Still out: Approval Workflow & Delegation Configuration, Notifications & Reminder Configuration, Integration Configuration, Audit Trail browsing. |
 | **Performance Management** | Not part of the design baseline. |
 | **Compensation & Benefits** | Not part of the design baseline. |
 
@@ -149,10 +149,28 @@ explicitly:
 |---|---|
 | Writing an audit record in the same transaction as the business change | **Still mandatory.** It is a crosscutting concern of every command, and the `audit_logs` table stays canonical. What is out of scope is the *administration endpoint for browsing audit records*. |
 | Transactional outbox for email and calendar delivery | **Still mandatory**, and `outbox_messages` stays canonical. What is out of scope is the *administration endpoint for inspecting and retrying deliveries*. |
-| `users` and `user_roles` tables | **Still canonical** — they carry the identity reference and the data scope that authorization reads. |
-| Creating accounts, roles and role grants | Out of scope as an API. Account and role provisioning is owned by the **external Identity Provider**; QLNS consumes the result, it does not administer it. |
+| Identity tables (`users`, `user_credentials`, `user_roles`, `roles`, `role_permissions`, `refresh_tokens`) | **Canonical** — they carry the credential, the identity reference and the data scope that authorization reads. |
+| Creating accounts, roles and role grants | **Now in scope** — served in-house by the ADM module ([section 2.6](#26-identity--access-adm--delivered-in-house)). There is no external Identity Provider. |
 | Server-side permission and data-scope check on every request | **Still mandatory** — quality goal Q1 is unchanged. |
 | Integration, notification and approval-workflow configuration | Out of scope. Configuration lives in `appsettings`, with no UI and no API. |
+
+### 2.6. Identity & Access (ADM) — delivered in house
+
+Sign-in was originally delegated to an external Identity Provider. It is now part
+of the delivery: QLNS issues, validates and revokes its own sessions, and
+administers its own accounts and role grants.
+
+| Delivered | Detail |
+|---|---|
+| **ADM-01 · Password sign-in** | `POST /api/v1/auth/login` · `refresh` · `logout` · `GET /auth/me` · `POST /auth/change-password`. PBKDF2-HMAC-SHA512 (210 000 iterations, per-password salt), 5-failure / 15-minute lockout, single-use refresh tokens stored only as a SHA-256 digest with theft detection. |
+| **ADM-02 · Account & role administration** | `/api/v1/admin/users` (search, create, update, enable/disable, password reset, replace role grants) and `/api/v1/admin/roles`. Requires `admin.user.read` / `admin.user.manage` / `admin.role.read`; an administrator may not act on their own account. |
+| **Role → permission matrix** | Reference data in [`database/seed_roles.sql`](database/seed_roles.sql), loaded in every environment. Eight roles, read through the API but only writable through a reviewed SQL change. |
+
+What did **not** change: every business endpoint still reads permissions and data
+scope from the token claims through the same resolver, so no business module was
+touched. That claim shape is also the federation seam — an external provider would
+have to emit the same claims — but there is no silent fallback to an external
+authority: `Authentication:Jwt:SigningKey` is required for the API to start.
 
 Infrastructure probes (`GET /health/live`, `GET /health/ready`) are retained under
 the `Operations` tag. They belong to the deployment view, not to the functional
@@ -163,11 +181,11 @@ map, and are not a business function in scope.
 ## 3. Roles and use cases
 
 Detail: [Use Cases](docs/use_cases.md#1-use-case-tổng-quát) ·
-[Role-to-story permission matrix](docs/user_stories.md#51-bảng-phân-quyền-role-to-story)
+[Role-to-story permission matrix](docs/user_stories.md#61-bảng-phân-quyền-role-to-story)
 
 | Actor | Owns |
 |---|---|
-| **Super Admin** | **no function in the current delivery** — accounts and role grants come from the external Identity Provider, and the System Administration pillar is out of scope ([section 2.5](#25-crosscutting-mechanisms-stay--their-administration-screens-do-not)) |
+| **Super Admin** | user accounts, role grants and data scope, password resets — the ADM module ([section 2.6](#26-identity--access-adm--delivered-in-house)); no business function |
 | **HR Director / Manager** | hiring and offer approval, employee movements, contracts |
 | **Recruiter** | vacancies, CV screening, the ATS pipeline, interview scheduling, offer preparation |
 | **Hiring Manager / Interviewer** | hiring requests, interviews, candidate scorecards |
@@ -181,14 +199,18 @@ flowchart LR
     Interviewer([Hiring Manager / Interviewer])
     HROfficer([HR Officer])
     User([Employee / Candidate])
+    Admin([Super Admin])
 
     subgraph HRMS["QLNS / HRMS"]
+        Accounts[Administer accounts, roles & data scope]
         Jobs[Create & publish job requisitions]
         ATS[Screen CVs & manage ATS pipeline]
         Interviews[Schedule interviews & submit scorecards]
         Offers[Approve offers & onboarding]
         Records[Manage employee records & contracts]
     end
+
+    Admin --> Accounts
 
     Recruiter --> Jobs
     Recruiter --> ATS
@@ -202,11 +224,12 @@ flowchart LR
     User --> Records
 ```
 
-**Super Admin is deliberately absent from this diagram**: it owns no use case in
-the current delivery. The role stays in the actor table because it exists in the
-role model, but every function it used to own — account and role administration,
-audit-trail browsing, configuration, organization-wide reporting — is out of
-scope, and account provisioning belongs to the external Identity Provider.
+**Super Admin owns exactly one group of use cases and no business data.**
+`ROLE_ADMIN` carries `admin.user.*`, `admin.role.read` and `corehr.organization.read`
+— nothing else — so an administrator can provision accounts and grant roles but
+cannot read a profile, a contract or a candidate. The functions it used to own that
+remain out of scope: audit-trail browsing, integration/notification configuration
+and organization-wide reporting.
 
 Authorization is **permission plus data scope**, enforced server-side on every
 request — `self`, `department` or `organization`. Hiding a button in the UI is not
@@ -347,8 +370,8 @@ version of all of them is [docs/architecture.md](docs/architecture.md).
 flowchart TD
     A["React 19 + Vite web client<br/><small>presentation tier</small>"]
     B["ASP.NET Core API · .NET 10<br/><small>application tier</small>"]
-    C["PostgreSQL<br/><small>system of record · 24 tables</small>"]
-    D["Providers<br/><small>IdP · email · calendar · object storage</small>"]
+    C["PostgreSQL<br/><small>system of record · 28 tables</small>"]
+    D["Providers<br/><small>email · calendar · object storage</small>"]
 
     A -->|HTTPS · /api/v1 · JWT| B
     B -->|EF Core| C
@@ -531,11 +554,11 @@ Read in this order:
 |---|---|---|
 | 01 | [Docs index](docs/README.md) | The map, the authority order, the reading path for your role |
 | 02 | [Functional Specifications (SRS)](docs/functional_specifications.md) | What the system must do, per module |
-| 03 | [INVEST user stories](docs/user_stories.md) | **24 stories with Gherkin acceptance criteria** and traceability |
+| 03 | [INVEST user stories](docs/user_stories.md) | **28 stories with Gherkin acceptance criteria** and traceability |
 | 04 | [Use cases](docs/use_cases.md) | Actors, boundaries and the actor-to-function matrix |
 | 05 | [Architecture (arc42 + C4)](docs/architecture.md) | **The main design document** — context, containers, components, runtime, deployment |
 | 06 | [Sequence diagrams](docs/sequence_diagrams.md) | Six flows across the three layers, success *and* failure branches |
 | 07 | [Class diagrams](docs/class_diagrams.md) | The domain model per module, the design model of the one slice that has code, and the 3-layer pattern for the rest |
 | 08 | [Database design](database/database_design.md) · [schema](database/schema.sql) | The ERD, the field specification, the canonical DDL |
-| 09 | [API contract](api/README.md) · [OpenAPI](api/openapi.yaml) · [reference](api/API_REFERENCE.md) | Conventions, 66 operations across 51 paths, per-operation status |
+| 09 | [API contract](api/README.md) · [OpenAPI](api/openapi.yaml) · [reference](api/API_REFERENCE.md) | Conventions, 79 operations across 62 paths, per-operation status |
 | 10 | [UI/UX prototypes](uiux/README.md) | Every prototype screen and the interactions it simulates |
